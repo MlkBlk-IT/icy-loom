@@ -1,0 +1,70 @@
+# Configuration de la preuve de bout en bout (couche 1 -> 4).
+# Même structure que icyloom.yaml, mais l'amont pointe sur le faux amont
+# de test (8154) et la base est isolée.
+server:
+  name: icyloom
+  host: 127.0.0.1
+  remote_access_token: null
+
+ports:
+  gateway_http: 8150
+  mcp_http: 8151
+  mcp_sse: 8152
+  admin: 8153
+
+database:
+  path: icyloom-e2e.db
+  journal_mode: WAL
+  busy_timeout_ms: 5000
+  synchronous: NORMAL
+
+cache:
+  ttl_seconds: 604800
+  max_entries: 50000
+  semantic_enabled: false
+
+compression:
+  enabled: false
+  profile: strict
+  auto_store_threshold: 500
+  max_anchor_chars: 6000
+  max_invariants: 40
+
+context:
+  session_ttl_days: 30
+  redact_enabled: true
+  rate_limit_per_minute: 1200
+  allowed_dirs: []
+  audit_enabled: true
+  audit_retention_days: 30
+  sandbox_enabled: true
+  sandbox_timeout_seconds: 30.0
+
+breaker:
+  failure_threshold: 3
+  reset_seconds: 30.0
+  half_open_probes: 1
+
+ledger:
+  enabled: true
+  retention_days: 90
+
+tool_proxy:
+  default_ttl_seconds: 3600
+  loop_window_seconds: 300
+  loop_warn_after: 3
+  loop_block_after: 5
+  loop_max_cycle: 3
+  max_result_bytes: 1048576
+  connect_timeout_seconds: 20.0
+  call_timeout_seconds: 300.0
+  servers: []
+
+upstreams:
+  - name: fake
+    base_url: http://127.0.0.1:8154/v1
+    priority: 10
+    kind: openai
+    api_key_env: ""
+    timeout_seconds: 30.0
+    sticky: true

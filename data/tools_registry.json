@@ -1,0 +1,10 @@
+{
+  "version": 1,
+  "total": 100,
+  "verified_anchors": [
+    {"name": "ha-mcp", "version": "8.7.0", "transport": "stdio"},
+    {"name": "serena-agent", "version": "2.1.0", "cmd": "serena start-mcp-server", "transport": "stdio"},
+    {"name": "browser-use", "version": "0.13.11", "flag": "--mcp", "transport": "stdio"}
+  ],
+  "groups": {"A": 15, "B": 22, "C1": 3, "C2": 60}
+}

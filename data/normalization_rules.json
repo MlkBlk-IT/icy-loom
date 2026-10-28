@@ -1,0 +1,5832 @@
+{
+  "version": 1,
+  "generated": "2026-10-26T09:12:00.000000",
+  "total_rules": 1122,
+  "intents": [
+    {
+      "pattern": "explique|explain|how to|comment faire|qu'est-ce que|what is",
+      "name": "explain"
+    },
+    {
+      "pattern": "setup|configure|install|créer|create|build",
+      "name": "configure"
+    },
+    {
+      "pattern": "fix|réparer|déboguer|troubleshoot|debug|repair",
+      "name": "troubleshoot"
+    },
+    {
+      "pattern": "compare|comparer|difference|vs|versus",
+      "name": "compare"
+    },
+    {
+      "pattern": "optimize|optimiser|improve|améliorer|speed up|accélérer",
+      "name": "optimize"
+    },
+    {
+      "pattern": "secure|sécuriser|protect|protéger|harden|durcir",
+      "name": "secure"
+    },
+    {
+      "pattern": "monitor|surveiller|track|suivre|log|journaliser",
+      "name": "monitor"
+    },
+    {
+      "pattern": "backup|sauvegarder|restore|restaurer|migrate|migrer",
+      "name": "backup"
+    },
+    {
+      "pattern": "test|tester|validate|valider|verify|vérifier",
+      "name": "test"
+    },
+    {
+      "pattern": "deploy|déployer|release|publier|publish",
+      "name": "deploy"
+    }
+  ],
+  "slots": {
+    "explain": [
+      {
+        "pattern": "hyperv|hyper-v|hyper v",
+        "slot": "topic",
+        "value": "hyper-v"
+      },
+      {
+        "pattern": "vm|virtual machine|machine virtuelle",
+        "slot": "topic",
+        "value": "vm"
+      },
+      {
+        "pattern": "docker|container|conteneur",
+        "slot": "topic",
+        "value": "docker"
+      },
+      {
+        "pattern": "kubernetes|k8s",
+        "slot": "topic",
+        "value": "kubernetes"
+      },
+      {
+        "pattern": "linux|debian|ubuntu|fedora|centos|alma|rocky",
+        "slot": "topic",
+        "value": "linux"
+      },
+      {
+        "pattern": "windows|win11|win10|server",
+        "slot": "topic",
+        "value": "windows"
+      },
+      {
+        "pattern": "network|reseau|networking",
+        "slot": "topic",
+        "value": "network"
+      },
+      {
+        "pattern": "security|securite|cybersecurity",
+        "slot": "topic",
+        "value": "security"
+      },
+      {
+        "pattern": "cloud|aws|azure|gcp",
+        "slot": "topic",
+        "value": "cloud"
+      },
+      {
+        "pattern": "database|db|sql|nosql",
+        "slot": "topic",
+        "value": "database"
+      },
+      {
+        "pattern": "api|rest|graphql",
+        "slot": "topic",
+        "value": "api"
+      },
+      {
+        "pattern": "\\d+ phrases?|\\d+ sentences?|short|court|bref",
+        "slot": "length",
+        "value": "short"
+      },
+      {
+        "pattern": "detailed|détaillé|long|complet|complete",
+        "slot": "length",
+        "value": "detailed"
+      },
+      {
+        "pattern": "beginner|débutant|basic|base",
+        "slot": "level",
+        "value": "beginner"
+      },
+      {
+        "pattern": "advanced|avancé|expert|pro",
+        "slot": "level",
+        "value": "advanced"
+      }
+    ],
+    "configure": [
+      {
+        "pattern": "firewall|pare-feu",
+        "slot": "component",
+        "value": "firewall"
+      },
+      {
+        "pattern": "dns",
+        "slot": "component",
+        "value": "dns"
+      },
+      {
+        "pattern": "dhcp",
+        "slot": "component",
+        "value": "dhcp"
+      },
+      {
+        "pattern": "vpn",
+        "slot": "component",
+        "value": "vpn"
+      },
+      {
+        "pattern": "proxy",
+        "slot": "component",
+        "value": "proxy"
+      },
+      {
+        "pattern": "nginx|apache|iis",
+        "slot": "component",
+        "value": "webserver"
+      },
+      {
+        "pattern": "mysql|postgres|mariadb",
+        "slot": "component",
+        "value": "database"
+      },
+      {
+        "pattern": "redis|memcached",
+        "slot": "component",
+        "value": "cache"
+      },
+      {
+        "pattern": "ssl|tls|https",
+        "slot": "component",
+        "value": "ssl"
+      },
+      {
+        "pattern": "ssh",
+        "slot": "component",
+        "value": "ssh"
+      }
+    ],
+    "troubleshoot": [
+      {
+        "pattern": "error|erreur|bug|fail|échec",
+        "slot": "issue",
+        "value": "error"
+      },
+      {
+        "pattern": "slow|lent|latency|latence",
+        "slot": "issue",
+        "value": "performance"
+      },
+      {
+        "pattern": "crash|freeze|geler|hang|bloquer",
+        "slot": "issue",
+        "value": "crash"
+      },
+      {
+        "pattern": "connection|connexion|network|reseau",
+        "slot": "issue",
+        "value": "network"
+      },
+      {
+        "pattern": "permission|autorisation|access|accès",
+        "slot": "issue",
+        "value": "permission"
+      },
+      {
+        "pattern": "memory|ram|mémoire",
+        "slot": "issue",
+        "value": "memory"
+      },
+      {
+        "pattern": "disk|disque|storage|stockage",
+        "slot": "issue",
+        "value": "storage"
+      },
+      {
+        "pattern": "cpu|processor|processeur",
+        "slot": "issue",
+        "value": "cpu"
+      }
+    ]
+  },
+  "rules": [
+    {
+      "pattern": "would it be possible to",
+      "replace": "",
+      "category": "politeness_en"
+    },
+    {
+      "pattern": "est-ce que vous pouvez",
+      "replace": "",
+      "category": "politeness_fr"
+    },
+    {
+      "pattern": "do you think you could",
+      "replace": "",
+      "category": "politeness_en"
+    },
+    {
+      "pattern": "i was hoping you could",
+      "replace": "",
+      "category": "politeness_en"
+    },
+    {
+      "pattern": "thank you in advance",
+      "replace": "",
+      "category": "politeness_en"
+    },
+    {
+      "pattern": "it would be great if",
+      "replace": "",
+      "category": "politeness_en"
+    },
+    {
+      "pattern": "est-ce que tu peux",
+      "replace": "",
+      "category": "politeness_fr"
+    },
+    {
+      "pattern": "en vous remerciant",
+      "replace": "",
+      "category": "politeness_fr"
+    },
+    {
+      "pattern": "i was wondering if",
+      "replace": "",
+      "category": "politeness_en"
+    },
+    {
+      "pattern": "if you don't mind",
+      "replace": "",
+      "category": "politeness_en"
+    },
+    {
+      "pattern": "is it possible to",
+      "replace": "",
+      "category": "politeness_en"
+    },
+    {
+      "pattern": "thanks in advance",
+      "replace": "",
+      "category": "politeness_en"
+    },
+    {
+      "pattern": "pour faire simple",
+      "replace": "",
+      "category": "filler_fr"
+    },
+    {
+      "pattern": "je vous remercie",
+      "replace": "",
+      "category": "politeness_fr"
+    },
+    {
+      "pattern": "en te remerciant",
+      "replace": "",
+      "category": "politeness_fr"
+    },
+    {
+      "pattern": "could you please",
+      "replace": "",
+      "category": "politeness_en"
+    },
+    {
+      "pattern": "en quelque sorte",
+      "replace": "",
+      "category": "filler_fr"
+    },
+    {
+      "pattern": "s'il vous plait",
+      "replace": "",
+      "category": "politeness_fr"
+    },
+    {
+      "pattern": "s'il vous plaît",
+      "replace": "",
+      "category": "politeness_fr"
+    },
+    {
+      "pattern": "responsability",
+      "replace": "responsibility",
+      "category": "typos_en"
+    },
+    {
+      "pattern": "administrateur",
+      "replace": "administrator",
+      "category": "tech_synonyms"
+    },
+    {
+      "pattern": "redimensionner",
+      "replace": "resize",
+      "category": "tech_synonyms"
+    },
+    {
+      "pattern": "deselectionner",
+      "replace": "deselect",
+      "category": "tech_synonyms"
+    },
+    {
+      "pattern": "j'aimerais que",
+      "replace": "",
+      "category": "politeness_fr"
+    },
+    {
+      "pattern": "merci beaucoup",
+      "replace": "",
+      "category": "politeness_fr"
+    },
+    {
+      "pattern": "je te remercie",
+      "replace": "",
+      "category": "politeness_fr"
+    },
+    {
+      "pattern": "would you mind",
+      "replace": "",
+      "category": "politeness_en"
+    },
+    {
+      "pattern": "can you please",
+      "replace": "",
+      "category": "politeness_en"
+    },
+    {
+      "pattern": "i'd appreciate",
+      "replace": "",
+      "category": "politeness_en"
+    },
+    {
+      "pattern": "understanding",
+      "replace": "understand",
+      "category": "conjugation_en"
+    },
+    {
+      "pattern": "developpement",
+      "replace": "développement",
+      "category": "typos_fr"
+    },
+    {
+      "pattern": "deverrouiller",
+      "replace": "déverrouiller",
+      "category": "typos_fr"
+    },
+    {
+      "pattern": "reinitialiser",
+      "replace": "réinitialiser",
+      "category": "typos_fr"
+    },
+    {
+      "pattern": "cybersecurite",
+      "replace": "cybersecurity",
+      "category": "tech_synonyms"
+    },
+    {
+      "pattern": "vulnerabilite",
+      "replace": "vulnerability",
+      "category": "tech_synonyms"
+    },
+    {
+      "pattern": "developpement",
+      "replace": "development",
+      "category": "tech_synonyms"
+    },
+    {
+      "pattern": "diagnostiquer",
+      "replace": "diagnose",
+      "category": "tech_synonyms"
+    },
+    {
+      "pattern": "mettre a jour",
+      "replace": "update",
+      "category": "tech_synonyms"
+    },
+    {
+      "pattern": "s'il te plait",
+      "replace": "",
+      "category": "politeness_fr"
+    },
+    {
+      "pattern": "pourriez-vous",
+      "replace": "",
+      "category": "politeness_fr"
+    },
+    {
+      "pattern": "s'il te plaît",
+      "replace": "",
+      "category": "politeness_fr"
+    },
+    {
+      "pattern": "desinstaller",
+      "replace": "désinstaller",
+      "category": "typos_fr"
+    },
+    {
+      "pattern": "defragmenter",
+      "replace": "défragmenter",
+      "category": "typos_fr"
+    },
+    {
+      "pattern": "maintainance",
+      "replace": "maintenance",
+      "category": "typos_en"
+    },
+    {
+      "pattern": "unfortunatly",
+      "replace": "unfortunately",
+      "category": "typos_en"
+    },
+    {
+      "pattern": "mot de passe",
+      "replace": "password",
+      "category": "tech_synonyms"
+    },
+    {
+      "pattern": "autorisation",
+      "replace": "authorization",
+      "category": "tech_synonyms"
+    },
+    {
+      "pattern": "authentifier",
+      "replace": "authenticate",
+      "category": "tech_synonyms"
+    },
+    {
+      "pattern": "partitionner",
+      "replace": "partition",
+      "category": "tech_synonyms"
+    },
+    {
+      "pattern": "synchroniser",
+      "replace": "synchronize",
+      "category": "tech_synonyms"
+    },
+    {
+      "pattern": "selectionner",
+      "replace": "select",
+      "category": "tech_synonyms"
+    },
+    {
+      "pattern": "i would like",
+      "replace": "",
+      "category": "politeness_en"
+    },
+    {
+      "pattern": "i appreciate",
+      "replace": "",
+      "category": "politeness_en"
+    },
+    {
+      "pattern": "c'est-à-dire",
+      "replace": "",
+      "category": "filler_fr"
+    },
+    {
+      "pattern": "c'est a dire",
+      "replace": "",
+      "category": "filler_fr"
+    },
+    {
+      "pattern": "understands",
+      "replace": "understand",
+      "category": "conjugation_en"
+    },
+    {
+      "pattern": "remembering",
+      "replace": "remember",
+      "category": "conjugation_en"
+    },
+    {
+      "pattern": "considering",
+      "replace": "consider",
+      "category": "conjugation_en"
+    },
+    {
+      "pattern": "deplacement",
+      "replace": "déplacement",
+      "category": "typos_fr"
+    },
+    {
+      "pattern": "telecharger",
+      "replace": "télécharger",
+      "category": "typos_fr"
+    },
+    {
+      "pattern": "deconnexion",
+      "replace": "déconnexion",
+      "category": "typos_fr"
+    },
+    {
+      "pattern": "independant",
+      "replace": "independent",
+      "category": "typos_en"
+    },
+    {
+      "pattern": "performence",
+      "replace": "performance",
+      "category": "typos_en"
+    },
+    {
+      "pattern": "commutateur",
+      "replace": "switch",
+      "category": "tech_synonyms"
+    },
+    {
+      "pattern": "chiffrement",
+      "replace": "encryption",
+      "category": "tech_synonyms"
+    },
+    {
+      "pattern": "hameconnage",
+      "replace": "phishing",
+      "category": "tech_synonyms"
+    },
+    {
+      "pattern": "utilisateur",
+      "replace": "user",
+      "category": "tech_synonyms"
+    },
+    {
+      "pattern": "journaliser",
+      "replace": "log",
+      "category": "tech_synonyms"
+    },
+    {
+      "pattern": "sauvegarder",
+      "replace": "backup",
+      "category": "tech_synonyms"
+    },
+    {
+      "pattern": "telecharger",
+      "replace": "download",
+      "category": "tech_synonyms"
+    },
+    {
+      "pattern": "enregistrer",
+      "replace": "save",
+      "category": "tech_synonyms"
+    },
+    {
+      "pattern": "verrouiller",
+      "replace": "lock",
+      "category": "tech_synonyms"
+    },
+    {
+      "pattern": "deconnecter",
+      "replace": "disconnect",
+      "category": "tech_synonyms"
+    },
+    {
+      "pattern": "je voudrais",
+      "replace": "",
+      "category": "politeness_fr"
+    },
+    {
+      "pattern": "pourrais-tu",
+      "replace": "",
+      "category": "politeness_fr"
+    },
+    {
+      "pattern": "pouvez-vous",
+      "replace": "",
+      "category": "politeness_fr"
+    },
+    {
+      "pattern": "basiquement",
+      "replace": "",
+      "category": "filler_fr"
+    },
+    {
+      "pattern": "par exemple",
+      "replace": "",
+      "category": "filler_fr"
+    },
+    {
+      "pattern": "essentially",
+      "replace": "",
+      "category": "filler_en"
+    },
+    {
+      "pattern": "practically",
+      "replace": "",
+      "category": "filler_en"
+    },
+    {
+      "pattern": "trouvaient",
+      "replace": "trouver",
+      "category": "conjugation_fr"
+    },
+    {
+      "pattern": "trouvèrent",
+      "replace": "trouver",
+      "category": "conjugation_fr"
+    },
+    {
+      "pattern": "trouverons",
+      "replace": "trouver",
+      "category": "conjugation_fr"
+    },
+    {
+      "pattern": "trouveront",
+      "replace": "trouver",
+      "category": "conjugation_fr"
+    },
+    {
+      "pattern": "continuing",
+      "replace": "continue",
+      "category": "conjugation_en"
+    },
+    {
+      "pattern": "understood",
+      "replace": "understand",
+      "category": "conjugation_en"
+    },
+    {
+      "pattern": "remembered",
+      "replace": "remember",
+      "category": "conjugation_en"
+    },
+    {
+      "pattern": "considered",
+      "replace": "consider",
+      "category": "conjugation_en"
+    },
+    {
+      "pattern": "apartement",
+      "replace": "appartement",
+      "category": "typos_fr"
+    },
+    {
+      "pattern": "configurer",
+      "replace": "configurer",
+      "category": "typos_fr"
+    },
+    {
+      "pattern": "redemarrer",
+      "replace": "redémarrer",
+      "category": "typos_fr"
+    },
+    {
+      "pattern": "dechiffrer",
+      "replace": "déchiffrer",
+      "category": "typos_fr"
+    },
+    {
+      "pattern": "definately",
+      "replace": "definitely",
+      "category": "typos_en"
+    },
+    {
+      "pattern": "accomodate",
+      "replace": "accommodate",
+      "category": "typos_en"
+    },
+    {
+      "pattern": "apparantly",
+      "replace": "apparently",
+      "category": "typos_en"
+    },
+    {
+      "pattern": "enviroment",
+      "replace": "environment",
+      "category": "typos_en"
+    },
+    {
+      "pattern": "experiance",
+      "replace": "experience",
+      "category": "typos_en"
+    },
+    {
+      "pattern": "immediatly",
+      "replace": "immediately",
+      "category": "typos_en"
+    },
+    {
+      "pattern": "intresting",
+      "replace": "interesting",
+      "category": "typos_en"
+    },
+    {
+      "pattern": "neccessary",
+      "replace": "necessary",
+      "category": "typos_en"
+    },
+    {
+      "pattern": "oportunity",
+      "replace": "opportunity",
+      "category": "typos_en"
+    },
+    {
+      "pattern": "publically",
+      "replace": "publicly",
+      "category": "typos_en"
+    },
+    {
+      "pattern": "resistence",
+      "replace": "resistance",
+      "category": "typos_en"
+    },
+    {
+      "pattern": "temperture",
+      "replace": "temperature",
+      "category": "typos_en"
+    },
+    {
+      "pattern": "sauvegarde",
+      "replace": "backup",
+      "category": "tech_synonyms"
+    },
+    {
+      "pattern": "surveiller",
+      "replace": "monitor",
+      "category": "tech_synonyms"
+    },
+    {
+      "pattern": "changement",
+      "replace": "change",
+      "category": "tech_synonyms"
+    },
+    {
+      "pattern": "dechiffrer",
+      "replace": "decrypt",
+      "category": "tech_synonyms"
+    },
+    {
+      "pattern": "redemarrer",
+      "replace": "restart",
+      "category": "tech_synonyms"
+    },
+    {
+      "pattern": "compresser",
+      "replace": "compress",
+      "category": "tech_synonyms"
+    },
+    {
+      "pattern": "rechercher",
+      "replace": "search",
+      "category": "tech_synonyms"
+    },
+    {
+      "pattern": "actualiser",
+      "replace": "refresh",
+      "category": "tech_synonyms"
+    },
+    {
+      "pattern": "rafraichir",
+      "replace": "refresh",
+      "category": "tech_synonyms"
+    },
+    {
+      "pattern": "en realite",
+      "replace": "",
+      "category": "filler_fr"
+    },
+    {
+      "pattern": "simplement",
+      "replace": "",
+      "category": "filler_fr"
+    },
+    {
+      "pattern": "faisaient",
+      "replace": "faire",
+      "category": "conjugation_fr"
+    },
+    {
+      "pattern": "pouvaient",
+      "replace": "pouvoir",
+      "category": "conjugation_fr"
+    },
+    {
+      "pattern": "voulaient",
+      "replace": "vouloir",
+      "category": "conjugation_fr"
+    },
+    {
+      "pattern": "voulurent",
+      "replace": "vouloir",
+      "category": "conjugation_fr"
+    },
+    {
+      "pattern": "prenaient",
+      "replace": "prendre",
+      "category": "conjugation_fr"
+    },
+    {
+      "pattern": "prendrons",
+      "replace": "prendre",
+      "category": "conjugation_fr"
+    },
+    {
+      "pattern": "prendront",
+      "replace": "prendre",
+      "category": "conjugation_fr"
+    },
+    {
+      "pattern": "viendrons",
+      "replace": "venir",
+      "category": "conjugation_fr"
+    },
+    {
+      "pattern": "viendront",
+      "replace": "venir",
+      "category": "conjugation_fr"
+    },
+    {
+      "pattern": "donnaient",
+      "replace": "donner",
+      "category": "conjugation_fr"
+    },
+    {
+      "pattern": "donnèrent",
+      "replace": "donner",
+      "category": "conjugation_fr"
+    },
+    {
+      "pattern": "donnerons",
+      "replace": "donner",
+      "category": "conjugation_fr"
+    },
+    {
+      "pattern": "donneront",
+      "replace": "donner",
+      "category": "conjugation_fr"
+    },
+    {
+      "pattern": "trouvions",
+      "replace": "trouver",
+      "category": "conjugation_fr"
+    },
+    {
+      "pattern": "trouvâmes",
+      "replace": "trouver",
+      "category": "conjugation_fr"
+    },
+    {
+      "pattern": "trouvâtes",
+      "replace": "trouver",
+      "category": "conjugation_fr"
+    },
+    {
+      "pattern": "trouverai",
+      "replace": "trouver",
+      "category": "conjugation_fr"
+    },
+    {
+      "pattern": "trouveras",
+      "replace": "trouver",
+      "category": "conjugation_fr"
+    },
+    {
+      "pattern": "trouverez",
+      "replace": "trouver",
+      "category": "conjugation_fr"
+    },
+    {
+      "pattern": "parlaient",
+      "replace": "parler",
+      "category": "conjugation_fr"
+    },
+    {
+      "pattern": "parlèrent",
+      "replace": "parler",
+      "category": "conjugation_fr"
+    },
+    {
+      "pattern": "parlerons",
+      "replace": "parler",
+      "category": "conjugation_fr"
+    },
+    {
+      "pattern": "parleront",
+      "replace": "parler",
+      "category": "conjugation_fr"
+    },
+    {
+      "pattern": "mettaient",
+      "replace": "mettre",
+      "category": "conjugation_fr"
+    },
+    {
+      "pattern": "partaient",
+      "replace": "partir",
+      "category": "conjugation_fr"
+    },
+    {
+      "pattern": "partirent",
+      "replace": "partir",
+      "category": "conjugation_fr"
+    },
+    {
+      "pattern": "partirons",
+      "replace": "partir",
+      "category": "conjugation_fr"
+    },
+    {
+      "pattern": "partiront",
+      "replace": "partir",
+      "category": "conjugation_fr"
+    },
+    {
+      "pattern": "beginning",
+      "replace": "begin",
+      "category": "conjugation_en"
+    },
+    {
+      "pattern": "believing",
+      "replace": "believe",
+      "category": "conjugation_en"
+    },
+    {
+      "pattern": "happening",
+      "replace": "happen",
+      "category": "conjugation_en"
+    },
+    {
+      "pattern": "including",
+      "replace": "include",
+      "category": "conjugation_en"
+    },
+    {
+      "pattern": "continues",
+      "replace": "continue",
+      "category": "conjugation_en"
+    },
+    {
+      "pattern": "continued",
+      "replace": "continue",
+      "category": "conjugation_en"
+    },
+    {
+      "pattern": "following",
+      "replace": "follow",
+      "category": "conjugation_en"
+    },
+    {
+      "pattern": "remembers",
+      "replace": "remember",
+      "category": "conjugation_en"
+    },
+    {
+      "pattern": "considers",
+      "replace": "consider",
+      "category": "conjugation_en"
+    },
+    {
+      "pattern": "appearing",
+      "replace": "appear",
+      "category": "conjugation_en"
+    },
+    {
+      "pattern": "expecting",
+      "replace": "expect",
+      "category": "conjugation_en"
+    },
+    {
+      "pattern": "remaining",
+      "replace": "remain",
+      "category": "conjugation_en"
+    },
+    {
+      "pattern": "soupiraux",
+      "replace": "soupirail",
+      "category": "plurals_fr"
+    },
+    {
+      "pattern": "evenement",
+      "replace": "événement",
+      "category": "typos_fr"
+    },
+    {
+      "pattern": "categorie",
+      "replace": "catégorie",
+      "category": "typos_fr"
+    },
+    {
+      "pattern": "execution",
+      "replace": "exécution",
+      "category": "typos_fr"
+    },
+    {
+      "pattern": "parametre",
+      "replace": "paramètre",
+      "category": "typos_fr"
+    },
+    {
+      "pattern": "propriete",
+      "replace": "propriété",
+      "category": "typos_fr"
+    },
+    {
+      "pattern": "installer",
+      "replace": "installer",
+      "category": "typos_fr"
+    },
+    {
+      "pattern": "debloquer",
+      "replace": "débloquer",
+      "category": "typos_fr"
+    },
+    {
+      "pattern": "agressive",
+      "replace": "aggressive",
+      "category": "typos_en"
+    },
+    {
+      "pattern": "arguement",
+      "replace": "argument",
+      "category": "typos_en"
+    },
+    {
+      "pattern": "completly",
+      "replace": "completely",
+      "category": "typos_en"
+    },
+    {
+      "pattern": "desparate",
+      "replace": "desperate",
+      "category": "typos_en"
+    },
+    {
+      "pattern": "disapoint",
+      "replace": "disappoint",
+      "category": "typos_en"
+    },
+    {
+      "pattern": "exagerate",
+      "replace": "exaggerate",
+      "category": "typos_en"
+    },
+    {
+      "pattern": "excercise",
+      "replace": "exercise",
+      "category": "typos_en"
+    },
+    {
+      "pattern": "existance",
+      "replace": "existence",
+      "category": "typos_en"
+    },
+    {
+      "pattern": "goverment",
+      "replace": "government",
+      "category": "typos_en"
+    },
+    {
+      "pattern": "managment",
+      "replace": "management",
+      "category": "typos_en"
+    },
+    {
+      "pattern": "noticable",
+      "replace": "noticeable",
+      "category": "typos_en"
+    },
+    {
+      "pattern": "occurence",
+      "replace": "occurrence",
+      "category": "typos_en"
+    },
+    {
+      "pattern": "personell",
+      "replace": "personnel",
+      "category": "typos_en"
+    },
+    {
+      "pattern": "posession",
+      "replace": "possession",
+      "category": "typos_en"
+    },
+    {
+      "pattern": "privelege",
+      "replace": "privilege",
+      "category": "typos_en"
+    },
+    {
+      "pattern": "reccomend",
+      "replace": "recommend",
+      "category": "typos_en"
+    },
+    {
+      "pattern": "succesful",
+      "replace": "successful",
+      "category": "typos_en"
+    },
+    {
+      "pattern": "supercede",
+      "replace": "supersede",
+      "category": "typos_en"
+    },
+    {
+      "pattern": "tommorrow",
+      "replace": "tomorrow",
+      "category": "typos_en"
+    },
+    {
+      "pattern": "unforseen",
+      "replace": "unforeseen",
+      "category": "typos_en"
+    },
+    {
+      "pattern": "politique",
+      "replace": "policy",
+      "category": "tech_synonyms"
+    },
+    {
+      "pattern": "restaurer",
+      "replace": "restore",
+      "category": "tech_synonyms"
+    },
+    {
+      "pattern": "websocket",
+      "replace": "web socket",
+      "category": "tech_synonyms"
+    },
+    {
+      "pattern": "autoriser",
+      "replace": "authorize",
+      "category": "tech_synonyms"
+    },
+    {
+      "pattern": "debloquer",
+      "replace": "unblock",
+      "category": "tech_synonyms"
+    },
+    {
+      "pattern": "suspendre",
+      "replace": "suspend",
+      "category": "tech_synonyms"
+    },
+    {
+      "pattern": "repliquer",
+      "replace": "replicate",
+      "category": "tech_synonyms"
+    },
+    {
+      "pattern": "monitorer",
+      "replace": "monitor",
+      "category": "tech_synonyms"
+    },
+    {
+      "pattern": "optimiser",
+      "replace": "optimize",
+      "category": "tech_synonyms"
+    },
+    {
+      "pattern": "convertir",
+      "replace": "convert",
+      "category": "tech_synonyms"
+    },
+    {
+      "pattern": "supprimer",
+      "replace": "delete",
+      "category": "tech_synonyms"
+    },
+    {
+      "pattern": "confirmer",
+      "replace": "confirm",
+      "category": "tech_synonyms"
+    },
+    {
+      "pattern": "appliquer",
+      "replace": "apply",
+      "category": "tech_synonyms"
+    },
+    {
+      "pattern": "minimiser",
+      "replace": "minimize",
+      "category": "tech_synonyms"
+    },
+    {
+      "pattern": "maximiser",
+      "replace": "maximize",
+      "category": "tech_synonyms"
+    },
+    {
+      "pattern": "recharger",
+      "replace": "reload",
+      "category": "tech_synonyms"
+    },
+    {
+      "pattern": "connecter",
+      "replace": "connect",
+      "category": "tech_synonyms"
+    },
+    {
+      "pattern": "thank you",
+      "replace": "",
+      "category": "politeness_en"
+    },
+    {
+      "pattern": "could you",
+      "replace": "",
+      "category": "politeness_en"
+    },
+    {
+      "pattern": "supposons",
+      "replace": "",
+      "category": "filler_fr"
+    },
+    {
+      "pattern": "imaginons",
+      "replace": "",
+      "category": "filler_fr"
+    },
+    {
+      "pattern": "basically",
+      "replace": "",
+      "category": "filler_en"
+    },
+    {
+      "pattern": "literally",
+      "replace": "",
+      "category": "filler_en"
+    },
+    {
+      "pattern": "i suppose",
+      "replace": "",
+      "category": "filler_en"
+    },
+    {
+      "pattern": "allaient",
+      "replace": "aller",
+      "category": "conjugation_fr"
+    },
+    {
+      "pattern": "allèrent",
+      "replace": "aller",
+      "category": "conjugation_fr"
+    },
+    {
+      "pattern": "faisions",
+      "replace": "faire",
+      "category": "conjugation_fr"
+    },
+    {
+      "pattern": "disaient",
+      "replace": "dire",
+      "category": "conjugation_fr"
+    },
+    {
+      "pattern": "pouvions",
+      "replace": "pouvoir",
+      "category": "conjugation_fr"
+    },
+    {
+      "pattern": "pourrons",
+      "replace": "pouvoir",
+      "category": "conjugation_fr"
+    },
+    {
+      "pattern": "pourront",
+      "replace": "pouvoir",
+      "category": "conjugation_fr"
+    },
+    {
+      "pattern": "voulions",
+      "replace": "vouloir",
+      "category": "conjugation_fr"
+    },
+    {
+      "pattern": "voulûmes",
+      "replace": "vouloir",
+      "category": "conjugation_fr"
+    },
+    {
+      "pattern": "voulûtes",
+      "replace": "vouloir",
+      "category": "conjugation_fr"
+    },
+    {
+      "pattern": "voudrons",
+      "replace": "vouloir",
+      "category": "conjugation_fr"
+    },
+    {
+      "pattern": "voudront",
+      "replace": "vouloir",
+      "category": "conjugation_fr"
+    },
+    {
+      "pattern": "voyaient",
+      "replace": "voir",
+      "category": "conjugation_fr"
+    },
+    {
+      "pattern": "savaient",
+      "replace": "savoir",
+      "category": "conjugation_fr"
+    },
+    {
+      "pattern": "devaient",
+      "replace": "devoir",
+      "category": "conjugation_fr"
+    },
+    {
+      "pattern": "prennent",
+      "replace": "prendre",
+      "category": "conjugation_fr"
+    },
+    {
+      "pattern": "prenions",
+      "replace": "prendre",
+      "category": "conjugation_fr"
+    },
+    {
+      "pattern": "prendrai",
+      "replace": "prendre",
+      "category": "conjugation_fr"
+    },
+    {
+      "pattern": "prendras",
+      "replace": "prendre",
+      "category": "conjugation_fr"
+    },
+    {
+      "pattern": "prendrez",
+      "replace": "prendre",
+      "category": "conjugation_fr"
+    },
+    {
+      "pattern": "viennent",
+      "replace": "venir",
+      "category": "conjugation_fr"
+    },
+    {
+      "pattern": "venaient",
+      "replace": "venir",
+      "category": "conjugation_fr"
+    },
+    {
+      "pattern": "viendrai",
+      "replace": "venir",
+      "category": "conjugation_fr"
+    },
+    {
+      "pattern": "viendras",
+      "replace": "venir",
+      "category": "conjugation_fr"
+    },
+    {
+      "pattern": "viendrez",
+      "replace": "venir",
+      "category": "conjugation_fr"
+    },
+    {
+      "pattern": "donnions",
+      "replace": "donner",
+      "category": "conjugation_fr"
+    },
+    {
+      "pattern": "donnâmes",
+      "replace": "donner",
+      "category": "conjugation_fr"
+    },
+    {
+      "pattern": "donnâtes",
+      "replace": "donner",
+      "category": "conjugation_fr"
+    },
+    {
+      "pattern": "donnerai",
+      "replace": "donner",
+      "category": "conjugation_fr"
+    },
+    {
+      "pattern": "donneras",
+      "replace": "donner",
+      "category": "conjugation_fr"
+    },
+    {
+      "pattern": "donnerez",
+      "replace": "donner",
+      "category": "conjugation_fr"
+    },
+    {
+      "pattern": "trouvons",
+      "replace": "trouver",
+      "category": "conjugation_fr"
+    },
+    {
+      "pattern": "trouvent",
+      "replace": "trouver",
+      "category": "conjugation_fr"
+    },
+    {
+      "pattern": "trouvais",
+      "replace": "trouver",
+      "category": "conjugation_fr"
+    },
+    {
+      "pattern": "trouvait",
+      "replace": "trouver",
+      "category": "conjugation_fr"
+    },
+    {
+      "pattern": "trouviez",
+      "replace": "trouver",
+      "category": "conjugation_fr"
+    },
+    {
+      "pattern": "trouvera",
+      "replace": "trouver",
+      "category": "conjugation_fr"
+    },
+    {
+      "pattern": "parlions",
+      "replace": "parler",
+      "category": "conjugation_fr"
+    },
+    {
+      "pattern": "parlâmes",
+      "replace": "parler",
+      "category": "conjugation_fr"
+    },
+    {
+      "pattern": "parlâtes",
+      "replace": "parler",
+      "category": "conjugation_fr"
+    },
+    {
+      "pattern": "parlerai",
+      "replace": "parler",
+      "category": "conjugation_fr"
+    },
+    {
+      "pattern": "parleras",
+      "replace": "parler",
+      "category": "conjugation_fr"
+    },
+    {
+      "pattern": "parlerez",
+      "replace": "parler",
+      "category": "conjugation_fr"
+    },
+    {
+      "pattern": "mettions",
+      "replace": "mettre",
+      "category": "conjugation_fr"
+    },
+    {
+      "pattern": "mettrons",
+      "replace": "mettre",
+      "category": "conjugation_fr"
+    },
+    {
+      "pattern": "mettront",
+      "replace": "mettre",
+      "category": "conjugation_fr"
+    },
+    {
+      "pattern": "partions",
+      "replace": "partir",
+      "category": "conjugation_fr"
+    },
+    {
+      "pattern": "partîmes",
+      "replace": "partir",
+      "category": "conjugation_fr"
+    },
+    {
+      "pattern": "partîtes",
+      "replace": "partir",
+      "category": "conjugation_fr"
+    },
+    {
+      "pattern": "partirai",
+      "replace": "partir",
+      "category": "conjugation_fr"
+    },
+    {
+      "pattern": "partiras",
+      "replace": "partir",
+      "category": "conjugation_fr"
+    },
+    {
+      "pattern": "partirez",
+      "replace": "partir",
+      "category": "conjugation_fr"
+    },
+    {
+      "pattern": "thinking",
+      "replace": "think",
+      "category": "conjugation_en"
+    },
+    {
+      "pattern": "becoming",
+      "replace": "become",
+      "category": "conjugation_en"
+    },
+    {
+      "pattern": "believes",
+      "replace": "believe",
+      "category": "conjugation_en"
+    },
+    {
+      "pattern": "believed",
+      "replace": "believe",
+      "category": "conjugation_en"
+    },
+    {
+      "pattern": "bringing",
+      "replace": "bring",
+      "category": "conjugation_en"
+    },
+    {
+      "pattern": "happened",
+      "replace": "happen",
+      "category": "conjugation_en"
+    },
+    {
+      "pattern": "standing",
+      "replace": "stand",
+      "category": "conjugation_en"
+    },
+    {
+      "pattern": "includes",
+      "replace": "include",
+      "category": "conjugation_en"
+    },
+    {
+      "pattern": "included",
+      "replace": "include",
+      "category": "conjugation_en"
+    },
+    {
+      "pattern": "learning",
+      "replace": "learn",
+      "category": "conjugation_en"
+    },
+    {
+      "pattern": "changing",
+      "replace": "change",
+      "category": "conjugation_en"
+    },
+    {
+      "pattern": "watching",
+      "replace": "watch",
+      "category": "conjugation_en"
+    },
+    {
+      "pattern": "followed",
+      "replace": "follow",
+      "category": "conjugation_en"
+    },
+    {
+      "pattern": "stopping",
+      "replace": "stop",
+      "category": "conjugation_en"
+    },
+    {
+      "pattern": "creating",
+      "replace": "create",
+      "category": "conjugation_en"
+    },
+    {
+      "pattern": "speaking",
+      "replace": "speak",
+      "category": "conjugation_en"
+    },
+    {
+      "pattern": "allowing",
+      "replace": "allow",
+      "category": "conjugation_en"
+    },
+    {
+      "pattern": "spending",
+      "replace": "spend",
+      "category": "conjugation_en"
+    },
+    {
+      "pattern": "teaching",
+      "replace": "teach",
+      "category": "conjugation_en"
+    },
+    {
+      "pattern": "offering",
+      "replace": "offer",
+      "category": "conjugation_en"
+    },
+    {
+      "pattern": "appeared",
+      "replace": "appear",
+      "category": "conjugation_en"
+    },
+    {
+      "pattern": "expected",
+      "replace": "expect",
+      "category": "conjugation_en"
+    },
+    {
+      "pattern": "building",
+      "replace": "build",
+      "category": "conjugation_en"
+    },
+    {
+      "pattern": "reaching",
+      "replace": "reach",
+      "category": "conjugation_en"
+    },
+    {
+      "pattern": "remained",
+      "replace": "remain",
+      "category": "conjugation_en"
+    },
+    {
+      "pattern": "journaux",
+      "replace": "journal",
+      "category": "plurals_fr"
+    },
+    {
+      "pattern": "vitriaux",
+      "replace": "vitrail",
+      "category": "plurals_fr"
+    },
+    {
+      "pattern": "children",
+      "replace": "child",
+      "category": "plurals_en"
+    },
+    {
+      "pattern": "aircraft",
+      "replace": "aircraft",
+      "category": "plurals_en"
+    },
+    {
+      "pattern": "probleme",
+      "replace": "problème",
+      "category": "typos_fr"
+    },
+    {
+      "pattern": "securite",
+      "replace": "sécurité",
+      "category": "typos_fr"
+    },
+    {
+      "pattern": "ecriture",
+      "replace": "écriture",
+      "category": "typos_fr"
+    },
+    {
+      "pattern": "creation",
+      "replace": "création",
+      "category": "typos_fr"
+    },
+    {
+      "pattern": "eteindre",
+      "replace": "éteindre",
+      "category": "typos_fr"
+    },
+    {
+      "pattern": "demonter",
+      "replace": "démonter",
+      "category": "typos_fr"
+    },
+    {
+      "pattern": "deployer",
+      "replace": "déployer",
+      "category": "typos_fr"
+    },
+    {
+      "pattern": "seperate",
+      "replace": "separate",
+      "category": "typos_en"
+    },
+    {
+      "pattern": "begining",
+      "replace": "beginning",
+      "category": "typos_en"
+    },
+    {
+      "pattern": "buisness",
+      "replace": "business",
+      "category": "typos_en"
+    },
+    {
+      "pattern": "calender",
+      "replace": "calendar",
+      "category": "typos_en"
+    },
+    {
+      "pattern": "catagory",
+      "replace": "category",
+      "category": "typos_en"
+    },
+    {
+      "pattern": "commitee",
+      "replace": "committee",
+      "category": "typos_en"
+    },
+    {
+      "pattern": "concious",
+      "replace": "conscious",
+      "category": "typos_en"
+    },
+    {
+      "pattern": "diffrent",
+      "replace": "different",
+      "category": "typos_en"
+    },
+    {
+      "pattern": "disapear",
+      "replace": "disappear",
+      "category": "typos_en"
+    },
+    {
+      "pattern": "embarass",
+      "replace": "embarrass",
+      "category": "typos_en"
+    },
+    {
+      "pattern": "knowlege",
+      "replace": "knowledge",
+      "category": "typos_en"
+    },
+    {
+      "pattern": "percieve",
+      "replace": "perceive",
+      "category": "typos_en"
+    },
+    {
+      "pattern": "relevent",
+      "replace": "relevant",
+      "category": "typos_en"
+    },
+    {
+      "pattern": "sincerly",
+      "replace": "sincerely",
+      "category": "typos_en"
+    },
+    {
+      "pattern": "strenght",
+      "replace": "strength",
+      "category": "typos_en"
+    },
+    {
+      "pattern": "tendancy",
+      "replace": "tendency",
+      "category": "typos_en"
+    },
+    {
+      "pattern": "therefor",
+      "replace": "therefore",
+      "category": "typos_en"
+    },
+    {
+      "pattern": "writting",
+      "replace": "writing",
+      "category": "typos_en"
+    },
+    {
+      "pattern": "pare-feu",
+      "replace": "firewall",
+      "category": "tech_synonyms"
+    },
+    {
+      "pattern": "securite",
+      "replace": "security",
+      "category": "tech_synonyms"
+    },
+    {
+      "pattern": "probleme",
+      "replace": "problem",
+      "category": "tech_synonyms"
+    },
+    {
+      "pattern": "protobuf",
+      "replace": "protocol buffers",
+      "category": "tech_synonyms"
+    },
+    {
+      "pattern": "chiffrer",
+      "replace": "encrypt",
+      "category": "tech_synonyms"
+    },
+    {
+      "pattern": "verifier",
+      "replace": "verify",
+      "category": "tech_synonyms"
+    },
+    {
+      "pattern": "demarrer",
+      "replace": "start",
+      "category": "tech_synonyms"
+    },
+    {
+      "pattern": "formater",
+      "replace": "format",
+      "category": "tech_synonyms"
+    },
+    {
+      "pattern": "demonter",
+      "replace": "unmount",
+      "category": "tech_synonyms"
+    },
+    {
+      "pattern": "analyser",
+      "replace": "analyze",
+      "category": "tech_synonyms"
+    },
+    {
+      "pattern": "nettoyer",
+      "replace": "clean",
+      "category": "tech_synonyms"
+    },
+    {
+      "pattern": "archiver",
+      "replace": "archive",
+      "category": "tech_synonyms"
+    },
+    {
+      "pattern": "extraire",
+      "replace": "extract",
+      "category": "tech_synonyms"
+    },
+    {
+      "pattern": "retablir",
+      "replace": "restore",
+      "category": "tech_synonyms"
+    },
+    {
+      "pattern": "exporter",
+      "replace": "export",
+      "category": "tech_synonyms"
+    },
+    {
+      "pattern": "importer",
+      "replace": "import",
+      "category": "tech_synonyms"
+    },
+    {
+      "pattern": "imprimer",
+      "replace": "print",
+      "category": "tech_synonyms"
+    },
+    {
+      "pattern": "recevoir",
+      "replace": "receive",
+      "category": "tech_synonyms"
+    },
+    {
+      "pattern": "partager",
+      "replace": "share",
+      "category": "tech_synonyms"
+    },
+    {
+      "pattern": "uploader",
+      "replace": "upload",
+      "category": "tech_synonyms"
+    },
+    {
+      "pattern": "renommer",
+      "replace": "rename",
+      "category": "tech_synonyms"
+    },
+    {
+      "pattern": "deplacer",
+      "replace": "move",
+      "category": "tech_synonyms"
+    },
+    {
+      "pattern": "naviguer",
+      "replace": "navigate",
+      "category": "tech_synonyms"
+    },
+    {
+      "pattern": "invertir",
+      "replace": "invert",
+      "category": "tech_synonyms"
+    },
+    {
+      "pattern": "agrandir",
+      "replace": "enlarge",
+      "category": "tech_synonyms"
+    },
+    {
+      "pattern": "d'avance",
+      "replace": "",
+      "category": "politeness_fr"
+    },
+    {
+      "pattern": "i'd like",
+      "replace": "",
+      "category": "politeness_en"
+    },
+    {
+      "pattern": "en effet",
+      "replace": "",
+      "category": "filler_fr"
+    },
+    {
+      "pattern": "actually",
+      "replace": "",
+      "category": "filler_en"
+    },
+    {
+      "pattern": "honestly",
+      "replace": "",
+      "category": "filler_en"
+    },
+    {
+      "pattern": "you know",
+      "replace": "",
+      "category": "filler_en"
+    },
+    {
+      "pattern": "étaient",
+      "replace": "être",
+      "category": "conjugation_fr"
+    },
+    {
+      "pattern": "avaient",
+      "replace": "avoir",
+      "category": "conjugation_fr"
+    },
+    {
+      "pattern": "allions",
+      "replace": "aller",
+      "category": "conjugation_fr"
+    },
+    {
+      "pattern": "allâmes",
+      "replace": "aller",
+      "category": "conjugation_fr"
+    },
+    {
+      "pattern": "allâtes",
+      "replace": "aller",
+      "category": "conjugation_fr"
+    },
+    {
+      "pattern": "faisons",
+      "replace": "faire",
+      "category": "conjugation_fr"
+    },
+    {
+      "pattern": "faisais",
+      "replace": "faire",
+      "category": "conjugation_fr"
+    },
+    {
+      "pattern": "faisait",
+      "replace": "faire",
+      "category": "conjugation_fr"
+    },
+    {
+      "pattern": "faisiez",
+      "replace": "faire",
+      "category": "conjugation_fr"
+    },
+    {
+      "pattern": "disions",
+      "replace": "dire",
+      "category": "conjugation_fr"
+    },
+    {
+      "pattern": "pouvons",
+      "replace": "pouvoir",
+      "category": "conjugation_fr"
+    },
+    {
+      "pattern": "peuvent",
+      "replace": "pouvoir",
+      "category": "conjugation_fr"
+    },
+    {
+      "pattern": "pouvais",
+      "replace": "pouvoir",
+      "category": "conjugation_fr"
+    },
+    {
+      "pattern": "pouvait",
+      "replace": "pouvoir",
+      "category": "conjugation_fr"
+    },
+    {
+      "pattern": "pouviez",
+      "replace": "pouvoir",
+      "category": "conjugation_fr"
+    },
+    {
+      "pattern": "pourrai",
+      "replace": "pouvoir",
+      "category": "conjugation_fr"
+    },
+    {
+      "pattern": "pourras",
+      "replace": "pouvoir",
+      "category": "conjugation_fr"
+    },
+    {
+      "pattern": "pourrez",
+      "replace": "pouvoir",
+      "category": "conjugation_fr"
+    },
+    {
+      "pattern": "voulons",
+      "replace": "vouloir",
+      "category": "conjugation_fr"
+    },
+    {
+      "pattern": "veulent",
+      "replace": "vouloir",
+      "category": "conjugation_fr"
+    },
+    {
+      "pattern": "voulais",
+      "replace": "vouloir",
+      "category": "conjugation_fr"
+    },
+    {
+      "pattern": "voulait",
+      "replace": "vouloir",
+      "category": "conjugation_fr"
+    },
+    {
+      "pattern": "vouliez",
+      "replace": "vouloir",
+      "category": "conjugation_fr"
+    },
+    {
+      "pattern": "voudrai",
+      "replace": "vouloir",
+      "category": "conjugation_fr"
+    },
+    {
+      "pattern": "voudras",
+      "replace": "vouloir",
+      "category": "conjugation_fr"
+    },
+    {
+      "pattern": "voudrez",
+      "replace": "vouloir",
+      "category": "conjugation_fr"
+    },
+    {
+      "pattern": "voyions",
+      "replace": "voir",
+      "category": "conjugation_fr"
+    },
+    {
+      "pattern": "verrons",
+      "replace": "voir",
+      "category": "conjugation_fr"
+    },
+    {
+      "pattern": "verront",
+      "replace": "voir",
+      "category": "conjugation_fr"
+    },
+    {
+      "pattern": "savions",
+      "replace": "savoir",
+      "category": "conjugation_fr"
+    },
+    {
+      "pattern": "saurons",
+      "replace": "savoir",
+      "category": "conjugation_fr"
+    },
+    {
+      "pattern": "sauront",
+      "replace": "savoir",
+      "category": "conjugation_fr"
+    },
+    {
+      "pattern": "doivent",
+      "replace": "devoir",
+      "category": "conjugation_fr"
+    },
+    {
+      "pattern": "devions",
+      "replace": "devoir",
+      "category": "conjugation_fr"
+    },
+    {
+      "pattern": "devrons",
+      "replace": "devoir",
+      "category": "conjugation_fr"
+    },
+    {
+      "pattern": "devront",
+      "replace": "devoir",
+      "category": "conjugation_fr"
+    },
+    {
+      "pattern": "prenons",
+      "replace": "prendre",
+      "category": "conjugation_fr"
+    },
+    {
+      "pattern": "prenais",
+      "replace": "prendre",
+      "category": "conjugation_fr"
+    },
+    {
+      "pattern": "prenait",
+      "replace": "prendre",
+      "category": "conjugation_fr"
+    },
+    {
+      "pattern": "preniez",
+      "replace": "prendre",
+      "category": "conjugation_fr"
+    },
+    {
+      "pattern": "prirent",
+      "replace": "prendre",
+      "category": "conjugation_fr"
+    },
+    {
+      "pattern": "prendra",
+      "replace": "prendre",
+      "category": "conjugation_fr"
+    },
+    {
+      "pattern": "venions",
+      "replace": "venir",
+      "category": "conjugation_fr"
+    },
+    {
+      "pattern": "vinrent",
+      "replace": "venir",
+      "category": "conjugation_fr"
+    },
+    {
+      "pattern": "viendra",
+      "replace": "venir",
+      "category": "conjugation_fr"
+    },
+    {
+      "pattern": "donnons",
+      "replace": "donner",
+      "category": "conjugation_fr"
+    },
+    {
+      "pattern": "donnent",
+      "replace": "donner",
+      "category": "conjugation_fr"
+    },
+    {
+      "pattern": "donnais",
+      "replace": "donner",
+      "category": "conjugation_fr"
+    },
+    {
+      "pattern": "donnait",
+      "replace": "donner",
+      "category": "conjugation_fr"
+    },
+    {
+      "pattern": "donniez",
+      "replace": "donner",
+      "category": "conjugation_fr"
+    },
+    {
+      "pattern": "donnera",
+      "replace": "donner",
+      "category": "conjugation_fr"
+    },
+    {
+      "pattern": "trouves",
+      "replace": "trouver",
+      "category": "conjugation_fr"
+    },
+    {
+      "pattern": "trouvez",
+      "replace": "trouver",
+      "category": "conjugation_fr"
+    },
+    {
+      "pattern": "trouvai",
+      "replace": "trouver",
+      "category": "conjugation_fr"
+    },
+    {
+      "pattern": "parlons",
+      "replace": "parler",
+      "category": "conjugation_fr"
+    },
+    {
+      "pattern": "parlent",
+      "replace": "parler",
+      "category": "conjugation_fr"
+    },
+    {
+      "pattern": "parlais",
+      "replace": "parler",
+      "category": "conjugation_fr"
+    },
+    {
+      "pattern": "parlait",
+      "replace": "parler",
+      "category": "conjugation_fr"
+    },
+    {
+      "pattern": "parliez",
+      "replace": "parler",
+      "category": "conjugation_fr"
+    },
+    {
+      "pattern": "parlera",
+      "replace": "parler",
+      "category": "conjugation_fr"
+    },
+    {
+      "pattern": "mettons",
+      "replace": "mettre",
+      "category": "conjugation_fr"
+    },
+    {
+      "pattern": "mettent",
+      "replace": "mettre",
+      "category": "conjugation_fr"
+    },
+    {
+      "pattern": "mettais",
+      "replace": "mettre",
+      "category": "conjugation_fr"
+    },
+    {
+      "pattern": "mettait",
+      "replace": "mettre",
+      "category": "conjugation_fr"
+    },
+    {
+      "pattern": "mettiez",
+      "replace": "mettre",
+      "category": "conjugation_fr"
+    },
+    {
+      "pattern": "mettrai",
+      "replace": "mettre",
+      "category": "conjugation_fr"
+    },
+    {
+      "pattern": "mettras",
+      "replace": "mettre",
+      "category": "conjugation_fr"
+    },
+    {
+      "pattern": "mettrez",
+      "replace": "mettre",
+      "category": "conjugation_fr"
+    },
+    {
+      "pattern": "partons",
+      "replace": "partir",
+      "category": "conjugation_fr"
+    },
+    {
+      "pattern": "partent",
+      "replace": "partir",
+      "category": "conjugation_fr"
+    },
+    {
+      "pattern": "partais",
+      "replace": "partir",
+      "category": "conjugation_fr"
+    },
+    {
+      "pattern": "partait",
+      "replace": "partir",
+      "category": "conjugation_fr"
+    },
+    {
+      "pattern": "partiez",
+      "replace": "partir",
+      "category": "conjugation_fr"
+    },
+    {
+      "pattern": "partira",
+      "replace": "partir",
+      "category": "conjugation_fr"
+    },
+    {
+      "pattern": "getting",
+      "replace": "get",
+      "category": "conjugation_en"
+    },
+    {
+      "pattern": "knowing",
+      "replace": "know",
+      "category": "conjugation_en"
+    },
+    {
+      "pattern": "thought",
+      "replace": "think",
+      "category": "conjugation_en"
+    },
+    {
+      "pattern": "wanting",
+      "replace": "want",
+      "category": "conjugation_en"
+    },
+    {
+      "pattern": "finding",
+      "replace": "find",
+      "category": "conjugation_en"
+    },
+    {
+      "pattern": "telling",
+      "replace": "tell",
+      "category": "conjugation_en"
+    },
+    {
+      "pattern": "working",
+      "replace": "work",
+      "category": "conjugation_en"
+    },
+    {
+      "pattern": "calling",
+      "replace": "call",
+      "category": "conjugation_en"
+    },
+    {
+      "pattern": "needing",
+      "replace": "need",
+      "category": "conjugation_en"
+    },
+    {
+      "pattern": "feeling",
+      "replace": "feel",
+      "category": "conjugation_en"
+    },
+    {
+      "pattern": "becomes",
+      "replace": "become",
+      "category": "conjugation_en"
+    },
+    {
+      "pattern": "leaving",
+      "replace": "leave",
+      "category": "conjugation_en"
+    },
+    {
+      "pattern": "putting",
+      "replace": "put",
+      "category": "conjugation_en"
+    },
+    {
+      "pattern": "meaning",
+      "replace": "mean",
+      "category": "conjugation_en"
+    },
+    {
+      "pattern": "keeping",
+      "replace": "keep",
+      "category": "conjugation_en"
+    },
+    {
+      "pattern": "letting",
+      "replace": "let",
+      "category": "conjugation_en"
+    },
+    {
+      "pattern": "seeming",
+      "replace": "seem",
+      "category": "conjugation_en"
+    },
+    {
+      "pattern": "helping",
+      "replace": "help",
+      "category": "conjugation_en"
+    },
+    {
+      "pattern": "showing",
+      "replace": "show",
+      "category": "conjugation_en"
+    },
+    {
+      "pattern": "hearing",
+      "replace": "hear",
+      "category": "conjugation_en"
+    },
+    {
+      "pattern": "playing",
+      "replace": "play",
+      "category": "conjugation_en"
+    },
+    {
+      "pattern": "running",
+      "replace": "run",
+      "category": "conjugation_en"
+    },
+    {
+      "pattern": "brought",
+      "replace": "bring",
+      "category": "conjugation_en"
+    },
+    {
+      "pattern": "happens",
+      "replace": "happen",
+      "category": "conjugation_en"
+    },
+    {
+      "pattern": "written",
+      "replace": "write",
+      "category": "conjugation_en"
+    },
+    {
+      "pattern": "writing",
+      "replace": "write",
+      "category": "conjugation_en"
+    },
+    {
+      "pattern": "sitting",
+      "replace": "sit",
+      "category": "conjugation_en"
+    },
+    {
+      "pattern": "meeting",
+      "replace": "meet",
+      "category": "conjugation_en"
+    },
+    {
+      "pattern": "setting",
+      "replace": "set",
+      "category": "conjugation_en"
+    },
+    {
+      "pattern": "learned",
+      "replace": "learn",
+      "category": "conjugation_en"
+    },
+    {
+      "pattern": "changes",
+      "replace": "change",
+      "category": "conjugation_en"
+    },
+    {
+      "pattern": "changed",
+      "replace": "change",
+      "category": "conjugation_en"
+    },
+    {
+      "pattern": "leading",
+      "replace": "lead",
+      "category": "conjugation_en"
+    },
+    {
+      "pattern": "watches",
+      "replace": "watch",
+      "category": "conjugation_en"
+    },
+    {
+      "pattern": "watched",
+      "replace": "watch",
+      "category": "conjugation_en"
+    },
+    {
+      "pattern": "follows",
+      "replace": "follow",
+      "category": "conjugation_en"
+    },
+    {
+      "pattern": "stopped",
+      "replace": "stop",
+      "category": "conjugation_en"
+    },
+    {
+      "pattern": "creates",
+      "replace": "create",
+      "category": "conjugation_en"
+    },
+    {
+      "pattern": "created",
+      "replace": "create",
+      "category": "conjugation_en"
+    },
+    {
+      "pattern": "reading",
+      "replace": "read",
+      "category": "conjugation_en"
+    },
+    {
+      "pattern": "allowed",
+      "replace": "allow",
+      "category": "conjugation_en"
+    },
+    {
+      "pattern": "growing",
+      "replace": "grow",
+      "category": "conjugation_en"
+    },
+    {
+      "pattern": "opening",
+      "replace": "open",
+      "category": "conjugation_en"
+    },
+    {
+      "pattern": "walking",
+      "replace": "walk",
+      "category": "conjugation_en"
+    },
+    {
+      "pattern": "winning",
+      "replace": "win",
+      "category": "conjugation_en"
+    },
+    {
+      "pattern": "teaches",
+      "replace": "teach",
+      "category": "conjugation_en"
+    },
+    {
+      "pattern": "offered",
+      "replace": "offer",
+      "category": "conjugation_en"
+    },
+    {
+      "pattern": "appears",
+      "replace": "appear",
+      "category": "conjugation_en"
+    },
+    {
+      "pattern": "waiting",
+      "replace": "wait",
+      "category": "conjugation_en"
+    },
+    {
+      "pattern": "serving",
+      "replace": "serve",
+      "category": "conjugation_en"
+    },
+    {
+      "pattern": "sending",
+      "replace": "send",
+      "category": "conjugation_en"
+    },
+    {
+      "pattern": "expects",
+      "replace": "expect",
+      "category": "conjugation_en"
+    },
+    {
+      "pattern": "staying",
+      "replace": "stay",
+      "category": "conjugation_en"
+    },
+    {
+      "pattern": "falling",
+      "replace": "fall",
+      "category": "conjugation_en"
+    },
+    {
+      "pattern": "cutting",
+      "replace": "cut",
+      "category": "conjugation_en"
+    },
+    {
+      "pattern": "reaches",
+      "replace": "reach",
+      "category": "conjugation_en"
+    },
+    {
+      "pattern": "reached",
+      "replace": "reach",
+      "category": "conjugation_en"
+    },
+    {
+      "pattern": "killing",
+      "replace": "kill",
+      "category": "conjugation_en"
+    },
+    {
+      "pattern": "remains",
+      "replace": "remain",
+      "category": "conjugation_en"
+    },
+    {
+      "pattern": "chevaux",
+      "replace": "cheval",
+      "category": "plurals_fr"
+    },
+    {
+      "pattern": "travaux",
+      "replace": "travail",
+      "category": "plurals_fr"
+    },
+    {
+      "pattern": "vantaux",
+      "replace": "vantail",
+      "category": "plurals_fr"
+    },
+    {
+      "pattern": "species",
+      "replace": "species",
+      "category": "plurals_en"
+    },
+    {
+      "pattern": "reponse",
+      "replace": "réponse",
+      "category": "typos_fr"
+    },
+    {
+      "pattern": "systeme",
+      "replace": "système",
+      "category": "typos_fr"
+    },
+    {
+      "pattern": "methode",
+      "replace": "méthode",
+      "category": "typos_fr"
+    },
+    {
+      "pattern": "reparer",
+      "replace": "réparer",
+      "category": "typos_fr"
+    },
+    {
+      "pattern": "recieve",
+      "replace": "receive",
+      "category": "typos_en"
+    },
+    {
+      "pattern": "occured",
+      "replace": "occurred",
+      "category": "typos_en"
+    },
+    {
+      "pattern": "acheive",
+      "replace": "achieve",
+      "category": "typos_en"
+    },
+    {
+      "pattern": "accross",
+      "replace": "across",
+      "category": "typos_en"
+    },
+    {
+      "pattern": "basicly",
+      "replace": "basically",
+      "category": "typos_en"
+    },
+    {
+      "pattern": "beleive",
+      "replace": "believe",
+      "category": "typos_en"
+    },
+    {
+      "pattern": "comming",
+      "replace": "coming",
+      "category": "typos_en"
+    },
+    {
+      "pattern": "decieve",
+      "replace": "deceive",
+      "category": "typos_en"
+    },
+    {
+      "pattern": "familar",
+      "replace": "familiar",
+      "category": "typos_en"
+    },
+    {
+      "pattern": "foriegn",
+      "replace": "foreign",
+      "category": "typos_en"
+    },
+    {
+      "pattern": "grammer",
+      "replace": "grammar",
+      "category": "typos_en"
+    },
+    {
+      "pattern": "happend",
+      "replace": "happened",
+      "category": "typos_en"
+    },
+    {
+      "pattern": "heighth",
+      "replace": "height",
+      "category": "typos_en"
+    },
+    {
+      "pattern": "offical",
+      "replace": "official",
+      "category": "typos_en"
+    },
+    {
+      "pattern": "preceed",
+      "replace": "precede",
+      "category": "typos_en"
+    },
+    {
+      "pattern": "promiss",
+      "replace": "promise",
+      "category": "typos_en"
+    },
+    {
+      "pattern": "reciept",
+      "replace": "receipt",
+      "category": "typos_en"
+    },
+    {
+      "pattern": "refered",
+      "replace": "referred",
+      "category": "typos_en"
+    },
+    {
+      "pattern": "remeber",
+      "replace": "remember",
+      "category": "typos_en"
+    },
+    {
+      "pattern": "scedule",
+      "replace": "schedule",
+      "category": "typos_en"
+    },
+    {
+      "pattern": "similer",
+      "replace": "similar",
+      "category": "typos_en"
+    },
+    {
+      "pattern": "suprise",
+      "replace": "surprise",
+      "category": "typos_en"
+    },
+    {
+      "pattern": "useable",
+      "replace": "usable",
+      "category": "typos_en"
+    },
+    {
+      "pattern": "vaccuum",
+      "replace": "vacuum",
+      "category": "typos_en"
+    },
+    {
+      "pattern": "vehical",
+      "replace": "vehicle",
+      "category": "typos_en"
+    },
+    {
+      "pattern": "routeur",
+      "replace": "router",
+      "category": "tech_synonyms"
+    },
+    {
+      "pattern": "pentest",
+      "replace": "penetration test",
+      "category": "tech_synonyms"
+    },
+    {
+      "pattern": "journal",
+      "replace": "log",
+      "category": "tech_synonyms"
+    },
+    {
+      "pattern": "demande",
+      "replace": "request",
+      "category": "tech_synonyms"
+    },
+    {
+      "pattern": "configs",
+      "replace": "configurations",
+      "category": "tech_synonyms"
+    },
+    {
+      "pattern": "restful",
+      "replace": "representational state transfer",
+      "category": "tech_synonyms"
+    },
+    {
+      "pattern": "graphql",
+      "replace": "graph query language",
+      "category": "tech_synonyms"
+    },
+    {
+      "pattern": "bloquer",
+      "replace": "block",
+      "category": "tech_synonyms"
+    },
+    {
+      "pattern": "resumer",
+      "replace": "resume",
+      "category": "tech_synonyms"
+    },
+    {
+      "pattern": "arreter",
+      "replace": "stop",
+      "category": "tech_synonyms"
+    },
+    {
+      "pattern": "alerter",
+      "replace": "alert",
+      "category": "tech_synonyms"
+    },
+    {
+      "pattern": "auditer",
+      "replace": "audit",
+      "category": "tech_synonyms"
+    },
+    {
+      "pattern": "encoder",
+      "replace": "encode",
+      "category": "tech_synonyms"
+    },
+    {
+      "pattern": "decoder",
+      "replace": "decode",
+      "category": "tech_synonyms"
+    },
+    {
+      "pattern": "annuler",
+      "replace": "cancel",
+      "category": "tech_synonyms"
+    },
+    {
+      "pattern": "scanner",
+      "replace": "scan",
+      "category": "tech_synonyms"
+    },
+    {
+      "pattern": "envoyer",
+      "replace": "send",
+      "category": "tech_synonyms"
+    },
+    {
+      "pattern": "pivoter",
+      "replace": "rotate",
+      "category": "tech_synonyms"
+    },
+    {
+      "pattern": "defiler",
+      "replace": "scroll",
+      "category": "tech_synonyms"
+    },
+    {
+      "pattern": "trouver",
+      "replace": "find",
+      "category": "tech_synonyms"
+    },
+    {
+      "pattern": "filtrer",
+      "replace": "filter",
+      "category": "tech_synonyms"
+    },
+    {
+      "pattern": "grouper",
+      "replace": "group",
+      "category": "tech_synonyms"
+    },
+    {
+      "pattern": "valider",
+      "replace": "validate",
+      "category": "tech_synonyms"
+    },
+    {
+      "pattern": "reduire",
+      "replace": "reduce",
+      "category": "tech_synonyms"
+    },
+    {
+      "pattern": "peux-tu",
+      "replace": "",
+      "category": "politeness_fr"
+    },
+    {
+      "pattern": "can you",
+      "replace": "",
+      "category": "politeness_en"
+    },
+    {
+      "pattern": "en fait",
+      "replace": "",
+      "category": "filler_fr"
+    },
+    {
+      "pattern": "en gros",
+      "replace": "",
+      "category": "filler_fr"
+    },
+    {
+      "pattern": "mettons",
+      "replace": "",
+      "category": "filler_fr"
+    },
+    {
+      "pattern": "in fact",
+      "replace": "",
+      "category": "filler_en"
+    },
+    {
+      "pattern": "anyways",
+      "replace": "",
+      "category": "filler_en"
+    },
+    {
+      "pattern": "alright",
+      "replace": "",
+      "category": "filler_en"
+    },
+    {
+      "pattern": "i guess",
+      "replace": "",
+      "category": "filler_en"
+    },
+    {
+      "pattern": "i think",
+      "replace": "",
+      "category": "filler_en"
+    },
+    {
+      "pattern": "sommes",
+      "replace": "être",
+      "category": "conjugation_fr"
+    },
+    {
+      "pattern": "étions",
+      "replace": "être",
+      "category": "conjugation_fr"
+    },
+    {
+      "pattern": "furent",
+      "replace": "être",
+      "category": "conjugation_fr"
+    },
+    {
+      "pattern": "serons",
+      "replace": "être",
+      "category": "conjugation_fr"
+    },
+    {
+      "pattern": "seront",
+      "replace": "être",
+      "category": "conjugation_fr"
+    },
+    {
+      "pattern": "avions",
+      "replace": "avoir",
+      "category": "conjugation_fr"
+    },
+    {
+      "pattern": "eurent",
+      "replace": "avoir",
+      "category": "conjugation_fr"
+    },
+    {
+      "pattern": "aurons",
+      "replace": "avoir",
+      "category": "conjugation_fr"
+    },
+    {
+      "pattern": "auront",
+      "replace": "avoir",
+      "category": "conjugation_fr"
+    },
+    {
+      "pattern": "allons",
+      "replace": "aller",
+      "category": "conjugation_fr"
+    },
+    {
+      "pattern": "allais",
+      "replace": "aller",
+      "category": "conjugation_fr"
+    },
+    {
+      "pattern": "allait",
+      "replace": "aller",
+      "category": "conjugation_fr"
+    },
+    {
+      "pattern": "alliez",
+      "replace": "aller",
+      "category": "conjugation_fr"
+    },
+    {
+      "pattern": "faites",
+      "replace": "faire",
+      "category": "conjugation_fr"
+    },
+    {
+      "pattern": "firent",
+      "replace": "faire",
+      "category": "conjugation_fr"
+    },
+    {
+      "pattern": "ferons",
+      "replace": "faire",
+      "category": "conjugation_fr"
+    },
+    {
+      "pattern": "feront",
+      "replace": "faire",
+      "category": "conjugation_fr"
+    },
+    {
+      "pattern": "disons",
+      "replace": "dire",
+      "category": "conjugation_fr"
+    },
+    {
+      "pattern": "disent",
+      "replace": "dire",
+      "category": "conjugation_fr"
+    },
+    {
+      "pattern": "disais",
+      "replace": "dire",
+      "category": "conjugation_fr"
+    },
+    {
+      "pattern": "disait",
+      "replace": "dire",
+      "category": "conjugation_fr"
+    },
+    {
+      "pattern": "disiez",
+      "replace": "dire",
+      "category": "conjugation_fr"
+    },
+    {
+      "pattern": "dirent",
+      "replace": "dire",
+      "category": "conjugation_fr"
+    },
+    {
+      "pattern": "dirons",
+      "replace": "dire",
+      "category": "conjugation_fr"
+    },
+    {
+      "pattern": "diront",
+      "replace": "dire",
+      "category": "conjugation_fr"
+    },
+    {
+      "pattern": "pouvez",
+      "replace": "pouvoir",
+      "category": "conjugation_fr"
+    },
+    {
+      "pattern": "purent",
+      "replace": "pouvoir",
+      "category": "conjugation_fr"
+    },
+    {
+      "pattern": "pourra",
+      "replace": "pouvoir",
+      "category": "conjugation_fr"
+    },
+    {
+      "pattern": "voulez",
+      "replace": "vouloir",
+      "category": "conjugation_fr"
+    },
+    {
+      "pattern": "voulus",
+      "replace": "vouloir",
+      "category": "conjugation_fr"
+    },
+    {
+      "pattern": "voulut",
+      "replace": "vouloir",
+      "category": "conjugation_fr"
+    },
+    {
+      "pattern": "voudra",
+      "replace": "vouloir",
+      "category": "conjugation_fr"
+    },
+    {
+      "pattern": "voyons",
+      "replace": "voir",
+      "category": "conjugation_fr"
+    },
+    {
+      "pattern": "voient",
+      "replace": "voir",
+      "category": "conjugation_fr"
+    },
+    {
+      "pattern": "voyais",
+      "replace": "voir",
+      "category": "conjugation_fr"
+    },
+    {
+      "pattern": "voyait",
+      "replace": "voir",
+      "category": "conjugation_fr"
+    },
+    {
+      "pattern": "voyiez",
+      "replace": "voir",
+      "category": "conjugation_fr"
+    },
+    {
+      "pattern": "virent",
+      "replace": "voir",
+      "category": "conjugation_fr"
+    },
+    {
+      "pattern": "verrai",
+      "replace": "voir",
+      "category": "conjugation_fr"
+    },
+    {
+      "pattern": "verras",
+      "replace": "voir",
+      "category": "conjugation_fr"
+    },
+    {
+      "pattern": "verrez",
+      "replace": "voir",
+      "category": "conjugation_fr"
+    },
+    {
+      "pattern": "savons",
+      "replace": "savoir",
+      "category": "conjugation_fr"
+    },
+    {
+      "pattern": "savent",
+      "replace": "savoir",
+      "category": "conjugation_fr"
+    },
+    {
+      "pattern": "savais",
+      "replace": "savoir",
+      "category": "conjugation_fr"
+    },
+    {
+      "pattern": "savait",
+      "replace": "savoir",
+      "category": "conjugation_fr"
+    },
+    {
+      "pattern": "saviez",
+      "replace": "savoir",
+      "category": "conjugation_fr"
+    },
+    {
+      "pattern": "surent",
+      "replace": "savoir",
+      "category": "conjugation_fr"
+    },
+    {
+      "pattern": "saurai",
+      "replace": "savoir",
+      "category": "conjugation_fr"
+    },
+    {
+      "pattern": "sauras",
+      "replace": "savoir",
+      "category": "conjugation_fr"
+    },
+    {
+      "pattern": "saurez",
+      "replace": "savoir",
+      "category": "conjugation_fr"
+    },
+    {
+      "pattern": "devons",
+      "replace": "devoir",
+      "category": "conjugation_fr"
+    },
+    {
+      "pattern": "devais",
+      "replace": "devoir",
+      "category": "conjugation_fr"
+    },
+    {
+      "pattern": "devait",
+      "replace": "devoir",
+      "category": "conjugation_fr"
+    },
+    {
+      "pattern": "deviez",
+      "replace": "devoir",
+      "category": "conjugation_fr"
+    },
+    {
+      "pattern": "durent",
+      "replace": "devoir",
+      "category": "conjugation_fr"
+    },
+    {
+      "pattern": "devrai",
+      "replace": "devoir",
+      "category": "conjugation_fr"
+    },
+    {
+      "pattern": "devras",
+      "replace": "devoir",
+      "category": "conjugation_fr"
+    },
+    {
+      "pattern": "devrez",
+      "replace": "devoir",
+      "category": "conjugation_fr"
+    },
+    {
+      "pattern": "prends",
+      "replace": "prendre",
+      "category": "conjugation_fr"
+    },
+    {
+      "pattern": "prenez",
+      "replace": "prendre",
+      "category": "conjugation_fr"
+    },
+    {
+      "pattern": "prîmes",
+      "replace": "prendre",
+      "category": "conjugation_fr"
+    },
+    {
+      "pattern": "prîtes",
+      "replace": "prendre",
+      "category": "conjugation_fr"
+    },
+    {
+      "pattern": "venons",
+      "replace": "venir",
+      "category": "conjugation_fr"
+    },
+    {
+      "pattern": "venais",
+      "replace": "venir",
+      "category": "conjugation_fr"
+    },
+    {
+      "pattern": "venait",
+      "replace": "venir",
+      "category": "conjugation_fr"
+    },
+    {
+      "pattern": "veniez",
+      "replace": "venir",
+      "category": "conjugation_fr"
+    },
+    {
+      "pattern": "vînmes",
+      "replace": "venir",
+      "category": "conjugation_fr"
+    },
+    {
+      "pattern": "vîntes",
+      "replace": "venir",
+      "category": "conjugation_fr"
+    },
+    {
+      "pattern": "donnes",
+      "replace": "donner",
+      "category": "conjugation_fr"
+    },
+    {
+      "pattern": "donnez",
+      "replace": "donner",
+      "category": "conjugation_fr"
+    },
+    {
+      "pattern": "donnai",
+      "replace": "donner",
+      "category": "conjugation_fr"
+    },
+    {
+      "pattern": "trouve",
+      "replace": "trouver",
+      "category": "conjugation_fr"
+    },
+    {
+      "pattern": "trouva",
+      "replace": "trouver",
+      "category": "conjugation_fr"
+    },
+    {
+      "pattern": "parles",
+      "replace": "parler",
+      "category": "conjugation_fr"
+    },
+    {
+      "pattern": "parlez",
+      "replace": "parler",
+      "category": "conjugation_fr"
+    },
+    {
+      "pattern": "parlai",
+      "replace": "parler",
+      "category": "conjugation_fr"
+    },
+    {
+      "pattern": "mettez",
+      "replace": "mettre",
+      "category": "conjugation_fr"
+    },
+    {
+      "pattern": "mirent",
+      "replace": "mettre",
+      "category": "conjugation_fr"
+    },
+    {
+      "pattern": "mettra",
+      "replace": "mettre",
+      "category": "conjugation_fr"
+    },
+    {
+      "pattern": "partez",
+      "replace": "partir",
+      "category": "conjugation_fr"
+    },
+    {
+      "pattern": "partis",
+      "replace": "partir",
+      "category": "conjugation_fr"
+    },
+    {
+      "pattern": "partit",
+      "replace": "partir",
+      "category": "conjugation_fr"
+    },
+    {
+      "pattern": "having",
+      "replace": "have",
+      "category": "conjugation_en"
+    },
+    {
+      "pattern": "saying",
+      "replace": "say",
+      "category": "conjugation_en"
+    },
+    {
+      "pattern": "gotten",
+      "replace": "get",
+      "category": "conjugation_en"
+    },
+    {
+      "pattern": "making",
+      "replace": "make",
+      "category": "conjugation_en"
+    },
+    {
+      "pattern": "thinks",
+      "replace": "think",
+      "category": "conjugation_en"
+    },
+    {
+      "pattern": "taking",
+      "replace": "take",
+      "category": "conjugation_en"
+    },
+    {
+      "pattern": "seeing",
+      "replace": "see",
+      "category": "conjugation_en"
+    },
+    {
+      "pattern": "coming",
+      "replace": "come",
+      "category": "conjugation_en"
+    },
+    {
+      "pattern": "wanted",
+      "replace": "want",
+      "category": "conjugation_en"
+    },
+    {
+      "pattern": "giving",
+      "replace": "give",
+      "category": "conjugation_en"
+    },
+    {
+      "pattern": "worked",
+      "replace": "work",
+      "category": "conjugation_en"
+    },
+    {
+      "pattern": "called",
+      "replace": "call",
+      "category": "conjugation_en"
+    },
+    {
+      "pattern": "trying",
+      "replace": "try",
+      "category": "conjugation_en"
+    },
+    {
+      "pattern": "asking",
+      "replace": "ask",
+      "category": "conjugation_en"
+    },
+    {
+      "pattern": "needed",
+      "replace": "need",
+      "category": "conjugation_en"
+    },
+    {
+      "pattern": "became",
+      "replace": "become",
+      "category": "conjugation_en"
+    },
+    {
+      "pattern": "leaves",
+      "replace": "leave",
+      "category": "conjugation_en"
+    },
+    {
+      "pattern": "begins",
+      "replace": "begin",
+      "category": "conjugation_en"
+    },
+    {
+      "pattern": "seemed",
+      "replace": "seem",
+      "category": "conjugation_en"
+    },
+    {
+      "pattern": "helped",
+      "replace": "help",
+      "category": "conjugation_en"
+    },
+    {
+      "pattern": "showed",
+      "replace": "show",
+      "category": "conjugation_en"
+    },
+    {
+      "pattern": "played",
+      "replace": "play",
+      "category": "conjugation_en"
+    },
+    {
+      "pattern": "moving",
+      "replace": "move",
+      "category": "conjugation_en"
+    },
+    {
+      "pattern": "living",
+      "replace": "live",
+      "category": "conjugation_en"
+    },
+    {
+      "pattern": "brings",
+      "replace": "bring",
+      "category": "conjugation_en"
+    },
+    {
+      "pattern": "writes",
+      "replace": "write",
+      "category": "conjugation_en"
+    },
+    {
+      "pattern": "stands",
+      "replace": "stand",
+      "category": "conjugation_en"
+    },
+    {
+      "pattern": "losing",
+      "replace": "lose",
+      "category": "conjugation_en"
+    },
+    {
+      "pattern": "paying",
+      "replace": "pay",
+      "category": "conjugation_en"
+    },
+    {
+      "pattern": "learns",
+      "replace": "learn",
+      "category": "conjugation_en"
+    },
+    {
+      "pattern": "speaks",
+      "replace": "speak",
+      "category": "conjugation_en"
+    },
+    {
+      "pattern": "spoken",
+      "replace": "speak",
+      "category": "conjugation_en"
+    },
+    {
+      "pattern": "allows",
+      "replace": "allow",
+      "category": "conjugation_en"
+    },
+    {
+      "pattern": "adding",
+      "replace": "add",
+      "category": "conjugation_en"
+    },
+    {
+      "pattern": "spends",
+      "replace": "spend",
+      "category": "conjugation_en"
+    },
+    {
+      "pattern": "opened",
+      "replace": "open",
+      "category": "conjugation_en"
+    },
+    {
+      "pattern": "walked",
+      "replace": "walk",
+      "category": "conjugation_en"
+    },
+    {
+      "pattern": "taught",
+      "replace": "teach",
+      "category": "conjugation_en"
+    },
+    {
+      "pattern": "offers",
+      "replace": "offer",
+      "category": "conjugation_en"
+    },
+    {
+      "pattern": "loving",
+      "replace": "love",
+      "category": "conjugation_en"
+    },
+    {
+      "pattern": "bought",
+      "replace": "buy",
+      "category": "conjugation_en"
+    },
+    {
+      "pattern": "buying",
+      "replace": "buy",
+      "category": "conjugation_en"
+    },
+    {
+      "pattern": "waited",
+      "replace": "wait",
+      "category": "conjugation_en"
+    },
+    {
+      "pattern": "serves",
+      "replace": "serve",
+      "category": "conjugation_en"
+    },
+    {
+      "pattern": "served",
+      "replace": "serve",
+      "category": "conjugation_en"
+    },
+    {
+      "pattern": "builds",
+      "replace": "build",
+      "category": "conjugation_en"
+    },
+    {
+      "pattern": "stayed",
+      "replace": "stay",
+      "category": "conjugation_en"
+    },
+    {
+      "pattern": "fallen",
+      "replace": "fall",
+      "category": "conjugation_en"
+    },
+    {
+      "pattern": "killed",
+      "replace": "kill",
+      "category": "conjugation_en"
+    },
+    {
+      "pattern": "coraux",
+      "replace": "coral",
+      "category": "plurals_fr"
+    },
+    {
+      "pattern": "people",
+      "replace": "person",
+      "category": "plurals_en"
+    },
+    {
+      "pattern": "series",
+      "replace": "series",
+      "category": "plurals_en"
+    },
+    {
+      "pattern": "aceuil",
+      "replace": "accueil",
+      "category": "typos_fr"
+    },
+    {
+      "pattern": "reseau",
+      "replace": "réseau",
+      "category": "typos_fr"
+    },
+    {
+      "pattern": "finaly",
+      "replace": "finally",
+      "category": "typos_en"
+    },
+    {
+      "pattern": "fourty",
+      "replace": "forty",
+      "category": "typos_en"
+    },
+    {
+      "pattern": "freind",
+      "replace": "friend",
+      "category": "typos_en"
+    },
+    {
+      "pattern": "libary",
+      "replace": "library",
+      "category": "typos_en"
+    },
+    {
+      "pattern": "saftey",
+      "replace": "safety",
+      "category": "typos_en"
+    },
+    {
+      "pattern": "truely",
+      "replace": "truly",
+      "category": "typos_en"
+    },
+    {
+      "pattern": "untill",
+      "replace": "until",
+      "category": "typos_en"
+    },
+    {
+      "pattern": "wether",
+      "replace": "weather",
+      "category": "typos_en"
+    },
+    {
+      "pattern": "reseau",
+      "replace": "network",
+      "category": "tech_synonyms"
+    },
+    {
+      "pattern": "compte",
+      "replace": "account",
+      "category": "tech_synonyms"
+    },
+    {
+      "pattern": "groupe",
+      "replace": "group",
+      "category": "tech_synonyms"
+    },
+    {
+      "pattern": "alerte",
+      "replace": "alert",
+      "category": "tech_synonyms"
+    },
+    {
+      "pattern": "config",
+      "replace": "configuration",
+      "category": "tech_synonyms"
+    },
+    {
+      "pattern": "regexp",
+      "replace": "regular expression",
+      "category": "tech_synonyms"
+    },
+    {
+      "pattern": "base64",
+      "replace": "base64 encoding",
+      "category": "tech_synonyms"
+    },
+    {
+      "pattern": "sha256",
+      "replace": "secure hash algorithm 256",
+      "category": "tech_synonyms"
+    },
+    {
+      "pattern": "sha512",
+      "replace": "secure hash algorithm 512",
+      "category": "tech_synonyms"
+    },
+    {
+      "pattern": "signer",
+      "replace": "sign",
+      "category": "tech_synonyms"
+    },
+    {
+      "pattern": "monter",
+      "replace": "mount",
+      "category": "tech_synonyms"
+    },
+    {
+      "pattern": "migrer",
+      "replace": "migrate",
+      "category": "tech_synonyms"
+    },
+    {
+      "pattern": "copier",
+      "replace": "copy",
+      "category": "tech_synonyms"
+    },
+    {
+      "pattern": "coller",
+      "replace": "paste",
+      "category": "tech_synonyms"
+    },
+    {
+      "pattern": "couper",
+      "replace": "cut",
+      "category": "tech_synonyms"
+    },
+    {
+      "pattern": "zoomer",
+      "replace": "zoom",
+      "category": "tech_synonyms"
+    },
+    {
+      "pattern": "fermer",
+      "replace": "close",
+      "category": "tech_synonyms"
+    },
+    {
+      "pattern": "ouvrir",
+      "replace": "open",
+      "category": "tech_synonyms"
+    },
+    {
+      "pattern": "please",
+      "replace": "",
+      "category": "politeness_en"
+    },
+    {
+      "pattern": "thanks",
+      "replace": "",
+      "category": "politeness_en"
+    },
+    {
+      "pattern": "disons",
+      "replace": "",
+      "category": "filler_fr"
+    },
+    {
+      "pattern": "simply",
+      "replace": "",
+      "category": "filler_en"
+    },
+    {
+      "pattern": "really",
+      "replace": "",
+      "category": "filler_en"
+    },
+    {
+      "pattern": "anyway",
+      "replace": "",
+      "category": "filler_en"
+    },
+    {
+      "pattern": "listen",
+      "replace": "",
+      "category": "filler_en"
+    },
+    {
+      "pattern": "i mean",
+      "replace": "",
+      "category": "filler_en"
+    },
+    {
+      "pattern": "étais",
+      "replace": "être",
+      "category": "conjugation_fr"
+    },
+    {
+      "pattern": "était",
+      "replace": "être",
+      "category": "conjugation_fr"
+    },
+    {
+      "pattern": "étiez",
+      "replace": "être",
+      "category": "conjugation_fr"
+    },
+    {
+      "pattern": "fûmes",
+      "replace": "être",
+      "category": "conjugation_fr"
+    },
+    {
+      "pattern": "fûtes",
+      "replace": "être",
+      "category": "conjugation_fr"
+    },
+    {
+      "pattern": "serai",
+      "replace": "être",
+      "category": "conjugation_fr"
+    },
+    {
+      "pattern": "seras",
+      "replace": "être",
+      "category": "conjugation_fr"
+    },
+    {
+      "pattern": "serez",
+      "replace": "être",
+      "category": "conjugation_fr"
+    },
+    {
+      "pattern": "avons",
+      "replace": "avoir",
+      "category": "conjugation_fr"
+    },
+    {
+      "pattern": "avais",
+      "replace": "avoir",
+      "category": "conjugation_fr"
+    },
+    {
+      "pattern": "avait",
+      "replace": "avoir",
+      "category": "conjugation_fr"
+    },
+    {
+      "pattern": "aviez",
+      "replace": "avoir",
+      "category": "conjugation_fr"
+    },
+    {
+      "pattern": "eûmes",
+      "replace": "avoir",
+      "category": "conjugation_fr"
+    },
+    {
+      "pattern": "eûtes",
+      "replace": "avoir",
+      "category": "conjugation_fr"
+    },
+    {
+      "pattern": "aurai",
+      "replace": "avoir",
+      "category": "conjugation_fr"
+    },
+    {
+      "pattern": "auras",
+      "replace": "avoir",
+      "category": "conjugation_fr"
+    },
+    {
+      "pattern": "aurez",
+      "replace": "avoir",
+      "category": "conjugation_fr"
+    },
+    {
+      "pattern": "allez",
+      "replace": "aller",
+      "category": "conjugation_fr"
+    },
+    {
+      "pattern": "allai",
+      "replace": "aller",
+      "category": "conjugation_fr"
+    },
+    {
+      "pattern": "irons",
+      "replace": "aller",
+      "category": "conjugation_fr"
+    },
+    {
+      "pattern": "iront",
+      "replace": "aller",
+      "category": "conjugation_fr"
+    },
+    {
+      "pattern": "fîmes",
+      "replace": "faire",
+      "category": "conjugation_fr"
+    },
+    {
+      "pattern": "fîtes",
+      "replace": "faire",
+      "category": "conjugation_fr"
+    },
+    {
+      "pattern": "ferai",
+      "replace": "faire",
+      "category": "conjugation_fr"
+    },
+    {
+      "pattern": "feras",
+      "replace": "faire",
+      "category": "conjugation_fr"
+    },
+    {
+      "pattern": "ferez",
+      "replace": "faire",
+      "category": "conjugation_fr"
+    },
+    {
+      "pattern": "dites",
+      "replace": "dire",
+      "category": "conjugation_fr"
+    },
+    {
+      "pattern": "dîmes",
+      "replace": "dire",
+      "category": "conjugation_fr"
+    },
+    {
+      "pattern": "dîtes",
+      "replace": "dire",
+      "category": "conjugation_fr"
+    },
+    {
+      "pattern": "dirai",
+      "replace": "dire",
+      "category": "conjugation_fr"
+    },
+    {
+      "pattern": "diras",
+      "replace": "dire",
+      "category": "conjugation_fr"
+    },
+    {
+      "pattern": "direz",
+      "replace": "dire",
+      "category": "conjugation_fr"
+    },
+    {
+      "pattern": "pûmes",
+      "replace": "pouvoir",
+      "category": "conjugation_fr"
+    },
+    {
+      "pattern": "pûtes",
+      "replace": "pouvoir",
+      "category": "conjugation_fr"
+    },
+    {
+      "pattern": "voyez",
+      "replace": "voir",
+      "category": "conjugation_fr"
+    },
+    {
+      "pattern": "vîmes",
+      "replace": "voir",
+      "category": "conjugation_fr"
+    },
+    {
+      "pattern": "vîtes",
+      "replace": "voir",
+      "category": "conjugation_fr"
+    },
+    {
+      "pattern": "verra",
+      "replace": "voir",
+      "category": "conjugation_fr"
+    },
+    {
+      "pattern": "savez",
+      "replace": "savoir",
+      "category": "conjugation_fr"
+    },
+    {
+      "pattern": "sûmes",
+      "replace": "savoir",
+      "category": "conjugation_fr"
+    },
+    {
+      "pattern": "sûtes",
+      "replace": "savoir",
+      "category": "conjugation_fr"
+    },
+    {
+      "pattern": "saura",
+      "replace": "savoir",
+      "category": "conjugation_fr"
+    },
+    {
+      "pattern": "devez",
+      "replace": "devoir",
+      "category": "conjugation_fr"
+    },
+    {
+      "pattern": "dûmes",
+      "replace": "devoir",
+      "category": "conjugation_fr"
+    },
+    {
+      "pattern": "dûtes",
+      "replace": "devoir",
+      "category": "conjugation_fr"
+    },
+    {
+      "pattern": "devra",
+      "replace": "devoir",
+      "category": "conjugation_fr"
+    },
+    {
+      "pattern": "prend",
+      "replace": "prendre",
+      "category": "conjugation_fr"
+    },
+    {
+      "pattern": "viens",
+      "replace": "venir",
+      "category": "conjugation_fr"
+    },
+    {
+      "pattern": "vient",
+      "replace": "venir",
+      "category": "conjugation_fr"
+    },
+    {
+      "pattern": "venez",
+      "replace": "venir",
+      "category": "conjugation_fr"
+    },
+    {
+      "pattern": "donne",
+      "replace": "donner",
+      "category": "conjugation_fr"
+    },
+    {
+      "pattern": "donna",
+      "replace": "donner",
+      "category": "conjugation_fr"
+    },
+    {
+      "pattern": "parle",
+      "replace": "parler",
+      "category": "conjugation_fr"
+    },
+    {
+      "pattern": "parla",
+      "replace": "parler",
+      "category": "conjugation_fr"
+    },
+    {
+      "pattern": "mîmes",
+      "replace": "mettre",
+      "category": "conjugation_fr"
+    },
+    {
+      "pattern": "mîtes",
+      "replace": "mettre",
+      "category": "conjugation_fr"
+    },
+    {
+      "pattern": "being",
+      "replace": "be",
+      "category": "conjugation_en"
+    },
+    {
+      "pattern": "doing",
+      "replace": "do",
+      "category": "conjugation_en"
+    },
+    {
+      "pattern": "going",
+      "replace": "go",
+      "category": "conjugation_en"
+    },
+    {
+      "pattern": "makes",
+      "replace": "make",
+      "category": "conjugation_en"
+    },
+    {
+      "pattern": "knows",
+      "replace": "know",
+      "category": "conjugation_en"
+    },
+    {
+      "pattern": "known",
+      "replace": "know",
+      "category": "conjugation_en"
+    },
+    {
+      "pattern": "takes",
+      "replace": "take",
+      "category": "conjugation_en"
+    },
+    {
+      "pattern": "taken",
+      "replace": "take",
+      "category": "conjugation_en"
+    },
+    {
+      "pattern": "comes",
+      "replace": "come",
+      "category": "conjugation_en"
+    },
+    {
+      "pattern": "wants",
+      "replace": "want",
+      "category": "conjugation_en"
+    },
+    {
+      "pattern": "using",
+      "replace": "use",
+      "category": "conjugation_en"
+    },
+    {
+      "pattern": "finds",
+      "replace": "find",
+      "category": "conjugation_en"
+    },
+    {
+      "pattern": "found",
+      "replace": "find",
+      "category": "conjugation_en"
+    },
+    {
+      "pattern": "gives",
+      "replace": "give",
+      "category": "conjugation_en"
+    },
+    {
+      "pattern": "given",
+      "replace": "give",
+      "category": "conjugation_en"
+    },
+    {
+      "pattern": "tells",
+      "replace": "tell",
+      "category": "conjugation_en"
+    },
+    {
+      "pattern": "works",
+      "replace": "work",
+      "category": "conjugation_en"
+    },
+    {
+      "pattern": "calls",
+      "replace": "call",
+      "category": "conjugation_en"
+    },
+    {
+      "pattern": "tries",
+      "replace": "try",
+      "category": "conjugation_en"
+    },
+    {
+      "pattern": "tried",
+      "replace": "try",
+      "category": "conjugation_en"
+    },
+    {
+      "pattern": "asked",
+      "replace": "ask",
+      "category": "conjugation_en"
+    },
+    {
+      "pattern": "needs",
+      "replace": "need",
+      "category": "conjugation_en"
+    },
+    {
+      "pattern": "feels",
+      "replace": "feel",
+      "category": "conjugation_en"
+    },
+    {
+      "pattern": "means",
+      "replace": "mean",
+      "category": "conjugation_en"
+    },
+    {
+      "pattern": "meant",
+      "replace": "mean",
+      "category": "conjugation_en"
+    },
+    {
+      "pattern": "keeps",
+      "replace": "keep",
+      "category": "conjugation_en"
+    },
+    {
+      "pattern": "began",
+      "replace": "begin",
+      "category": "conjugation_en"
+    },
+    {
+      "pattern": "begun",
+      "replace": "begin",
+      "category": "conjugation_en"
+    },
+    {
+      "pattern": "seems",
+      "replace": "seem",
+      "category": "conjugation_en"
+    },
+    {
+      "pattern": "helps",
+      "replace": "help",
+      "category": "conjugation_en"
+    },
+    {
+      "pattern": "shows",
+      "replace": "show",
+      "category": "conjugation_en"
+    },
+    {
+      "pattern": "shown",
+      "replace": "show",
+      "category": "conjugation_en"
+    },
+    {
+      "pattern": "hears",
+      "replace": "hear",
+      "category": "conjugation_en"
+    },
+    {
+      "pattern": "heard",
+      "replace": "hear",
+      "category": "conjugation_en"
+    },
+    {
+      "pattern": "plays",
+      "replace": "play",
+      "category": "conjugation_en"
+    },
+    {
+      "pattern": "moves",
+      "replace": "move",
+      "category": "conjugation_en"
+    },
+    {
+      "pattern": "moved",
+      "replace": "move",
+      "category": "conjugation_en"
+    },
+    {
+      "pattern": "lives",
+      "replace": "live",
+      "category": "conjugation_en"
+    },
+    {
+      "pattern": "lived",
+      "replace": "live",
+      "category": "conjugation_en"
+    },
+    {
+      "pattern": "wrote",
+      "replace": "write",
+      "category": "conjugation_en"
+    },
+    {
+      "pattern": "stood",
+      "replace": "stand",
+      "category": "conjugation_en"
+    },
+    {
+      "pattern": "loses",
+      "replace": "lose",
+      "category": "conjugation_en"
+    },
+    {
+      "pattern": "meets",
+      "replace": "meet",
+      "category": "conjugation_en"
+    },
+    {
+      "pattern": "leads",
+      "replace": "lead",
+      "category": "conjugation_en"
+    },
+    {
+      "pattern": "stops",
+      "replace": "stop",
+      "category": "conjugation_en"
+    },
+    {
+      "pattern": "spoke",
+      "replace": "speak",
+      "category": "conjugation_en"
+    },
+    {
+      "pattern": "reads",
+      "replace": "read",
+      "category": "conjugation_en"
+    },
+    {
+      "pattern": "added",
+      "replace": "add",
+      "category": "conjugation_en"
+    },
+    {
+      "pattern": "spent",
+      "replace": "spend",
+      "category": "conjugation_en"
+    },
+    {
+      "pattern": "grows",
+      "replace": "grow",
+      "category": "conjugation_en"
+    },
+    {
+      "pattern": "grown",
+      "replace": "grow",
+      "category": "conjugation_en"
+    },
+    {
+      "pattern": "opens",
+      "replace": "open",
+      "category": "conjugation_en"
+    },
+    {
+      "pattern": "walks",
+      "replace": "walk",
+      "category": "conjugation_en"
+    },
+    {
+      "pattern": "loves",
+      "replace": "love",
+      "category": "conjugation_en"
+    },
+    {
+      "pattern": "loved",
+      "replace": "love",
+      "category": "conjugation_en"
+    },
+    {
+      "pattern": "waits",
+      "replace": "wait",
+      "category": "conjugation_en"
+    },
+    {
+      "pattern": "dying",
+      "replace": "die",
+      "category": "conjugation_en"
+    },
+    {
+      "pattern": "sends",
+      "replace": "send",
+      "category": "conjugation_en"
+    },
+    {
+      "pattern": "built",
+      "replace": "build",
+      "category": "conjugation_en"
+    },
+    {
+      "pattern": "stays",
+      "replace": "stay",
+      "category": "conjugation_en"
+    },
+    {
+      "pattern": "falls",
+      "replace": "fall",
+      "category": "conjugation_en"
+    },
+    {
+      "pattern": "kills",
+      "replace": "kill",
+      "category": "conjugation_en"
+    },
+    {
+      "pattern": "émaux",
+      "replace": "émail",
+      "category": "plurals_fr"
+    },
+    {
+      "pattern": "cieux",
+      "replace": "ciel",
+      "category": "plurals_fr"
+    },
+    {
+      "pattern": "teeth",
+      "replace": "tooth",
+      "category": "plurals_en"
+    },
+    {
+      "pattern": "women",
+      "replace": "woman",
+      "category": "plurals_en"
+    },
+    {
+      "pattern": "geese",
+      "replace": "goose",
+      "category": "plurals_en"
+    },
+    {
+      "pattern": "sheep",
+      "replace": "sheep",
+      "category": "plurals_en"
+    },
+    {
+      "pattern": "moose",
+      "replace": "moose",
+      "category": "plurals_en"
+    },
+    {
+      "pattern": "craft",
+      "replace": "craft",
+      "category": "plurals_en"
+    },
+    {
+      "pattern": "acces",
+      "replace": "accès",
+      "category": "typos_fr"
+    },
+    {
+      "pattern": "heros",
+      "replace": "heroes",
+      "category": "typos_en"
+    },
+    {
+      "pattern": "peice",
+      "replace": "piece",
+      "category": "typos_en"
+    },
+    {
+      "pattern": "realy",
+      "replace": "really",
+      "category": "typos_en"
+    },
+    {
+      "pattern": "rythm",
+      "replace": "rhythm",
+      "category": "typos_en"
+    },
+    {
+      "pattern": "seize",
+      "replace": "seize",
+      "category": "typos_en"
+    },
+    {
+      "pattern": "nuage",
+      "replace": "cloud",
+      "category": "tech_synonyms"
+    },
+    {
+      "pattern": "azure",
+      "replace": "microsoft azure",
+      "category": "tech_synonyms"
+    },
+    {
+      "pattern": "https",
+      "replace": "hypertext transfer protocol secure",
+      "category": "tech_synonyms"
+    },
+    {
+      "pattern": "admin",
+      "replace": "administrator",
+      "category": "tech_synonyms"
+    },
+    {
+      "pattern": "oauth",
+      "replace": "open authorization",
+      "category": "tech_synonyms"
+    },
+    {
+      "pattern": "owasp",
+      "replace": "open web application security project",
+      "category": "tech_synonyms"
+    },
+    {
+      "pattern": "nosql",
+      "replace": "not only sql",
+      "category": "tech_synonyms"
+    },
+    {
+      "pattern": "http2",
+      "replace": "hypertext transfer protocol 2",
+      "category": "tech_synonyms"
+    },
+    {
+      "pattern": "http3",
+      "replace": "hypertext transfer protocol 3",
+      "category": "tech_synonyms"
+    },
+    {
+      "pattern": "regex",
+      "replace": "regular expression",
+      "category": "tech_synonyms"
+    },
+    {
+      "pattern": "ascii",
+      "replace": "american standard code for information interchange",
+      "category": "tech_synonyms"
+    },
+    {
+      "pattern": "utf16",
+      "replace": "unicode transformation format 16",
+      "category": "tech_synonyms"
+    },
+    {
+      "pattern": "utf32",
+      "replace": "unicode transformation format 32",
+      "category": "tech_synonyms"
+    },
+    {
+      "pattern": "trier",
+      "replace": "sort",
+      "category": "tech_synonyms"
+    },
+    {
+      "pattern": "merci",
+      "replace": "",
+      "category": "politeness_fr"
+    },
+    {
+      "pattern": "juste",
+      "replace": "",
+      "category": "filler_fr"
+    },
+    {
+      "pattern": "alors",
+      "replace": "",
+      "category": "filler_fr"
+    },
+    {
+      "pattern": "voila",
+      "replace": "",
+      "category": "filler_fr"
+    },
+    {
+      "pattern": "voilà",
+      "replace": "",
+      "category": "filler_fr"
+    },
+    {
+      "pattern": "comme",
+      "replace": "",
+      "category": "filler_fr"
+    },
+    {
+      "pattern": "suis",
+      "replace": "être",
+      "category": "conjugation_fr"
+    },
+    {
+      "pattern": "êtes",
+      "replace": "être",
+      "category": "conjugation_fr"
+    },
+    {
+      "pattern": "sont",
+      "replace": "être",
+      "category": "conjugation_fr"
+    },
+    {
+      "pattern": "sera",
+      "replace": "être",
+      "category": "conjugation_fr"
+    },
+    {
+      "pattern": "avez",
+      "replace": "avoir",
+      "category": "conjugation_fr"
+    },
+    {
+      "pattern": "aura",
+      "replace": "avoir",
+      "category": "conjugation_fr"
+    },
+    {
+      "pattern": "vais",
+      "replace": "aller",
+      "category": "conjugation_fr"
+    },
+    {
+      "pattern": "vont",
+      "replace": "aller",
+      "category": "conjugation_fr"
+    },
+    {
+      "pattern": "alla",
+      "replace": "aller",
+      "category": "conjugation_fr"
+    },
+    {
+      "pattern": "irai",
+      "replace": "aller",
+      "category": "conjugation_fr"
+    },
+    {
+      "pattern": "iras",
+      "replace": "aller",
+      "category": "conjugation_fr"
+    },
+    {
+      "pattern": "irez",
+      "replace": "aller",
+      "category": "conjugation_fr"
+    },
+    {
+      "pattern": "fais",
+      "replace": "faire",
+      "category": "conjugation_fr"
+    },
+    {
+      "pattern": "fait",
+      "replace": "faire",
+      "category": "conjugation_fr"
+    },
+    {
+      "pattern": "font",
+      "replace": "faire",
+      "category": "conjugation_fr"
+    },
+    {
+      "pattern": "fera",
+      "replace": "faire",
+      "category": "conjugation_fr"
+    },
+    {
+      "pattern": "dira",
+      "replace": "dire",
+      "category": "conjugation_fr"
+    },
+    {
+      "pattern": "peux",
+      "replace": "pouvoir",
+      "category": "conjugation_fr"
+    },
+    {
+      "pattern": "peut",
+      "replace": "pouvoir",
+      "category": "conjugation_fr"
+    },
+    {
+      "pattern": "veux",
+      "replace": "vouloir",
+      "category": "conjugation_fr"
+    },
+    {
+      "pattern": "veut",
+      "replace": "vouloir",
+      "category": "conjugation_fr"
+    },
+    {
+      "pattern": "vois",
+      "replace": "voir",
+      "category": "conjugation_fr"
+    },
+    {
+      "pattern": "voit",
+      "replace": "voir",
+      "category": "conjugation_fr"
+    },
+    {
+      "pattern": "sais",
+      "replace": "savoir",
+      "category": "conjugation_fr"
+    },
+    {
+      "pattern": "sait",
+      "replace": "savoir",
+      "category": "conjugation_fr"
+    },
+    {
+      "pattern": "dois",
+      "replace": "devoir",
+      "category": "conjugation_fr"
+    },
+    {
+      "pattern": "doit",
+      "replace": "devoir",
+      "category": "conjugation_fr"
+    },
+    {
+      "pattern": "pris",
+      "replace": "prendre",
+      "category": "conjugation_fr"
+    },
+    {
+      "pattern": "prit",
+      "replace": "prendre",
+      "category": "conjugation_fr"
+    },
+    {
+      "pattern": "vins",
+      "replace": "venir",
+      "category": "conjugation_fr"
+    },
+    {
+      "pattern": "vint",
+      "replace": "venir",
+      "category": "conjugation_fr"
+    },
+    {
+      "pattern": "mets",
+      "replace": "mettre",
+      "category": "conjugation_fr"
+    },
+    {
+      "pattern": "pars",
+      "replace": "partir",
+      "category": "conjugation_fr"
+    },
+    {
+      "pattern": "part",
+      "replace": "partir",
+      "category": "conjugation_fr"
+    },
+    {
+      "pattern": "were",
+      "replace": "be",
+      "category": "conjugation_en"
+    },
+    {
+      "pattern": "been",
+      "replace": "be",
+      "category": "conjugation_en"
+    },
+    {
+      "pattern": "does",
+      "replace": "do",
+      "category": "conjugation_en"
+    },
+    {
+      "pattern": "done",
+      "replace": "do",
+      "category": "conjugation_en"
+    },
+    {
+      "pattern": "goes",
+      "replace": "go",
+      "category": "conjugation_en"
+    },
+    {
+      "pattern": "went",
+      "replace": "go",
+      "category": "conjugation_en"
+    },
+    {
+      "pattern": "gone",
+      "replace": "go",
+      "category": "conjugation_en"
+    },
+    {
+      "pattern": "says",
+      "replace": "say",
+      "category": "conjugation_en"
+    },
+    {
+      "pattern": "said",
+      "replace": "say",
+      "category": "conjugation_en"
+    },
+    {
+      "pattern": "gets",
+      "replace": "get",
+      "category": "conjugation_en"
+    },
+    {
+      "pattern": "made",
+      "replace": "make",
+      "category": "conjugation_en"
+    },
+    {
+      "pattern": "knew",
+      "replace": "know",
+      "category": "conjugation_en"
+    },
+    {
+      "pattern": "took",
+      "replace": "take",
+      "category": "conjugation_en"
+    },
+    {
+      "pattern": "sees",
+      "replace": "see",
+      "category": "conjugation_en"
+    },
+    {
+      "pattern": "seen",
+      "replace": "see",
+      "category": "conjugation_en"
+    },
+    {
+      "pattern": "came",
+      "replace": "come",
+      "category": "conjugation_en"
+    },
+    {
+      "pattern": "uses",
+      "replace": "use",
+      "category": "conjugation_en"
+    },
+    {
+      "pattern": "used",
+      "replace": "use",
+      "category": "conjugation_en"
+    },
+    {
+      "pattern": "gave",
+      "replace": "give",
+      "category": "conjugation_en"
+    },
+    {
+      "pattern": "told",
+      "replace": "tell",
+      "category": "conjugation_en"
+    },
+    {
+      "pattern": "asks",
+      "replace": "ask",
+      "category": "conjugation_en"
+    },
+    {
+      "pattern": "felt",
+      "replace": "feel",
+      "category": "conjugation_en"
+    },
+    {
+      "pattern": "left",
+      "replace": "leave",
+      "category": "conjugation_en"
+    },
+    {
+      "pattern": "puts",
+      "replace": "put",
+      "category": "conjugation_en"
+    },
+    {
+      "pattern": "kept",
+      "replace": "keep",
+      "category": "conjugation_en"
+    },
+    {
+      "pattern": "lets",
+      "replace": "let",
+      "category": "conjugation_en"
+    },
+    {
+      "pattern": "runs",
+      "replace": "run",
+      "category": "conjugation_en"
+    },
+    {
+      "pattern": "sits",
+      "replace": "sit",
+      "category": "conjugation_en"
+    },
+    {
+      "pattern": "lost",
+      "replace": "lose",
+      "category": "conjugation_en"
+    },
+    {
+      "pattern": "pays",
+      "replace": "pay",
+      "category": "conjugation_en"
+    },
+    {
+      "pattern": "paid",
+      "replace": "pay",
+      "category": "conjugation_en"
+    },
+    {
+      "pattern": "sets",
+      "replace": "set",
+      "category": "conjugation_en"
+    },
+    {
+      "pattern": "adds",
+      "replace": "add",
+      "category": "conjugation_en"
+    },
+    {
+      "pattern": "grew",
+      "replace": "grow",
+      "category": "conjugation_en"
+    },
+    {
+      "pattern": "wins",
+      "replace": "win",
+      "category": "conjugation_en"
+    },
+    {
+      "pattern": "buys",
+      "replace": "buy",
+      "category": "conjugation_en"
+    },
+    {
+      "pattern": "dies",
+      "replace": "die",
+      "category": "conjugation_en"
+    },
+    {
+      "pattern": "died",
+      "replace": "die",
+      "category": "conjugation_en"
+    },
+    {
+      "pattern": "sent",
+      "replace": "send",
+      "category": "conjugation_en"
+    },
+    {
+      "pattern": "fell",
+      "replace": "fall",
+      "category": "conjugation_en"
+    },
+    {
+      "pattern": "cuts",
+      "replace": "cut",
+      "category": "conjugation_en"
+    },
+    {
+      "pattern": "baux",
+      "replace": "bail",
+      "category": "plurals_fr"
+    },
+    {
+      "pattern": "yeux",
+      "replace": "oeil",
+      "category": "plurals_fr"
+    },
+    {
+      "pattern": "mice",
+      "replace": "mouse",
+      "category": "plurals_en"
+    },
+    {
+      "pattern": "feet",
+      "replace": "foot",
+      "category": "plurals_en"
+    },
+    {
+      "pattern": "oxen",
+      "replace": "ox",
+      "category": "plurals_en"
+    },
+    {
+      "pattern": "lice",
+      "replace": "louse",
+      "category": "plurals_en"
+    },
+    {
+      "pattern": "fish",
+      "replace": "fish",
+      "category": "plurals_en"
+    },
+    {
+      "pattern": "deer",
+      "replace": "deer",
+      "category": "plurals_en"
+    },
+    {
+      "pattern": "alot",
+      "replace": "a lot",
+      "category": "typos_en"
+    },
+    {
+      "pattern": "wich",
+      "replace": "which",
+      "category": "typos_en"
+    },
+    {
+      "pattern": "iaas",
+      "replace": "infrastructure as a service",
+      "category": "tech_synonyms"
+    },
+    {
+      "pattern": "paas",
+      "replace": "platform as a service",
+      "category": "tech_synonyms"
+    },
+    {
+      "pattern": "saas",
+      "replace": "software as a service",
+      "category": "tech_synonyms"
+    },
+    {
+      "pattern": "dhcp",
+      "replace": "dynamic host configuration protocol",
+      "category": "tech_synonyms"
+    },
+    {
+      "pattern": "http",
+      "replace": "hypertext transfer protocol",
+      "category": "tech_synonyms"
+    },
+    {
+      "pattern": "sftp",
+      "replace": "secure file transfer protocol",
+      "category": "tech_synonyms"
+    },
+    {
+      "pattern": "siem",
+      "replace": "security information and event management",
+      "category": "tech_synonyms"
+    },
+    {
+      "pattern": "rest",
+      "replace": "representational state transfer",
+      "category": "tech_synonyms"
+    },
+    {
+      "pattern": "json",
+      "replace": "javascript object notation",
+      "category": "tech_synonyms"
+    },
+    {
+      "pattern": "html",
+      "replace": "hypertext markup language",
+      "category": "tech_synonyms"
+    },
+    {
+      "pattern": "cicd",
+      "replace": "continuous integration continuous delivery",
+      "category": "tech_synonyms"
+    },
+    {
+      "pattern": "ldap",
+      "replace": "lightweight directory access protocol",
+      "category": "tech_synonyms"
+    },
+    {
+      "pattern": "apps",
+      "replace": "applications",
+      "category": "tech_synonyms"
+    },
+    {
+      "pattern": "envs",
+      "replace": "environments",
+      "category": "tech_synonyms"
+    },
+    {
+      "pattern": "prod",
+      "replace": "production",
+      "category": "tech_synonyms"
+    },
+    {
+      "pattern": "test",
+      "replace": "testing",
+      "category": "tech_synonyms"
+    },
+    {
+      "pattern": "bios",
+      "replace": "basic input output system",
+      "category": "tech_synonyms"
+    },
+    {
+      "pattern": "uefi",
+      "replace": "unified extensible firmware interface",
+      "category": "tech_synonyms"
+    },
+    {
+      "pattern": "nvme",
+      "replace": "non-volatile memory express",
+      "category": "tech_synonyms"
+    },
+    {
+      "pattern": "hdmi",
+      "replace": "high-definition multimedia interface",
+      "category": "tech_synonyms"
+    },
+    {
+      "pattern": "wlan",
+      "replace": "wireless local area network",
+      "category": "tech_synonyms"
+    },
+    {
+      "pattern": "ssid",
+      "replace": "service set identifier",
+      "category": "tech_synonyms"
+    },
+    {
+      "pattern": "saml",
+      "replace": "security assertion markup language",
+      "category": "tech_synonyms"
+    },
+    {
+      "pattern": "rbac",
+      "replace": "role-based access control",
+      "category": "tech_synonyms"
+    },
+    {
+      "pattern": "cvss",
+      "replace": "common vulnerability scoring system",
+      "category": "tech_synonyms"
+    },
+    {
+      "pattern": "csrf",
+      "replace": "cross-site request forgery",
+      "category": "tech_synonyms"
+    },
+    {
+      "pattern": "crud",
+      "replace": "create read update delete",
+      "category": "tech_synonyms"
+    },
+    {
+      "pattern": "grpc",
+      "replace": "google remote procedure call",
+      "category": "tech_synonyms"
+    },
+    {
+      "pattern": "yaml",
+      "replace": "yaml ain't markup language",
+      "category": "tech_synonyms"
+    },
+    {
+      "pattern": "toml",
+      "replace": "tom's obvious minimal language",
+      "category": "tech_synonyms"
+    },
+    {
+      "pattern": "utf8",
+      "replace": "unicode transformation format 8",
+      "category": "tech_synonyms"
+    },
+    {
+      "pattern": "sha1",
+      "replace": "secure hash algorithm 1",
+      "category": "tech_synonyms"
+    },
+    {
+      "pattern": "ocsp",
+      "replace": "online certificate status protocol",
+      "category": "tech_synonyms"
+    },
+    {
+      "pattern": "bref",
+      "replace": "",
+      "category": "filler_fr"
+    },
+    {
+      "pattern": "bien",
+      "replace": "",
+      "category": "filler_fr"
+    },
+    {
+      "pattern": "donc",
+      "replace": "",
+      "category": "filler_fr"
+    },
+    {
+      "pattern": "just",
+      "replace": "",
+      "category": "filler_en"
+    },
+    {
+      "pattern": "well",
+      "replace": "",
+      "category": "filler_en"
+    },
+    {
+      "pattern": "look",
+      "replace": "",
+      "category": "filler_en"
+    },
+    {
+      "pattern": "okay",
+      "replace": "",
+      "category": "filler_en"
+    },
+    {
+      "pattern": "est",
+      "replace": "être",
+      "category": "conjugation_fr"
+    },
+    {
+      "pattern": "fus",
+      "replace": "être",
+      "category": "conjugation_fr"
+    },
+    {
+      "pattern": "fut",
+      "replace": "être",
+      "category": "conjugation_fr"
+    },
+    {
+      "pattern": "ont",
+      "replace": "avoir",
+      "category": "conjugation_fr"
+    },
+    {
+      "pattern": "eus",
+      "replace": "avoir",
+      "category": "conjugation_fr"
+    },
+    {
+      "pattern": "eut",
+      "replace": "avoir",
+      "category": "conjugation_fr"
+    },
+    {
+      "pattern": "vas",
+      "replace": "aller",
+      "category": "conjugation_fr"
+    },
+    {
+      "pattern": "ira",
+      "replace": "aller",
+      "category": "conjugation_fr"
+    },
+    {
+      "pattern": "fis",
+      "replace": "faire",
+      "category": "conjugation_fr"
+    },
+    {
+      "pattern": "fit",
+      "replace": "faire",
+      "category": "conjugation_fr"
+    },
+    {
+      "pattern": "dis",
+      "replace": "dire",
+      "category": "conjugation_fr"
+    },
+    {
+      "pattern": "dit",
+      "replace": "dire",
+      "category": "conjugation_fr"
+    },
+    {
+      "pattern": "dis",
+      "replace": "dire",
+      "category": "conjugation_fr"
+    },
+    {
+      "pattern": "dit",
+      "replace": "dire",
+      "category": "conjugation_fr"
+    },
+    {
+      "pattern": "pus",
+      "replace": "pouvoir",
+      "category": "conjugation_fr"
+    },
+    {
+      "pattern": "put",
+      "replace": "pouvoir",
+      "category": "conjugation_fr"
+    },
+    {
+      "pattern": "vis",
+      "replace": "voir",
+      "category": "conjugation_fr"
+    },
+    {
+      "pattern": "vit",
+      "replace": "voir",
+      "category": "conjugation_fr"
+    },
+    {
+      "pattern": "sus",
+      "replace": "savoir",
+      "category": "conjugation_fr"
+    },
+    {
+      "pattern": "sut",
+      "replace": "savoir",
+      "category": "conjugation_fr"
+    },
+    {
+      "pattern": "dus",
+      "replace": "devoir",
+      "category": "conjugation_fr"
+    },
+    {
+      "pattern": "dut",
+      "replace": "devoir",
+      "category": "conjugation_fr"
+    },
+    {
+      "pattern": "met",
+      "replace": "mettre",
+      "category": "conjugation_fr"
+    },
+    {
+      "pattern": "mis",
+      "replace": "mettre",
+      "category": "conjugation_fr"
+    },
+    {
+      "pattern": "mit",
+      "replace": "mettre",
+      "category": "conjugation_fr"
+    },
+    {
+      "pattern": "are",
+      "replace": "be",
+      "category": "conjugation_en"
+    },
+    {
+      "pattern": "was",
+      "replace": "be",
+      "category": "conjugation_en"
+    },
+    {
+      "pattern": "has",
+      "replace": "have",
+      "category": "conjugation_en"
+    },
+    {
+      "pattern": "had",
+      "replace": "have",
+      "category": "conjugation_en"
+    },
+    {
+      "pattern": "did",
+      "replace": "do",
+      "category": "conjugation_en"
+    },
+    {
+      "pattern": "got",
+      "replace": "get",
+      "category": "conjugation_en"
+    },
+    {
+      "pattern": "saw",
+      "replace": "see",
+      "category": "conjugation_en"
+    },
+    {
+      "pattern": "ran",
+      "replace": "run",
+      "category": "conjugation_en"
+    },
+    {
+      "pattern": "sat",
+      "replace": "sit",
+      "category": "conjugation_en"
+    },
+    {
+      "pattern": "met",
+      "replace": "meet",
+      "category": "conjugation_en"
+    },
+    {
+      "pattern": "led",
+      "replace": "lead",
+      "category": "conjugation_en"
+    },
+    {
+      "pattern": "won",
+      "replace": "win",
+      "category": "conjugation_en"
+    },
+    {
+      "pattern": "men",
+      "replace": "man",
+      "category": "plurals_en"
+    },
+    {
+      "pattern": "aws",
+      "replace": "amazon web services",
+      "category": "tech_synonyms"
+    },
+    {
+      "pattern": "gcp",
+      "replace": "google cloud platform",
+      "category": "tech_synonyms"
+    },
+    {
+      "pattern": "vms",
+      "replace": "virtual machines",
+      "category": "tech_synonyms"
+    },
+    {
+      "pattern": "k8s",
+      "replace": "kubernetes",
+      "category": "tech_synonyms"
+    },
+    {
+      "pattern": "vpn",
+      "replace": "virtual private network",
+      "category": "tech_synonyms"
+    },
+    {
+      "pattern": "dns",
+      "replace": "domain name system",
+      "category": "tech_synonyms"
+    },
+    {
+      "pattern": "ssh",
+      "replace": "secure shell",
+      "category": "tech_synonyms"
+    },
+    {
+      "pattern": "ftp",
+      "replace": "file transfer protocol",
+      "category": "tech_synonyms"
+    },
+    {
+      "pattern": "tcp",
+      "replace": "transmission control protocol",
+      "category": "tech_synonyms"
+    },
+    {
+      "pattern": "udp",
+      "replace": "user datagram protocol",
+      "category": "tech_synonyms"
+    },
+    {
+      "pattern": "ids",
+      "replace": "intrusion detection system",
+      "category": "tech_synonyms"
+    },
+    {
+      "pattern": "ips",
+      "replace": "intrusion prevention system",
+      "category": "tech_synonyms"
+    },
+    {
+      "pattern": "soc",
+      "replace": "security operations center",
+      "category": "tech_synonyms"
+    },
+    {
+      "pattern": "api",
+      "replace": "application programming interface",
+      "category": "tech_synonyms"
+    },
+    {
+      "pattern": "xml",
+      "replace": "extensible markup language",
+      "category": "tech_synonyms"
+    },
+    {
+      "pattern": "css",
+      "replace": "cascading style sheets",
+      "category": "tech_synonyms"
+    },
+    {
+      "pattern": "gpo",
+      "replace": "group policy object",
+      "category": "tech_synonyms"
+    },
+    {
+      "pattern": "app",
+      "replace": "application",
+      "category": "tech_synonyms"
+    },
+    {
+      "pattern": "dbs",
+      "replace": "databases",
+      "category": "tech_synonyms"
+    },
+    {
+      "pattern": "env",
+      "replace": "environment",
+      "category": "tech_synonyms"
+    },
+    {
+      "pattern": "dev",
+      "replace": "development",
+      "category": "tech_synonyms"
+    },
+    {
+      "pattern": "cpu",
+      "replace": "central processing unit",
+      "category": "tech_synonyms"
+    },
+    {
+      "pattern": "gpu",
+      "replace": "graphics processing unit",
+      "category": "tech_synonyms"
+    },
+    {
+      "pattern": "ram",
+      "replace": "random access memory",
+      "category": "tech_synonyms"
+    },
+    {
+      "pattern": "ssd",
+      "replace": "solid state drive",
+      "category": "tech_synonyms"
+    },
+    {
+      "pattern": "hdd",
+      "replace": "hard disk drive",
+      "category": "tech_synonyms"
+    },
+    {
+      "pattern": "usb",
+      "replace": "universal serial bus",
+      "category": "tech_synonyms"
+    },
+    {
+      "pattern": "vga",
+      "replace": "video graphics array",
+      "category": "tech_synonyms"
+    },
+    {
+      "pattern": "lan",
+      "replace": "local area network",
+      "category": "tech_synonyms"
+    },
+    {
+      "pattern": "wan",
+      "replace": "wide area network",
+      "category": "tech_synonyms"
+    },
+    {
+      "pattern": "mac",
+      "replace": "media access control",
+      "category": "tech_synonyms"
+    },
+    {
+      "pattern": "nat",
+      "replace": "network address translation",
+      "category": "tech_synonyms"
+    },
+    {
+      "pattern": "dmz",
+      "replace": "demilitarized zone",
+      "category": "tech_synonyms"
+    },
+    {
+      "pattern": "ssl",
+      "replace": "secure sockets layer",
+      "category": "tech_synonyms"
+    },
+    {
+      "pattern": "tls",
+      "replace": "transport layer security",
+      "category": "tech_synonyms"
+    },
+    {
+      "pattern": "jwt",
+      "replace": "json web token",
+      "category": "tech_synonyms"
+    },
+    {
+      "pattern": "mfa",
+      "replace": "multi-factor authentication",
+      "category": "tech_synonyms"
+    },
+    {
+      "pattern": "2fa",
+      "replace": "two-factor authentication",
+      "category": "tech_synonyms"
+    },
+    {
+      "pattern": "otp",
+      "replace": "one-time password",
+      "category": "tech_synonyms"
+    },
+    {
+      "pattern": "acl",
+      "replace": "access control list",
+      "category": "tech_synonyms"
+    },
+    {
+      "pattern": "cve",
+      "replace": "common vulnerabilities and exposures",
+      "category": "tech_synonyms"
+    },
+    {
+      "pattern": "xss",
+      "replace": "cross-site scripting",
+      "category": "tech_synonyms"
+    },
+    {
+      "pattern": "sql",
+      "replace": "structured query language",
+      "category": "tech_synonyms"
+    },
+    {
+      "pattern": "orm",
+      "replace": "object-relational mapping",
+      "category": "tech_synonyms"
+    },
+    {
+      "pattern": "cdn",
+      "replace": "content delivery network",
+      "category": "tech_synonyms"
+    },
+    {
+      "pattern": "url",
+      "replace": "uniform resource locator",
+      "category": "tech_synonyms"
+    },
+    {
+      "pattern": "uri",
+      "replace": "uniform resource identifier",
+      "category": "tech_synonyms"
+    },
+    {
+      "pattern": "urn",
+      "replace": "uniform resource name",
+      "category": "tech_synonyms"
+    },
+    {
+      "pattern": "ini",
+      "replace": "initialization",
+      "category": "tech_synonyms"
+    },
+    {
+      "pattern": "cfg",
+      "replace": "configuration",
+      "category": "tech_synonyms"
+    },
+    {
+      "pattern": "hex",
+      "replace": "hexadecimal",
+      "category": "tech_synonyms"
+    },
+    {
+      "pattern": "md5",
+      "replace": "message digest 5",
+      "category": "tech_synonyms"
+    },
+    {
+      "pattern": "aes",
+      "replace": "advanced encryption standard",
+      "category": "tech_synonyms"
+    },
+    {
+      "pattern": "rsa",
+      "replace": "rivest shamir adleman",
+      "category": "tech_synonyms"
+    },
+    {
+      "pattern": "ecc",
+      "replace": "elliptic curve cryptography",
+      "category": "tech_synonyms"
+    },
+    {
+      "pattern": "pki",
+      "replace": "public key infrastructure",
+      "category": "tech_synonyms"
+    },
+    {
+      "pattern": "crl",
+      "replace": "certificate revocation list",
+      "category": "tech_synonyms"
+    },
+    {
+      "pattern": "csr",
+      "replace": "certificate signing request",
+      "category": "tech_synonyms"
+    },
+    {
+      "pattern": "pem",
+      "replace": "privacy-enhanced mail",
+      "category": "tech_synonyms"
+    },
+    {
+      "pattern": "der",
+      "replace": "distinguished encoding rules",
+      "category": "tech_synonyms"
+    },
+    {
+      "pattern": "p12",
+      "replace": "pkcs12",
+      "category": "tech_synonyms"
+    },
+    {
+      "pattern": "pfx",
+      "replace": "personal information exchange",
+      "category": "tech_synonyms"
+    },
+    {
+      "pattern": "jks",
+      "replace": "java keystore",
+      "category": "tech_synonyms"
+    },
+    {
+      "pattern": "hsm",
+      "replace": "hardware security module",
+      "category": "tech_synonyms"
+    },
+    {
+      "pattern": "kms",
+      "replace": "key management service",
+      "category": "tech_synonyms"
+    },
+    {
+      "pattern": "stp",
+      "replace": "",
+      "category": "politeness_fr"
+    },
+    {
+      "pattern": "svp",
+      "replace": "",
+      "category": "politeness_fr"
+    },
+    {
+      "pattern": "bon",
+      "replace": "",
+      "category": "filler_fr"
+    },
+    {
+      "pattern": "vm",
+      "replace": "virtual machine",
+      "category": "tech_synonyms"
+    },
+    {
+      "pattern": "ip",
+      "replace": "ip address",
+      "category": "tech_synonyms"
+    },
+    {
+      "pattern": "ci",
+      "replace": "continuous integration",
+      "category": "tech_synonyms"
+    },
+    {
+      "pattern": "ad",
+      "replace": "active directory",
+      "category": "tech_synonyms"
+    },
+    {
+      "pattern": "db",
+      "replace": "database",
+      "category": "tech_synonyms"
+    },
+    {
+      "pattern": "qa",
+      "replace": "quality assurance",
+      "category": "tech_synonyms"
+    },
+    {
+      "pattern": "ui",
+      "replace": "user interface",
+      "category": "tech_synonyms"
+    },
+    {
+      "pattern": "ux",
+      "replace": "user experience",
+      "category": "tech_synonyms"
+    },
+    {
+      "pattern": "os",
+      "replace": "operating system",
+      "category": "tech_synonyms"
+    },
+    {
+      "pattern": "hw",
+      "replace": "hardware",
+      "category": "tech_synonyms"
+    },
+    {
+      "pattern": "sw",
+      "replace": "software",
+      "category": "tech_synonyms"
+    },
+    {
+      "pattern": "fw",
+      "replace": "firmware",
+      "category": "tech_synonyms"
+    },
+    {
+      "pattern": "ca",
+      "replace": "certificate authority",
+      "category": "tech_synonyms"
+    },
+    {
+      "pattern": "ok",
+      "replace": "",
+      "category": "filler_en"
+    },
+    {
+      "pattern": "zero",
+      "replace": "0",
+      "category": "num_words"
+    },
+    {
+      "pattern": "one",
+      "replace": "1",
+      "category": "num_words"
+    },
+    {
+      "pattern": "two",
+      "replace": "2",
+      "category": "num_words"
+    },
+    {
+      "pattern": "three",
+      "replace": "3",
+      "category": "num_words"
+    },
+    {
+      "pattern": "four",
+      "replace": "4",
+      "category": "num_words"
+    },
+    {
+      "pattern": "five",
+      "replace": "5",
+      "category": "num_words"
+    },
+    {
+      "pattern": "six",
+      "replace": "6",
+      "category": "num_words"
+    },
+    {
+      "pattern": "seven",
+      "replace": "7",
+      "category": "num_words"
+    },
+    {
+      "pattern": "eight",
+      "replace": "8",
+      "category": "num_words"
+    },
+    {
+      "pattern": "nine",
+      "replace": "9",
+      "category": "num_words"
+    },
+    {
+      "pattern": "ten",
+      "replace": "10",
+      "category": "num_words"
+    }
+  ]
+}

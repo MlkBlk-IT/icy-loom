@@ -1,0 +1,25 @@
+# Text files are stored with LF in the repository, whatever the platform.
+* text=auto eol=lf
+
+# The console, the config and the Python sources are UTF-8.
+*.py text eol=lf
+*.html text eol=lf
+*.css text eol=lf
+*.js text eol=lf
+*.json text eol=lf
+*.yaml text eol=lf
+*.yml text eol=lf
+*.toml text eol=lf
+*.md text eol=lf
+*.svg text eol=lf
+
+# Binaries.
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.ico binary
+*.db binary
+*.db-wal binary
+*.db-shm binary
+*.pdf binary

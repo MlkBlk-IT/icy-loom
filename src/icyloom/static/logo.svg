@@ -1,0 +1,68 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512" role="img" aria-label="IcyLoom">
+  <title>IcyLoom</title>
+  <desc>Hand-drawn mark: a flame rising through the warp threads of a loom, drawn in ink on warm paper.</desc>
+
+  <defs>
+    <pattern id="paper" width="32" height="32" patternUnits="userSpaceOnUse">
+      <circle cx="6" cy="7" r="1.7" fill="#E8D5B8" opacity="0.6"/>
+      <circle cx="24" cy="19" r="1.4" fill="#E8D5B8" opacity="0.45"/>
+    </pattern>
+    <pattern id="hatch" width="9" height="9" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
+      <line x1="0" y1="0" x2="0" y2="9" stroke="#FF5A36" stroke-width="2.1" stroke-linecap="round"/>
+    </pattern>
+  </defs>
+
+  <!-- paper -->
+  <rect width="512" height="512" rx="26" fill="#FDF3E3"/>
+  <rect width="512" height="512" rx="26" fill="url(#paper)"/>
+
+  <!-- frame : two sketch passes -->
+  <path d="M74 66 C180 57 332 73 438 63 C447 152 435 300 443 449 C330 458 188 447 69 455 C63 332 75 168 69 69 Z"
+        fill="none" stroke="#46231A" stroke-width="11" stroke-linejoin="round" stroke-linecap="round"/>
+  <path d="M79 71 C185 62 328 78 433 69 C441 158 430 296 437 444 C326 452 192 442 74 449 C69 328 80 172 74 74 Z"
+        fill="none" stroke="#46231A" stroke-width="4" stroke-linejoin="round" stroke-linecap="round" opacity="0.35"/>
+
+  <!-- warp threads : the loom, behind the flame -->
+  <g fill="none" stroke="#0FB5A6" stroke-width="5" stroke-linecap="round">
+    <path d="M150 88 C168 132 136 176 154 220 C170 258 138 302 156 344 C168 374 148 398 152 424"/>
+    <path d="M200 86 C216 132 186 174 202 220 C216 258 186 300 202 342 C214 372 196 398 200 426"/>
+    <path d="M312 86 C296 132 326 174 310 220 C296 258 326 300 310 342 C298 372 316 398 312 426"/>
+    <path d="M362 88 C344 132 376 176 358 220 C342 258 372 302 356 344 C344 374 364 398 360 424"/>
+  </g>
+
+  <!-- flame : outer body -->
+  <path d="M256 88 C288 140 308 168 308 208 C308 234 297 254 284 270
+           C302 262 318 276 323 296 C332 332 304 372 256 372
+           C204 372 178 328 184 286 C188 258 207 240 226 219
+           C243 200 250 148 256 88 Z"
+        fill="url(#hatch)" stroke="#46231A" stroke-width="9" stroke-linejoin="round" stroke-linecap="round"/>
+  <!-- flame : second sketch pass -->
+  <path d="M256 100 C282 146 300 172 300 208 C300 232 290 252 278 268
+           C294 262 308 276 312 294 C320 326 296 360 256 360
+           C210 360 190 322 194 286 C198 262 214 244 232 224
+           C246 206 250 154 256 100 Z"
+        fill="none" stroke="#46231A" stroke-width="3.4" stroke-linejoin="round" stroke-linecap="round" opacity="0.4"/>
+  <!-- flame : core -->
+  <path d="M257 182 C277 212 282 232 273 251 C267 263 254 271 250 285
+           C246 302 257 320 271 320 C288 320 298 305 296 288
+           C304 303 302 326 289 340 C275 356 248 354 238 335
+           C228 315 240 296 251 282 C260 270 262 236 257 182 Z"
+        fill="#FFC93E" stroke="#46231A" stroke-width="6" stroke-linejoin="round" stroke-linecap="round"/>
+
+  <!-- weft threads : in front, the loom weaves -->
+  <g fill="none" stroke="#9B1B4F" stroke-width="6" stroke-linecap="round">
+    <path d="M124 196 C186 184 236 204 296 194 C330 188 352 198 388 190"/>
+    <path d="M124 332 C184 346 232 326 292 336 C330 342 352 330 388 338"/>
+  </g>
+
+  <!-- doodles : sparks -->
+  <g fill="none" stroke="#FF5A36" stroke-width="6" stroke-linecap="round">
+    <path d="M104 258 L84 246 M112 232 L96 214 M92 292 L70 294"/>
+  </g>
+  <path d="M406 246 L418 228 M414 262 L434 254 M396 230 L400 208"
+        fill="none" stroke="#FFC93E" stroke-width="6" stroke-linecap="round"/>
+
+  <!-- ink splatter sticker -->
+  <circle cx="420" cy="404" r="9" fill="#FF5A36" stroke="#46231A" stroke-width="5"/>
+  <circle cx="104" cy="150" r="6" fill="#22B784" stroke="#46231A" stroke-width="4"/>
+</svg>

@@ -1,0 +1,56 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "icyloom"
+version = "1.0.0"
+description = "Passerelle locale unifiee : cache LLM + tiroir de contexte compresse, en un seul serveur MCP"
+readme = "README.md"
+requires-python = ">=3.11,<3.14"
+license = { text = "MIT" }
+authors = [{ name = "IcyLoom" }]
+keywords = ["mcp", "cache", "llm", "proxy", "context"]
+classifiers = [
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Intended Audience :: Developers",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+]
+dependencies = [
+    "mcp>=1.2,<2",
+    "fastapi>=0.115,<1",
+    "uvicorn>=0.30",
+    "httpx>=0.27,<1",
+    "sse-starlette>=2.1",
+    "websockets>=12.0",
+    "pydantic>=2.9",
+    "pyyaml>=6.0",
+    "pyahocorasick>=2.1",
+    "tiktoken>=0.7",
+]
+
+[project.optional-dependencies]
+dev = ["pytest>=8", "pytest-asyncio>=0.23"]
+qdrant = ["qdrant-client>=1.9"]
+vector = ["numpy>=1.24", "faiss-cpu>=1.7"]
+
+[project.scripts]
+icyloom = "icyloom.cli:main"
+
+
+[tool.setuptools]
+package-dir = { "" = "src" }
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-data]
+icyloom = ["py.typed", "static/*.html", "static/*.svg"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-q"
+markers = ["timeout: limite de temps pour les tests réseau"]
+filterwarnings = ["ignore::DeprecationWarning"]
