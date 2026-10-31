@@ -41,7 +41,9 @@ def _cmd_version(args: argparse.Namespace) -> int:
 def _cmd_paths(args: argparse.Namespace) -> int:
     info = {
         "project_root": str(paths.project_root()),
+        "checkout": paths.is_checkout(),
         "config_file": str(paths.config_path()),
+        "user_data_dir": str(paths.user_data_dir()),
         "data_dir": str(paths.data_dir()),
         "runtime_dir": str(paths.runtime_dir()),
         "normalization_rules": str(paths.data_file("normalization_rules.json")),
@@ -73,7 +75,7 @@ def _cmd_config_get(args: argparse.Namespace) -> int:
 
 
 def _cmd_init(args: argparse.Namespace) -> int:
-    target = Path(args.path) if args.path else paths.project_root() / paths.CONFIG_FILENAME
+    target = Path(args.path) if args.path else paths.config_path()
     try:
         write_default_config(target, force=args.force)
     except FileExistsError as exc:
@@ -85,6 +87,7 @@ def _cmd_init(args: argparse.Namespace) -> int:
 
 def _cmd_doctor(args: argparse.Namespace) -> int:
     problems: list[str] = []
+    warnings: list[str] = []
     print("== IcyLoom doctor ==")
     print(f"version               : {__version__}")
     print(f"python                : {platform.python_version()} ({sys.executable})")
@@ -151,6 +154,9 @@ def _cmd_doctor(args: argparse.Namespace) -> int:
               f"profil={cfg.compression.profile}")
         print(f"cache sémantique       : {'actif' if cfg.cache.semantic_enabled else 'inactif (opt-in)'}")
         print(f"upstreams configurés  : {len(cfg.upstreams)}")
+        if not cfg.upstreams:
+            warnings.append("aucun upstream déclaré : le relais LLM sera inactif "
+                            "(c'est le fonctionnement normal d'une installation neuve)")
         import httpx
         for upstream in cfg.upstreams:
             if not upstream.enabled:
@@ -161,24 +167,29 @@ def _cmd_doctor(args: argparse.Namespace) -> int:
                 response = httpx.get(probe_url, timeout=2.5)
                 print(f"upstream {upstream.name:<16}: HTTP {response.status_code}")
                 if response.status_code >= 500:
-                    problems.append(f"upstream inaccessible : {upstream.name} ({response.status_code})")
+                    warnings.append(f"upstream inaccessible : {upstream.name} ({response.status_code})")
             except httpx.HTTPError as exc:
                 print(f"upstream {upstream.name:<16}: INACCESSIBLE ({type(exc).__name__})")
-                problems.append(f"upstream inaccessible : {upstream.name} ({type(exc).__name__})")
+                warnings.append(f"upstream inaccessible : {upstream.name} ({type(exc).__name__})")
         print(f"serveurs d'outils      : {len(cfg.tool_proxy.servers)}")
         for server in cfg.tool_proxy.servers:
             executable = shutil.which(server.command)
             print(f"outil {server.name:<19}: {executable or 'ABSENT'}")
             if executable is None:
-                problems.append(f"executable absent : {server.command} ({server.name})")
+                warnings.append(f"executable absent : {server.command} ({server.name})")
         for label, port in (("gateway", cfg.ports.gateway_http), ("mcp-http", cfg.ports.mcp_http),
                             ("mcp-sse", cfg.ports.mcp_sse), ("admin", cfg.ports.admin)):
             free = _port_free(cfg.server.host, port)
             print(f"port {label:<17}: {port} {'libre' if free else 'OCCUPÉ'}")
             if not free:
-                problems.append(f"port occupé : {port} ({label})")
+                warnings.append(f"port occupé : {port} ({label}) — une instance tourne peut-être déjà")
 
     print()
+    if warnings:
+        print("AVERTISSEMENTS :")
+        for w in warnings:
+            print(f"  - {w}")
+        print()
     if problems:
         print("PROBLÈMES :")
         for p in problems:

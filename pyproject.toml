@@ -1,22 +1,29 @@
 [build-system]
-requires = ["setuptools>=68", "wheel"]
+requires = ["setuptools>=77", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
 name = "icyloom"
 version = "1.0.0"
-description = "Passerelle locale unifiee : cache LLM + tiroir de contexte compresse, en un seul serveur MCP"
+description = "Unified local gateway: LLM cache + compressed context drawer, in a single MCP server"
 readme = "README.md"
 requires-python = ">=3.11,<3.14"
-license = { text = "MIT" }
-authors = [{ name = "IcyLoom" }]
-keywords = ["mcp", "cache", "llm", "proxy", "context"]
+license = "MIT"
+license-files = ["LICENSE"]
+authors = [{ name = "Malik Belkacemi" }]
+keywords = ["mcp", "mcp-server", "cache", "llm", "proxy", "context", "local-first"]
 classifiers = [
+    "Development Status :: 4 - Beta",
+    "Environment :: Console",
+    "Intended Audience :: Developers",
+    "Operating System :: Microsoft :: Windows",
+    "Operating System :: POSIX :: Linux",
+    "Operating System :: MacOS :: MacOS X",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
     "Programming Language :: Python :: 3.13",
-    "Intended Audience :: Developers",
     "Topic :: Software Development :: Libraries :: Python Modules",
+    "Topic :: Internet :: Proxy Servers",
 ]
 dependencies = [
     "mcp>=1.2,<2",
@@ -30,6 +37,12 @@ dependencies = [
     "pyahocorasick>=2.1",
     "tiktoken>=0.7",
 ]
+
+[project.urls]
+Homepage = "https://github.com/MlkBlk-IT/icy-loom"
+Repository = "https://github.com/MlkBlk-IT/icy-loom"
+Issues = "https://github.com/MlkBlk-IT/icy-loom/issues"
+Changelog = "https://github.com/MlkBlk-IT/icy-loom/blob/main/CHANGELOG.md"
 
 [project.optional-dependencies]
 dev = ["pytest>=8", "pytest-asyncio>=0.23"]
@@ -47,7 +60,7 @@ package-dir = { "" = "src" }
 where = ["src"]
 
 [tool.setuptools.package-data]
-icyloom = ["py.typed", "static/*.html", "static/*.svg"]
+icyloom = ["py.typed", "static/*.html", "static/*.svg", "data/*.json"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

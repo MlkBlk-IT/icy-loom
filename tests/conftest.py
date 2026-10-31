@@ -14,8 +14,10 @@ from fake_upstream import FakeUpstream  # noqa: E402
 
 from icyloom.config import Config, DatabaseConfig, LedgerConfig, PortsConfig  # noqa: E402
 from icyloom.normalize import Canonicalizer  # noqa: E402
+from icyloom.paths import data_file  # noqa: E402
 
-RULES = Path(__file__).resolve().parents[1] / "data" / "normalization_rules.json"
+#: Fichier de règles de normalisation (embarqué dans le paquet).
+RULES = data_file("normalization_rules.json")
 
 #: Port du faux amont. Surchargeable pour que la suite puisse tourner
 #: pendant qu'une pile IcyLoom occupe 8154 (démo, développement) :

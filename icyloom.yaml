@@ -3,6 +3,11 @@
 # Tout le produit lit ce fichier : passerelle HTTP, serveur MCP, API admin,
 # base SQLite, journal économique. Aucun autre fichier de configuration.
 # Les chemins sont RELATIFS (résolus contre la racine du projet).
+#
+# Ce fichier est le DÉFAUT AUTONOME : il fonctionne sur n'importe quelle
+# machine, sans LM Studio, sans Node, sans uvx, sans clé d'API.
+# Les sections facultatives (upstreams LLM, serveurs d'outils MCP) sont
+# commentées : décommentez-les si vous en avez besoin.
 # =============================================================================
 
 server:
@@ -23,7 +28,7 @@ ports:
   admin: 8153           # API d'administration + métriques
 
 database:
-  path: icyloom.db      # relatif -> <projet>/var/
+  path: icyloom.db      # relatif -> <projet>/var/ (ou dossier utilisateur)
   journal_mode: WAL
   busy_timeout_ms: 5000
   synchronous: NORMAL
@@ -38,7 +43,7 @@ cache:
   semantic_collection: icyloom
 
 compression:
-  enabled: false        # jamais activée par défaut (critère économique)
+  enabled: false        # opt-in : jamais activée par défaut (critère économique)
   profile: strict       # strict = lossless ; balanced/aggressive = opt-in
   auto_store_threshold: 500
   max_anchor_chars: 6000
@@ -72,43 +77,28 @@ tool_proxy:
   max_result_bytes: 1048576
   connect_timeout_seconds: 20.0
   call_timeout_seconds: 300.0
-  servers:
-    - name: fetch
-      command: uvx
-      args: ["mcp-server-fetch@2026.10.10"]
-      cache_enabled: true
-      ttl_seconds: 3600
-      cache_tools:
-        fetch: true
-    - name: github
-      command: npx
-      args: ["-y", "@modelcontextprotocol/server-github"]
-      cache_enabled: true
-      ttl_seconds: 3600
-      cache_tools:
-        search_issues: true
-        search_code: true
-        search_repositories: true
-        get_issue: true
-        get_pull_request: true
-        get_file_contents: true
-        list_issues: true
-        list_pull_requests: true
+  # Serveurs d'outils descendants, appelables via le relais d'outils.
+  # Vide = aucun relais (comportement par défaut, aucune dépendance externe).
+  servers: []
+  # servers:
+  #   - name: fetch
+  #     command: uvx
+  #     args: ["mcp-server-fetch@2026.10.10"]
+  #     cache_enabled: true
+  #     ttl_seconds: 3600
+  #     cache_tools:
+  #       fetch: true
 
 # Upstreams LLM : routage par priorité (préfixe d'URL > en-tête > corps > défaut).
 # Aucun nom propre à un client particulier : uniquement base_url + clé d'env.
-upstreams:
-  - name: local
-    base_url: http://127.0.0.1:1234/v1
-    priority: 10
-    kind: openai
-    api_key_env: ""
-    timeout_seconds: 120.0
-    sticky: true
-  - name: cloud
-    base_url: http://127.0.0.1:20128/v1
-    priority: 50
-    kind: openai
-    api_key_env: OMNIROUTE_API_KEY
-    timeout_seconds: 120.0
-    enabled: true    # ViaRoma / OmniRoute local
+# Vide = relais LLM inactif (la base, le cache et le tiroir de contexte
+# fonctionnent sans aucun fournisseur).
+upstreams: []
+# upstreams:
+#   - name: local
+#     base_url: http://127.0.0.1:1234/v1   # LM Studio
+#     priority: 10
+#     kind: openai
+#     api_key_env: ""
+#     timeout_seconds: 120.0
+#     sticky: true
