@@ -145,7 +145,7 @@ def data_dir() -> Path:
     """Dossier des fichiers de données externalisés."""
     env = os.environ.get("ICYLOOM_DATA_DIR")
     if env:
-        return Path(env).expanduser().resolve()
+        return _seed_data(Path(env).expanduser().resolve() / PACKAGE_DATA_DIR)
     if is_checkout():
         return bundled_data_dir()
     return _seed_data(user_data_dir() / PACKAGE_DATA_DIR)
