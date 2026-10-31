@@ -19,7 +19,7 @@
 
 ---
 
-A local gateway that puts an **LLM cache**, a **compressed context drawer** and an **MCP tool relay** behind **one MCP server**, **one configuration file** and **one SQLite database**.
+A hybrid gateway for **local and cloud LLM workflows** that puts an **LLM cache**, a **compressed context drawer** and an **MCP tool relay** behind **one MCP server**, **one configuration file** and **one SQLite database**.
 
 IcyLoom is a **standalone** project: no imports, links or paths to any other project. The code is written from scratch; the only files taken from elsewhere are **data** (normalisation rules, a tool registry), because the cache hash depends on them.
 
@@ -30,7 +30,7 @@ IcyLoom is a **standalone** project: no imports, links or paths to any other pro
 | **Tool relay** | Downstream MCP servers, cached by canonical signature, **deny by default**. |
 | **Registry** | `v_token_ledger`: tokens **paid upstream** and tokens **avoided**, in one unit, one view. |
 | **Console** | A hand-drawn web console on `:8153` — side panel, live views, working buttons. |
-| **Privacy** | Binds `127.0.0.1`. Nothing leaves the machine. |
+| **Privacy** | Binds `127.0.0.1`. Local mode stays on-device; configured cloud upstreams receive only the traffic you route to them. |
 
 **The numbers are real.** A cache hit is counted as *avoided*, a miss is counted as *paid* with the upstream's own usage figures — never estimated. The 35 % threshold is read straight from the ledger.
 
@@ -40,8 +40,8 @@ IcyLoom is a **standalone** project: no imports, links or paths to any other pro
 
 ## Quick start
 
-Five minutes, on a clean machine. No GPU, no paid API, no LM Studio, no Node,
-no `uvx`.
+Five minutes, on a clean machine. No GPU is required, no provider lock-in is imposed,
+and no cloud account is needed for local mode. Route to local or cloud upstreams when configured.
 
 ### Linux / macOS
 
