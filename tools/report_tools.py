@@ -17,14 +17,18 @@ from __future__ import annotations
 import ast
 import hashlib
 import json
+import os
 import re
 import time
 from collections import Counter, defaultdict
 from pathlib import Path
 from typing import Any
 
-SESSION = Path(r"C:\Users\Tech\.minimax\v2\sessions\2026\10\26\05-11-49-074-"
-               r"session_bXZzXzFhYzZlZjg4YTExNzQzNjM5NzQ1MTIxZGYwZmY3NjI0")
+from icyloom.paths import data_file
+
+#: Journal de session à analyser : fourni par la variable d'environnement
+#: ``ICYLOOM_SESSION`` (jamais codé en dur — ce chemin est propre à une machine).
+SESSION = Path(os.environ.get("ICYLOOM_SESSION", "")) if os.environ.get("ICYLOOM_SESSION") else None
 REPORT = Path(__file__).resolve().parents[1] / "var" / "rapport-outils.md"
 
 
@@ -71,9 +75,8 @@ def _canon(value: Any, engine: Any) -> Any:
 def collect() -> dict[str, Any]:
     from icyloom.normalize import Canonicalizer
 
-    engine = Canonicalizer(rules_path=Path(__file__).resolve().parents[1]
-                            / "data" / "normalization_rules.json")
-    snapshots = sorted((SESSION / "snapshots").glob("g*.jsonl"))
+    engine = Canonicalizer(rules_path=data_file("normalization_rules.json"))
+    snapshots = sorted((SESSION / "snapshots").glob("g*.jsonl")) if SESSION else []
     messages: dict[str, dict[str, Any]] = {}
     order: list[str] = []
     for snapshot in snapshots:

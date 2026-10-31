@@ -97,7 +97,7 @@ DOCUMENTS: list[tuple[str, str]] = [
      "  admin: 8153\nversion: 3.12.10\nle 2026-10-26\n"),
     ("module.py",
      "def normalize(text: str) -> str:\n    return text.strip().lower()\n\n"
-     "# version 2.1.0 — chemin D:/Icy-Loom/src\n"),
+     "# version 2.1.0 — chemin /srv/icyloom/src\n"),
     ("nginx.log",
      "2026/10/26 10:00:01 [error] 502 upstream timed out : /v1/chat/completions\n"
      "2026/10/26 10:00:09 [warn] latency p95 = 1200 ms\n"),
@@ -105,7 +105,7 @@ DOCUMENTS: list[tuple[str, str]] = [
      '{"items": [{"id": 1, "name": "café", "prix": 3.5}], "total": 1}\n'),
     ("notes.md",
      "# Notes de conception\n\nLe service écoute sur le port 8151.\n"
-     "La base vit dans D:/Icy-Loom/var.\nVersion 3.12.10\n"),
+     "La base vit dans /srv/icyloom/var.\nVersion 3.12.10\n"),
     ("prose.txt",
      "Le tiroir de contexte range le contexte, les invariants sont conservés, "
      "la compression est stricte. 🚀 Le port 8153 sert la console.\n"),

@@ -1,13 +1,26 @@
-"""Diagnostic : écart entre le moteur courant et le cache historique."""
+"""Diagnostic : écart entre le moteur courant et un cache historique.
+
+Usage :
+    python tools/diag_norm.py <chemin/vers/cache.db>
+
+La base est lue en lecture seule. Sans argument, le script compare le moteur
+courant aux entrées du fichier de test de la suite.
+"""
 import sqlite3
 import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 from icyloom.normalize import Canonicalizer  # noqa: E402
+from icyloom.paths import data_file  # noqa: E402
 
-c = Canonicalizer(rules_path=Path(r"D:\ICY-LOOM\data\normalization_rules.json"))
-conn = sqlite3.connect("file:D:/IcyCache/db/cache.db?mode=ro", uri=True)
+c = Canonicalizer(rules_path=data_file("normalization_rules.json"))
+
+if len(sys.argv) < 2:
+    print("usage : python tools/diag_norm.py <chemin/vers/cache.db>")
+    raise SystemExit(2)
+
+conn = sqlite3.connect(f"file:{sys.argv[1]}?mode=ro", uri=True)
 rows = conn.execute(
     "SELECT original_prompt, normalized_prompt FROM cache "
     "WHERE original_prompt IS NOT NULL LIMIT 400").fetchall()
