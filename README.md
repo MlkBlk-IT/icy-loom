@@ -1,6 +1,6 @@
 <div align="center">
 
-<img src="docs/logo.png" alt="IcyLoom" width="180" />
+<p align="center"><img src="https://raw.githubusercontent.com/MlkBlk-IT/icy-loom/main/docs/readme-header.svg" width="100%" alt="icy-loom visual header" /></p>
 
 # IcyLoom
 
