@@ -117,6 +117,8 @@ An MCP client connects with a single entry, for example:
 
 An LLM client points its `base_url` at `http://127.0.0.1:8150/v1`.
 
+`icyloom doctor` also probes each enabled upstream (`/models`) and checks that the tool-server executables are on the PATH. When `server.remote_access_token` is set, every admin and gateway route except `/health` requires it, and a non-loopback `server.host` is refused without one.
+
 ## The tool cache
 
 IcyLoom relays calls to downstream MCP servers and can cache their results. The rules:
@@ -167,6 +169,10 @@ http://127.0.0.1:8153/dashboard      (alias: http://127.0.0.1:8153/)
 .\.venv\Scripts\python.exe -m icyloom dashboard          # URL + current state
 .\.venv\Scripts\python.exe -m icyloom dashboard --serve  # serve the console
 ```
+
+![IcyLoom console](docs/images/dashboard.png)
+
+*The console on a demo database seeded by `tools/seed_demo.py` (synthetic traffic) — not production data.*
 
 ### One console, two consoles fused
 
