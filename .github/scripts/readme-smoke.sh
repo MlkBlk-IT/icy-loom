@@ -10,6 +10,11 @@ python -m pip install --upgrade pip build
 python -m build
 
 WORK="$(mktemp -d)"
+# The configuration, the data and the database stay inside this directory:
+# the job must look like a machine where nothing exists yet.
+export ICYLOOM_CONFIG="$WORK/icyloom.yaml"
+export ICYLOOM_DATA_DIR="$WORK/data"
+export ICYLOOM_STATE_DIR="$WORK/var"
 cd "$WORK"
 
 python -m venv venv

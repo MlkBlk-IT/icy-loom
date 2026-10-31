@@ -36,6 +36,9 @@ jobs:
         run: |
           set -e
           WORK="$(mktemp -d)"
+          export ICYLOOM_CONFIG="$WORK/icyloom.yaml"
+          export ICYLOOM_DATA_DIR="$WORK/data"
+          export ICYLOOM_STATE_DIR="$WORK/var"
           cd "$WORK"
           icyloom init
           icyloom doctor
@@ -44,6 +47,9 @@ jobs:
         run: |
           set -e
           WORK="$(mktemp -d)"
+          export ICYLOOM_CONFIG="$WORK/icyloom.yaml"
+          export ICYLOOM_DATA_DIR="$WORK/data"
+          export ICYLOOM_STATE_DIR="$WORK/var"
           cd "$WORK"
           icyloom init
           icyloom check --transport stdio
