@@ -1,6 +1,6 @@
 <div align="center">
 
-<p align="center"><img src="https://raw.githubusercontent.com/MlkBlk-IT/icy-loom/main/docs/readme-header.svg" width="100%" alt="icy-loom visual header" /></p>
+<p align="center"><img src="https://raw.githubusercontent.com/MlkBlk-IT/icy-loom/main/docs/mlkblk-banner.svg" width="100%" alt="icy-loom — Malik Belkacemi · MLKBLK-IT" /></p>
 
 # IcyLoom
 
@@ -476,3 +476,12 @@ MIT — see [`LICENSE`](LICENSE).
 
 Copyright (c) 2026 Malik Belkacemi.
 
+
+
+---
+
+<div align="center">
+
+<sub>Original project and documentation by <strong>Malik Belkacemi · MLKBLK-IT</strong> · © 2026</sub>
+
+</div>
