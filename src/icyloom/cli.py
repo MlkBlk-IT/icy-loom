@@ -16,6 +16,7 @@ from __future__ import annotations
 import argparse
 import json
 import platform
+import shutil
 import socket
 import sys
 from pathlib import Path
@@ -150,7 +151,26 @@ def _cmd_doctor(args: argparse.Namespace) -> int:
               f"profil={cfg.compression.profile}")
         print(f"cache sémantique       : {'actif' if cfg.cache.semantic_enabled else 'inactif (opt-in)'}")
         print(f"upstreams configurés  : {len(cfg.upstreams)}")
+        import httpx
+        for upstream in cfg.upstreams:
+            if not upstream.enabled:
+                print(f"upstream {upstream.name:<16}: DISABLED")
+                continue
+            probe_url = upstream.base_url.rstrip("/") + "/models"
+            try:
+                response = httpx.get(probe_url, timeout=2.5)
+                print(f"upstream {upstream.name:<16}: HTTP {response.status_code}")
+                if response.status_code >= 500:
+                    problems.append(f"upstream inaccessible : {upstream.name} ({response.status_code})")
+            except httpx.HTTPError as exc:
+                print(f"upstream {upstream.name:<16}: INACCESSIBLE ({type(exc).__name__})")
+                problems.append(f"upstream inaccessible : {upstream.name} ({type(exc).__name__})")
         print(f"serveurs d'outils      : {len(cfg.tool_proxy.servers)}")
+        for server in cfg.tool_proxy.servers:
+            executable = shutil.which(server.command)
+            print(f"outil {server.name:<19}: {executable or 'ABSENT'}")
+            if executable is None:
+                problems.append(f"executable absent : {server.command} ({server.name})")
         for label, port in (("gateway", cfg.ports.gateway_http), ("mcp-http", cfg.ports.mcp_http),
                             ("mcp-sse", cfg.ports.mcp_sse), ("admin", cfg.ports.admin)):
             free = _port_free(cfg.server.host, port)

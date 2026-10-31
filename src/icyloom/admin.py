@@ -29,10 +29,6 @@ from .toolproxy import ToolProxy
 log = logging.getLogger("icyloom.admin")
 
 #: Routes qui exigent un jeton quand un jeton est configuré.
-PROTECTED = ("/api/ledger", "/api/metrics", "/api/cache-clear", "/api/tools/clear",
-             "/api/sessions/purge")
-
-
 def create_app(config: Config) -> FastAPI:
     """Construit l'API d'administration."""
     db = Database(config)
@@ -62,7 +58,7 @@ def create_app(config: Config) -> FastAPI:
     @app.middleware("http")
     async def _auth(request: Request, call_next):
         token = config.server.remote_access_token
-        if token and request.url.path.startswith(PROTECTED):
+        if token and request.url.path != "/health":
             header = request.headers.get("authorization", "")
             if header != f"Bearer {token}":
                 return JSONResponse({"error": "unauthorized"}, status_code=401)

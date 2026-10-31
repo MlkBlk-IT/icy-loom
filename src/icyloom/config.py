@@ -17,7 +17,7 @@ from pathlib import Path
 from typing import Any, Literal
 
 import yaml
-from pydantic import BaseModel, Field, field_validator
+from pydantic import BaseModel, Field, field_validator, model_validator
 
 from . import paths
 
@@ -41,6 +41,14 @@ class ServerConfig(BaseModel):
     @classmethod
     def _host_is_loopback_or_explicit(cls, v: str) -> str:
         return v.strip() or "127.0.0.1"
+
+    @model_validator(mode="after")
+    def _remote_host_requires_token(self) -> "ServerConfig":
+        host = self.host.lower().strip("[]")
+        loopback = host in {"localhost", "127.0.0.1", "::1"}
+        if not loopback and not self.remote_access_token:
+            raise ValueError("remote_access_token est obligatoire si server.host n'est pas local")
+        return self
 
 
 class PortsConfig(BaseModel):

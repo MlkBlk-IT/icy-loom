@@ -237,6 +237,14 @@ def create_app(config: Config) -> FastAPI:
     app = FastAPI(title="IcyLoom Gateway", version="1.0.0")
     app.state.gateway = gateway
 
+    @app.middleware("http")
+    async def _auth(request: Request, call_next):
+        token = config.server.remote_access_token
+        if token and request.url.path != "/health":
+            if request.headers.get("authorization", "") != f"Bearer {token}":
+                return JSONResponse({"error": "unauthorized"}, status_code=401)
+        return await call_next(request)
+
     # ------------------------------------------------------------------
     # interne
     # ------------------------------------------------------------------
@@ -457,21 +465,10 @@ def create_app(config: Config) -> FastAPI:
         if fmt == "gemini":
             # Le modèle est dans l'URL, pas dans le corps : il entre dans la clé.
             model_in_path = path.split("/models/", 1)[-1].split(":", 1)[0]
-            key = gateway.canonicalizer.digest(body, scope={"model": model_in_path})
             wants_stream = path.endswith(":streamGenerateContent")
         else:
-            key = gateway.canonicalizer.digest(body)
+            model_in_path = ""
             wants_stream = bool(body.get("stream"))
-
-        entry = gateway.cache.get(key, bump=False)
-        if entry is not None and not wants_stream and not entry.is_stream:
-            return _cache_hit_response(entry, request, key)
-        if (entry is not None and wants_stream and entry.is_stream
-                and (fmt != "openai" or path.endswith("/chat/completions"))):
-            raw_hit = _parse_raw(entry.response)
-            # Forme du flux (ex. ?alt=sse) : on ne rejoue que pour la meme query-string.
-            if raw_hit is None or raw_hit[0].get("q", "") == request.url.query:
-                return _cache_hit_stream_response(entry, request, key, fmt)
 
         candidates = [routed.upstream] + gateway.registry.fallback_chain(routed.upstream)
         if routed.source not in ("prefix", "header", "body"):
@@ -480,6 +477,21 @@ def create_app(config: Config) -> FastAPI:
                 candidates = same_kind
         last_error: str | None = None
         for candidate in candidates:
+            # Le provider fait partie de la clé : une réponse locale ne doit
+            # jamais être servie après un routage vers cloud (ou inversement).
+            scope = {"upstream": candidate.name, "format": fmt}
+            if model_in_path:
+                scope["model"] = model_in_path
+            key = gateway.canonicalizer.digest(body, scope=scope)
+            entry = gateway.cache.get(key, bump=False)
+            if entry is not None and not wants_stream and not entry.is_stream:
+                return _cache_hit_response(entry, request, key)
+            if (entry is not None and wants_stream and entry.is_stream
+                    and (fmt != "openai" or path.endswith("/chat/completions"))):
+                raw_hit = _parse_raw(entry.response)
+                # Forme du flux (ex. ?alt=sse) : on ne rejoue que pour la meme query-string.
+                if raw_hit is None or raw_hit[0].get("q", "") == request.url.query:
+                    return _cache_hit_stream_response(entry, request, key, fmt)
             breaker = gateway.breakers.for_name(candidate.name)
             if not breaker.allows():
                 last_error = f"circuit ouvert pour l'amont '{candidate.name}'"
