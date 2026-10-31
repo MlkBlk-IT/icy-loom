@@ -1,0 +1,91 @@
+name: CI
+
+on:
+  push:
+    branches: [main, prod-ready]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  test:
+    name: test ${{ matrix.os }} / py${{ matrix.python }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+        python: ["3.11", "3.12", "3.13"]
+        include:
+          - os: ubuntu-latest
+            python: "3.14"
+            continue: true
+    continue-on-error: ${{ matrix.continue || false }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python }}
+      - name: Install
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -e ".[dev]"
+      - name: Tests
+        run: python -m pytest -o addopts="" -q
+      - name: Doctor (installation neuve, hors dépôt)
+        shell: bash
+        run: |
+          set -e
+          WORK="$(mktemp -d)"
+          cd "$WORK"
+          icyloom init
+          icyloom doctor
+      - name: Check (transport stdio, autonome)
+        shell: bash
+        run: |
+          set -e
+          WORK="$(mktemp -d)"
+          cd "$WORK"
+          icyloom init
+          icyloom check --transport stdio
+
+  build:
+    name: build wheel + sdist
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Build
+        run: |
+          python -m pip install --upgrade pip build twine
+          python -m build
+      - name: twine check
+        run: python -m twine check dist/*
+      - name: Install the wheel outside the repository
+        shell: bash
+        run: |
+          set -e
+          python -m venv "$RUNNER_TEMP/wheel-venv"
+          "$RUNNER_TEMP/wheel-venv/bin/python" -m pip install --upgrade pip
+          "$RUNNER_TEMP/wheel-venv/bin/python" -m pip install dist/*.whl
+          WORK="$(mktemp -d)"
+          cd "$WORK"
+          "$RUNNER_TEMP/wheel-venv/bin/icyloom" init
+          "$RUNNER_TEMP/wheel-venv/bin/icyloom" doctor
+          "$RUNNER_TEMP/wheel-venv/bin/icyloom" check --transport stdio
+      - uses: actions/upload-artifact@v4
+        with:
+          name: dist
+          path: dist/
+
+  readme-smoke:
+    name: readme quickstart (literal)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Run the README quickstart, command for command
+        run: bash .github/scripts/readme-smoke.sh

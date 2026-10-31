@@ -1,0 +1,56 @@
+name: Bug report
+description: Something does not work as documented
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time. Please fill in the sections below.
+        Never paste a token, an API key or a private path.
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened
+      description: The command you ran and what you expected instead.
+    validations:
+      required: true
+  - type: textarea
+    id: reproduce
+    attributes:
+      label: Steps to reproduce
+      value: |
+        1.
+        2.
+        3.
+    validations:
+      required: true
+  - type: textarea
+    id: output
+    attributes:
+      label: Full output
+      description: The complete terminal output, including errors.
+      render: shell
+    validations:
+      required: true
+  - type: input
+    id: environment
+    attributes:
+      label: Environment
+      description: OS, Python version (`python -V`), install method (wheel or git)
+    validations:
+      required: true
+  - type: textarea
+    id: diagnostics
+    attributes:
+      label: Diagnostics
+      description: The output of `icyloom paths` and `icyloom doctor`.
+      render: shell
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Checks
+      options:
+        - label: I read the "Status & known limitations" section of the README.
+          required: false
+        - label: I searched the existing issues.
+          required: false
