@@ -478,6 +478,11 @@ Copyright (c) 2026 Malik Belkacemi.
 
 
 
+
+## Ownership and license
+
+[Project origin and evidence](PROJECT-ORIGIN.md) · [License](LICENSE)
+
 ---
 
 <div align="center">
