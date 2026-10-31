@@ -33,7 +33,7 @@ IcyLoom is a **standalone** project: no imports, links or paths to any other pro
 
 <img src="docs/screenshots/overview.png" alt="IcyLoom console — overview" width="860" />
 
-<sub>Overview: the unified registry, five live KPIs, calls per bucket, latency, outcomes, models, upstreams.</sub>
+<sub>Overview: the unified registry, five live KPIs, calls per bucket, latency, outcomes, models, upstreams. Captured on a demo database seeded by `tools/seed_demo.py` (synthetic traffic) — not production data.</sub>
 
 ## Quick start
 
