@@ -15,10 +15,6 @@ jobs:
       matrix:
         os: [ubuntu-latest, windows-latest]
         python: ["3.11", "3.12", "3.13"]
-        include:
-          - os: ubuntu-latest
-            python: "3.14"
-            continue: true
     continue-on-error: ${{ matrix.continue || false }}
     steps:
       - uses: actions/checkout@v4

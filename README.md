@@ -136,7 +136,7 @@ This section is the honest summary. Raw measurements live in
 | Latency gain on a slow tool | One real `fetch` call: 1527 ms first, 24 ms when repeated (one static page) |
 | **Token savings on tool calls** | **Not delivered and not measured.** A tool-cache hit is ledgered with 0 tokens saved |
 | Context compression | **Opt-in, off by default.** `ctx_verify` proves the invariants survive a round trip, but **answer quality is not proven** (see Known limitations) |
-| Python versions | 3.11, 3.12, 3.13 supported. 3.14 is probed in CI but is **not** in the supported range yet |
+| Python versions | 3.11, 3.12, 3.13 supported. Python 3.14 is **not** in the supported range yet |
 
 The "50 percent tokens saved" printed by `tests/proof_e2e.py` is true by construction: that test sends every request twice. It is not a traffic figure and must not be quoted as one.
 

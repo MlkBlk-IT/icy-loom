@@ -56,4 +56,4 @@ Windows and by the CI matrix (Ubuntu + Windows, Python 3.11 / 3.12 / 3.13).
 - Token savings on *tool* calls are not measured: a tool-cache hit is
   ledgered with 0 tokens saved.
 - The semantic (vector) cache stays opt-in and needs an external vector store.
-- Python 3.14 is probed in CI but is **not** in the supported range yet.
+- Python 3.14 is **not** in the supported range yet and is excluded from CI.
