@@ -28,8 +28,9 @@ from pathlib import Path
 import pytest
 
 from icyloom.normalize import Canonicalizer, canonical_json
+from icyloom.paths import data_file
 
-RULES = Path(__file__).resolve().parents[1] / "data" / "normalization_rules.json"
+RULES = data_file("normalization_rules.json")
 
 
 @pytest.fixture(scope="module")

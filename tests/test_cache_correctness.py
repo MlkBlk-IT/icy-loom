@@ -78,6 +78,12 @@ def make_proxy(tmp: Path, cache_tools: dict[str, bool], **tool_proxy: Any):
         return fake.invoke(tool, args)
 
     proxy._invoke = _invoke  # type: ignore[method-assign]
+    # This fixture replaces the upstream invocation with FakeNotes. Seed the
+    # catalogue too, so tests never try to spawn the intentionally fake
+    # ``unused`` MCP command just to discover an input schema.
+    proxy._schemas[SERVER] = {
+        tool: {} for tool in ("read_note", "list_notes", "write_note", "annotate", "remember")
+    }
     return proxy, fake
 
 

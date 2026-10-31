@@ -10,6 +10,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 from icyloom.clientcheck import (  # noqa: E402
     client_config,
+    _endpoint_urls,
     install_client_config,
     run_checks,
 )
@@ -53,3 +54,39 @@ def test_stdio_transport_works_like_a_real_client() -> None:
     ok, checks = run_checks(transports=("stdio",))
     assert ok, [label for flag, label in checks if not flag]
     assert len(checks) >= 7
+
+
+def _write_config(tmp_path: Path, body: str) -> str:
+    path = tmp_path / "icyloom.yaml"
+    path.write_text(body, encoding="utf-8")
+    return str(path)
+
+
+def test_check_urls_follow_configured_ports(tmp_path: Path) -> None:
+    """Régression : `check` visait 8151/8152 en dur, même avec d'autres ports."""
+    cfg = _write_config(
+        tmp_path,
+        "server:\n  host: 127.0.0.1\nports:\n  mcp_http: 19151\n  mcp_sse: 19152\n",
+    )
+    http_url, sse_url = _endpoint_urls(cfg)
+    assert http_url == "http://127.0.0.1:19151/mcp"
+    assert sse_url == "http://127.0.0.1:19152/sse"
+
+
+def test_check_urls_fall_back_to_defaults_when_config_is_unreadable(
+        tmp_path: Path) -> None:
+    http_url, sse_url = _endpoint_urls(str(tmp_path / "absent.yaml"))
+    assert http_url == "http://127.0.0.1:8151/mcp"
+    assert sse_url == "http://127.0.0.1:8152/sse"
+
+
+def test_check_urls_never_dial_a_wildcard_host(tmp_path: Path) -> None:
+    cfg = _write_config(
+        tmp_path,
+        "server:\n  host: 0.0.0.0\n  remote_access_token: secret\n"
+        "ports:\n  mcp_http: 19151\n  mcp_sse: 19152\n",
+    )
+    http_url, sse_url = _endpoint_urls(cfg)
+    assert http_url == "http://127.0.0.1:19151/mcp"
+    assert sse_url == "http://127.0.0.1:19152/sse"
+

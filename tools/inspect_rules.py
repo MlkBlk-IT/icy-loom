@@ -4,7 +4,10 @@ import pathlib
 import re
 import sys
 
-p = pathlib.Path(r"D:\ICY-LOOM\data\normalization_rules.json")
+sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[1] / "src"))
+from icyloom.paths import data_file  # noqa: E402
+
+p = data_file("normalization_rules.json")
 data = json.loads(p.read_text(encoding="utf-8"))
 rules = data["rules"]
 print("racine:", list(data.keys()))

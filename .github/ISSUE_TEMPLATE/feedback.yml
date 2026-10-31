@@ -1,0 +1,42 @@
+name: Feedback
+description: Ergonomics, missing features, documentation, ideas
+labels: [feedback]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Not a crash? This is the right template.
+  - type: textarea
+    id: context
+    attributes:
+      label: What were you trying to do?
+      description: The workflow you wanted to run.
+    validations:
+      required: true
+  - type: textarea
+    id: friction
+    attributes:
+      label: What slowed you down or surprised you?
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: What would you like instead?
+      description: Optional. A rough idea is enough.
+    validations:
+      required: false
+  - type: dropdown
+    id: area
+    attributes:
+      label: Area
+      options:
+        - Installation
+        - Documentation
+        - Cache
+        - Context drawer
+        - Tool relay
+        - Console / dashboard
+        - Other
+    validations:
+      required: true

@@ -37,18 +37,48 @@ IcyLoom is a **standalone** project: no imports, links or paths to any other pro
 
 ## Quick start
 
-Three commands, and it works:
+Five minutes, on a clean machine. No GPU, no paid API, no LM Studio, no Node,
+no `uvx`.
+
+### Linux / macOS
+
+```bash
+python3 -m venv venv
+source venv/bin/activate
+python -m pip install --upgrade pip
+python -m pip install https://github.com/MlkBlk-IT/icy-loom/releases/download/v1.0.0/icyloom-1.0.0-py3-none-any.whl
+
+icyloom init
+icyloom doctor
+
+# in a second terminal
+icyloom serve
+icyloom check --transport all
+```
+
+### Windows (PowerShell)
 
 ```powershell
-# 1. check that everything works, like a real client
-.\.venv\Scripts\python.exe -m icyloom check
+py -3.12 -m venv venv
+.\venv\Scripts\Activate.ps1
+python -m pip install --upgrade pip
+python -m pip install https://github.com/MlkBlk-IT/icy-loom/releases/download/v1.0.0/icyloom-1.0.0-py3-none-any.whl
 
-# 2. plug IcyLoom into your MCP client (writes the config on your machine)
-.\.venv\Scripts\python.exe -m icyloom client --target cursor --install
+icyloom init
+icyloom doctor
 
-# 3. read the config to paste (Claude Code, Claude Desktop, Cursor, Windsurf, Codex)
-.\.venv\Scripts\python.exe -m icyloom client --target claude
+# in a second terminal
+icyloom serve
+icyloom check --transport all
 ```
+
+Without the wheel (git required):
+
+```bash
+python -m pip install "icyloom @ git+https://github.com/MlkBlk-IT/icy-loom.git@v1.0.0"
+```
+
+Expected output of `icyloom check`: `21/21 vérifications réussies`.
 
 `icyloom check` plays the role of the client: it starts the server, connects,
 lists the 13 tools and calls them (`ctx_store`, `ctx_search`, `ctx_verify`,
@@ -58,18 +88,20 @@ well. If HTTP or SSE fails, the stack is not running (`icyloom serve`); the
 **stdio** mode, on the other hand, is self-contained — it is the one Claude
 Code and Cursor use.
 
-For the HTTP gateway (your LLM client pointing `base_url` at IcyLoom)
-and the web console:
+Then plug IcyLoom into your MCP client:
 
-```powershell
-.\.venv\Scripts\python.exe -m icyloom serve      # 8150 / 8151 / 8152 / 8153
+```bash
+icyloom client --target cursor --install     # writes the config on your machine
+icyloom client --target claude               # prints the block to paste
 ```
 
+Targets: `cursor`, `claude` (Desktop), `claude-code`, `windsurf`, `codex`,
+`json` (raw block).
+
 ```
-D:\ICY-LOOM
-  icyloom.yaml      single configuration (Pydantic)
-  data\             externalised data (JSON)
-  var\icyloom.db    single SQLite database (WAL)
+icyloom.yaml      single configuration (Pydantic)
+src/icyloom/data/ externalised data, shipped inside the package (JSON)
+var/icyloom.db    single SQLite database (WAL)
 
   HTTP gateway :8150                      MCP server (one build function)
     /v1/chat/completions                    stdio             dedicated process
@@ -82,42 +114,53 @@ D:\ICY-LOOM
   gateway, MCP and admin all write to one database and one ledger
 ```
 
-## Status (verified 2026-10-28)
+Outside a repository checkout, nothing is written inside `site-packages`: the
+configuration, the database and the logs go to the user data directory —
+`%LOCALAPPDATA%\icyloom` on Windows, `$XDG_DATA_HOME/icyloom` (or
+`~/.local/share/icyloom`) on Linux and macOS. Override it with
+`ICYLOOM_DATA_DIR`.
 
-This section is the honest summary. Details and raw numbers are in [`PROGRESS.md`](PROGRESS.md).
+## Status & known limitations
+
+This section is the honest summary. Raw measurements live in
+[`docs/archive/PROGRESS.md`](docs/archive/PROGRESS.md).
 
 | Area | Status |
 |---|---|
+| Installation from a wheel on a clean machine | **Verified.** `init`, `doctor` (exit 0), `serve`, `check` 21/21, from a venv outside the repository |
+| Test suite | **137** tests pass (131 + 6 new proofs and regressions) |
+| Cache round trip (miss then hit) | **Verified by an automated test**: the first request calls the upstream, the identical second request does not, the served response is identical, and the ledger records both |
+| Tool relay | **Verified by an automated test** against a real MCP stdio server: the tool is reached, it answers, and the second identical call is served from the cache |
 | Tool-result cache correctness (stale hits, replayed writes, cached errors, loop detection) | **Verified.** Synthetic harness: 0 stale hits out of 140 (before the fix: 425 out of 436). Real `fetch` server: 8 of 8 checks pass |
-| Test suite | All **131** tests pass |
 | Gateway latency | p50 13.5 ms (MISS) and 10.7 ms (HIT); p95 about 16 ms against a 200 ms budget |
 | Latency gain on a slow tool | One real `fetch` call: 1527 ms first, 24 ms when repeated (one static page) |
 | **Token savings on tool calls** | **Not delivered and not measured.** A tool-cache hit is ledgered with 0 tokens saved |
-| Context compression | **Opt-in, off by default.** Large estimated token savings in a prototype, but **answer quality is not proven** (see Known limitations) |
+| Context compression | **Opt-in, off by default.** `ctx_verify` proves the invariants survive a round trip, but **answer quality is not proven** (see Known limitations) |
+| Python versions | 3.11, 3.12, 3.13 supported. Python 3.14 is **not** in the supported range yet |
 
 The "50 percent tokens saved" printed by `tests/proof_e2e.py` is true by construction: that test sends every request twice. It is not a traffic figure and must not be quoted as one.
 
 ## Getting started
 
-```powershell
-cd D:\ICY-LOOM
-.\.venv\Scripts\python.exe -m icyloom doctor        # diagnostics
-.\.venv\Scripts\python.exe -m icyloom serve         # gateway + MCP + admin
-.\.venv\Scripts\python.exe -m icyloom mcp --transport stdio   # for an MCP client
-.\.venv\Scripts\python.exe -m icyloom gateway       # gateway only (8150)
-.\.venv\Scripts\python.exe -m icyloom admin         # admin API only (8153)
+```bash
+icyloom doctor        # diagnostics
+icyloom serve         # gateway + MCP + admin
+icyloom mcp --transport stdio   # for an MCP client
+icyloom gateway       # gateway only (8150)
+icyloom admin         # admin API only (8153)
+icyloom paths         # every resolved path
 ```
 
 An MCP client connects with a single entry, for example:
 
 ```json
-{ "mcpServers": { "icyloom": { "command": "D:\\ICY-LOOM\\.venv\\Scripts\\python.exe",
+{ "mcpServers": { "icyloom": { "command": "/path/to/venv/bin/python",
                               "args": ["-m", "icyloom", "mcp", "--transport", "stdio"] } } }
 ```
 
 An LLM client points its `base_url` at `http://127.0.0.1:8150/v1`.
 
-`icyloom doctor` also probes each enabled upstream (`/models`) and checks that the tool-server executables are on the PATH. When `server.remote_access_token` is set, every admin and gateway route except `/health` requires it, and a non-loopback `server.host` is refused without one.
+`icyloom doctor` also probes each enabled upstream (`/models`) and checks that the tool-server executables are on the PATH. A missing upstream or a missing tool executable is a **warning**, not a failure: a default installation has neither, and still works. When `server.remote_access_token` is set, every admin and gateway route except `/health` requires it, and a non-loopback `server.host` is refused without one.
 
 ## The tool cache
 
