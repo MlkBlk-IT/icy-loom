@@ -11,6 +11,9 @@
 [![MCP](https://img.shields.io/badge/MCP-13%20tools-0FB5A6?style=flat-square&labelColor=FDF3E3)](src/icyloom/mcpserver.py)
 [![Tests](https://img.shields.io/badge/tests-131%20passing-22B784?style=flat-square&labelColor=FDF3E3&logo=pytest&logoColor=white)](tests/)
 [![Bind](https://img.shields.io/badge/bind-127.0.0.1%20only-FFC93E?style=flat-square&labelColor=FDF3E3&logo=lock&logoColor=46231A)](icyloom.yaml)
+[![PyPI](https://img.shields.io/pypi/v/icyloom?style=flat-square&logo=pypi&logoColor=white)](https://pypi.org/project/icyloom/)
+[![GitHub stars](https://img.shields.io/github/stars/MlkBlk-IT/icy-loom?style=flat-square)](https://github.com/MlkBlk-IT/icy-loom/stargazers)
+![README views](https://hits.sh/github.com/MlkBlk-IT/icy-loom.svg?label=README%20views)
 
 </div>
 
