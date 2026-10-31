@@ -157,24 +157,47 @@ async def _check_stdio(config_path: str | None,
             return await _exercise(session, checks)
 
 
-async def _check_http(checks: list[tuple[bool, str]]) -> dict[str, Any]:
+async def _check_http(checks: list[tuple[bool, str]],
+                      url: str = "http://127.0.0.1:8151/mcp") -> dict[str, Any]:
     from mcp import ClientSession
     from mcp.client.streamable_http import streamablehttp_client
 
-    async with streamablehttp_client("http://127.0.0.1:8151/mcp") as (read, write, _):
+    async with streamablehttp_client(url) as (read, write, _):
         async with ClientSession(read, write) as session:
             await session.initialize()
             return await _exercise(session, checks)
 
 
-async def _check_sse(checks: list[tuple[bool, str]]) -> dict[str, Any]:
+async def _check_sse(checks: list[tuple[bool, str]],
+                     url: str = "http://127.0.0.1:8152/sse") -> dict[str, Any]:
     from mcp import ClientSession
     from mcp.client.sse import sse_client
 
-    async with sse_client("http://127.0.0.1:8152/sse") as (read, write):
+    async with sse_client(url) as (read, write):
         async with ClientSession(read, write) as session:
             await session.initialize()
             return await _exercise(session, checks)
+
+
+def _endpoint_urls(config_path: str | None) -> tuple[str, str]:
+    """URLs MCP streamable-HTTP et SSE lues depuis la configuration.
+
+    Repli sur les ports par défaut (8151/8152) si la configuration est
+    illisible : le test stdio, lui, signalera alors le vrai problème.
+    """
+    try:
+        from .config import load_config
+
+        cfg = load_config(config_path)
+        host = (cfg.server.host or "").strip()
+        if host in ("", "0.0.0.0", "::", "[::]"):
+            host = "127.0.0.1"
+        elif ":" in host and not host.startswith("["):
+            host = f"[{host}]"
+        return (f"http://{host}:{cfg.ports.mcp_http}/mcp",
+                f"http://{host}:{cfg.ports.mcp_sse}/sse")
+    except Exception:
+        return ("http://127.0.0.1:8151/mcp", "http://127.0.0.1:8152/sse")
 
 
 def run_checks(config_path: str | None = None,
@@ -185,10 +208,11 @@ def run_checks(config_path: str | None = None,
     Retourne ``(ok, checks)``.
     """
     checks: list[tuple[bool, str]] = []
+    urls = _endpoint_urls(config_path)
     runners = {
         "stdio": lambda: _check_stdio(config_path, checks),
-        "http": lambda: _check_http(checks),
-        "sse": lambda: _check_sse(checks),
+        "http": lambda: _check_http(checks, urls[0]),
+        "sse": lambda: _check_sse(checks, urls[1]),
     }
     for transport in transports:
         if not quiet:
