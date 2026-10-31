@@ -1,6 +1,6 @@
 <div align="center">
 
-<p align="center"><img src="https://raw.githubusercontent.com/MlkBlk-IT/icy-loom/main/docs/mlkblk-banner.svg" width="100%" alt="icy-loom — Malik Belkacemi · MLKBLK-IT" /></p>
+<p align="center"><img src="https://raw.githubusercontent.com/MlkBlk-IT/icy-loom/main/docs/mlkblk-banner-v2.svg" width="100%" alt="IcyLoom — Malik Belkacemi · MLKBLK-IT" /></p>
 
 # IcyLoom
 
