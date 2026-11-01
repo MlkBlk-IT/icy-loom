@@ -118,10 +118,76 @@ Voir section 7 — résultat recopié après exécution.
 Le run précédent échouait sur `tests/test_dashboard.py::test_dashboard_html_is_self_contained`.
 Après correctif du test : vert.
 
-## 8. Fichiers modifiés
+## 9. Second bug, plus grave : l'ancre coûte plus cher que le contenu
+
+### Mesure runtime
+
+```
+before  anchor  delta   decision
+     1      26    -25   RAW (perte evitee)
+    15      40    -25   RAW (perte evitee)
+    81     105    -24   RAW (perte evitee)
+```
+
+L'ancre est un squelette structurel à taille quasi fixe (~25 tokens).
+Sous ~150 tokens de contenu, elle coûte **plus cher** que ce qu'elle résume :
+chaque compression **perdait** des tokens.
+
+### En base (42 sources)
+
+```
+GAIN  :  2 sources  -> +16 968 tokens
+PERTE : 40 sources  ->  -1 803 tokens
+  dont 32 compressions label='check' : before=224 / anchor=992 -> -768
+```
+
+Le `tokens_saved: 15165` du dashboard n'est qu'un **cumul historique** porté
+par 2 gros tests. Tout le reste perdait.
+
+### Pourquoi c'était invisible
+
+`store.py` écrivait `max(0, tokens_before - anchor_tokens)` : une perte de
+-24 était enregistrée à **0**. Les metrics ne pouvaient pas bouger.
+
+### Correctif
+
+Dans `store.py` : si `anchor_tokens >= tokens_before`, on sert le **contenu
+brut** (gain nul au pire, jamais négatif) en **conservant les invariants**
+(ce sont eux qui rendent `verify()`/`coverage` valides). Le ledger enregistre
+désormais la valeur **signée**, la perte devient visible.
+
+### Vérification
+
+```
+small  before=   1  anchor=   1  delta=    0
+medium before=  81  anchor=  81  delta=    0
+facts  before=  20  anchor=  20  delta=    0
+big    before=2000  anchor= 193  delta=+1807
+coverage 1.0  ok True
+
+pytest: 137 passed, 0 failed
+```
+
+### Incident de parcours
+
+Première version du correctif : `invariants = []` → `coverage` tombait à 0.0,
+`test_verify_reports_full_coverage` échouait. Corrigé en conservant les
+invariants.
+
+## 10. Commits
+
+| Commit | Contenu |
+|---|---|
+| `4cd5617` | fix(gateway): credit upstream cache hits |
+| `f25e6f2` | fix(store): no anchor below break-even, signed ledger value |
+
+Les deux sont sur `origin/main`.
+
+## 11. Fichiers modifies
 
 | Fichier | Nature |
 |---|---|
-| `src/icyloom/gateway.py` | 2 helpers ajoutés, `_proxy_json` et `_proxy_stream` corrigés |
-| `tests/test_dashboard.py` | assertion de self-containment ciblée sur les ressources chargées |
+| `src/icyloom/gateway.py` | 2 helpers ajoutes, `_proxy_json` et `_proxy_stream` corriges |
+| `src/icyloom/context/store.py` | seuil de rentabilite + ledger signe |
+| `tests/test_dashboard.py` | assertion self-containment ciblee |
 | `progress.md` | ce document |
