@@ -13,3 +13,8 @@ logs/
 data/*.db
 data/*.db-wal
 data/*.db-shm
+
+# artefacts de test et sauvegardes de revue
+.pytest-run/
+*.bak_icyloom_*
+*.bak_2026*

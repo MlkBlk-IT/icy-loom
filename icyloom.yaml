@@ -43,7 +43,7 @@ cache:
   semantic_collection: icyloom
 
 compression:
-  enabled: false        # opt-in : jamais activée par défaut (critère économique)
+  enabled: true         # ACTIVÉ (2026-11-01) : lossless strict, pour que le tiroir de contexte serve vraiment
   profile: strict       # strict = lossless ; balanced/aggressive = opt-in
   auto_store_threshold: 500
   max_anchor_chars: 6000
@@ -53,7 +53,10 @@ context:
   session_ttl_days: 30
   redact_enabled: true
   rate_limit_per_minute: 120
-  allowed_dirs: []      # vide = sandbox fermée par défaut
+  allowed_dirs:         # ACTIVÉ (2026-11-01) : sandbox ouverte sur les racines de travail
+    - D:\Icy-Loom
+    - C:\Users\Tech\AppData\Local\hermes\cache\scratch
+    - C:\Users\Tech\AppData\Local\hermes
   audit_enabled: true
   audit_retention_days: 30
   sandbox_enabled: true
@@ -93,12 +96,14 @@ tool_proxy:
 # Aucun nom propre à un client particulier : uniquement base_url + clé d'env.
 # Vide = relais LLM inactif (la base, le cache et le tiroir de contexte
 # fonctionnent sans aucun fournisseur).
-upstreams: []
-# upstreams:
-#   - name: local
-#     base_url: http://127.0.0.1:1234/v1   # LM Studio
-#     priority: 10
-#     kind: openai
-#     api_key_env: ""
-#     timeout_seconds: 120.0
-#     sticky: true
+upstreams:
+  # ACTIVÉ (2026-11-01) : upstream = Hermes (IcyCache :8080 -> omniroute/nous/...).
+  # IcyLoom cache-devant le chemin Hermes : cache exact, SSE-safe, mesuré par le ledger.
+  - name: hermes
+    base_url: http://127.0.0.1:8080/v1
+    priority: 10
+    kind: openai
+    api_key_env: HERMES_CUSTOM_OMNIROUTE_API_KEY
+    timeout_seconds: 120.0
+    sticky: true
+    enabled: true

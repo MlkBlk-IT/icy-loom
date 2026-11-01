@@ -182,7 +182,15 @@ def api_kind(path: str) -> str:
 
 
 def _usage_tokens(payload: Any) -> tuple[int, int]:
-    """Tokens réels d'une réponse (prompt, completion). 0 si l'amont n'envoie rien."""
+    """Tokens réels d'une réponse (prompt, completion). 0 si l'amont n'envoie rien.
+
+    Un amont qui sert une réponse depuis **son propre** cache (IcyCache,
+    Copilot, provider avec prompt-caching) renvoie ``usage`` à zéro et
+    déplace les compteurs réels dans ``original_usage`` (ou expose
+    ``saved_prompt_tokens`` / ``saved_completion_tokens``). Sans ce repli,
+    la réponse était comptée « miss avec 0 token » : le gain du cache amont
+    n'était jamais crédité et le total paraissait perdre de l'argent.
+    """
     if not isinstance(payload, dict):
         return 0, 0
     meta = payload.get("usageMetadata")  # Gemini natif
@@ -201,9 +209,68 @@ def _usage_tokens(payload: Any) -> tuple[int, int]:
     if completion is None:
         completion = usage.get("output_tokens")
     try:
-        return int(prompt or 0), int(completion or 0)
+        prompt_i, completion_i = int(prompt or 0), int(completion or 0)
     except (TypeError, ValueError):
+        prompt_i, completion_i = 0, 0
+    # Repli « cache amont » : usage remis à zéro, compteurs réels ailleurs.
+    if prompt_i == 0 and completion_i == 0:
+        prompt_i, completion_i = _upstream_cached_tokens(payload)
+    return prompt_i, completion_i
+
+
+def _upstream_cached_tokens(payload: Any) -> tuple[int, int]:
+    """Tokens d'une réponse servie par le cache d'un amont (0,0 si absent).
+
+    Champs reconnus, dans l'ordre : ``saved_prompt_tokens`` /
+    ``saved_completion_tokens`` (IcyCache), ``original_usage`` (IcyCache),
+    ``usage.prompt_tokens_details.cached_tokens`` (OpenAI).
+    """
+    if not isinstance(payload, dict):
         return 0, 0
+
+    def _ints(candidate: Any) -> tuple[int, int]:
+        if not isinstance(candidate, dict):
+            return 0, 0
+        p = candidate.get("prompt_tokens", candidate.get("input_tokens"))
+        c = candidate.get("completion_tokens", candidate.get("output_tokens"))
+        try:
+            return int(p or 0), int(c or 0)
+        except (TypeError, ValueError):
+            return 0, 0
+
+    direct = _ints({"prompt_tokens": payload.get("saved_prompt_tokens"),
+                    "completion_tokens": payload.get("saved_completion_tokens")})
+    if direct != (0, 0):
+        return direct
+    original = _ints(payload.get("original_usage"))
+    if original != (0, 0):
+        return original
+    usage = payload.get("usage")
+    details = usage.get("prompt_tokens_details") if isinstance(usage, dict) else None
+    if isinstance(details, dict):
+        try:
+            cached = int(details.get("cached_tokens") or 0)
+        except (TypeError, ValueError):
+            cached = 0
+        if cached:
+            return cached, 0
+    return 0, 0
+
+
+def _upstream_served_from_cache(payload: Any, status_code: int | None = None) -> bool:
+    """Vrai si l'amont a servi cette réponse depuis SON cache.
+
+    Marqueurs : ``cached: true``, ``cache_hash`` / ``cache_age_seconds`` /
+    ``hit_count``, ou l'en-tête de statut d'un amont de cache.
+    """
+    if not isinstance(payload, dict):
+        return False
+    if payload.get("cached") is True:
+        return True
+    for marker in ("cache_hash", "cache_age_seconds", "hit_count"):
+        if payload.get(marker) is not None:
+            return True
+    return False
 
 
 def _forward_headers(request: Request, upstream_cfg) -> dict[str, str]:
@@ -528,7 +595,18 @@ def create_app(config: Config) -> FastAPI:
             payload = json.loads(text)
         except json.JSONDecodeError:
             payload = None
-        prompt_tokens, completion_tokens = _usage_tokens(payload)
+        tokens_prompt, tokens_completion = _usage_tokens(payload)
+        served_by_upstream_cache = _upstream_served_from_cache(payload)
+        if served_by_upstream_cache:
+            # L'amont a servi depuis SON cache : aucun token n'a ete envoye au
+            # modele. On credite l'economie (tokens qui auraient ete payes) et
+            # on marque un « hit » — sinon le gain etait invisible et total
+            # paraissait perdre de l'argent.
+            saved_prompt, saved_completion = tokens_prompt, tokens_completion
+            prompt_tokens = completion_tokens = 0
+        else:
+            prompt_tokens, completion_tokens = tokens_prompt, tokens_completion
+            saved_prompt = saved_completion = 0
         breaker = gateway.breakers.for_name(candidate.name)
         if response.status_code >= 500:
             breaker.record_failure()
@@ -552,23 +630,28 @@ def create_app(config: Config) -> FastAPI:
                 json.dumps(gateway.canonicalizer.canonical_body(body),
                            ensure_ascii=False, sort_keys=True),
                 None, text, 0, candidate.name, str(body.get("model") or ""), None,
-                prompt_tokens, completion_tokens,
-            ) if _finish_ok(_event_finish_reasons(payload)) else None,
+                prompt_tokens or saved_prompt, completion_tokens or saved_completion,
+            ) if (not served_by_upstream_cache
+                  and _finish_ok(_event_finish_reasons(payload))) else None,
             llm_event=(
-                "miss", key, candidate.name, body.get("model"), 0,
-                prompt_tokens, completion_tokens, 0, 0, latency_ms,
-                candidate.name, request.headers.get("x-client"),
+                "hit" if served_by_upstream_cache else "miss", key, candidate.name,
+                body.get("model"), 0,
+                prompt_tokens, completion_tokens, saved_prompt, saved_completion,
+                latency_ms, candidate.name, request.headers.get("x-client"),
             ),
             ledger_row=(
-                "llm_call", None, request.headers.get("x-client"), candidate.name,
-                str(body.get("model") or ""), prompt_tokens, completion_tokens, 0, 0,
+                "llm_cache_hit" if served_by_upstream_cache else "llm_call",
+                None, request.headers.get("x-client"), candidate.name,
+                str(body.get("model") or ""), prompt_tokens, completion_tokens,
+                saved_prompt + saved_completion, 0,
                 latency_ms, 0,
-                json.dumps({"cache_key": key}, ensure_ascii=False),
+                json.dumps({"cache_key": key,
+                            "upstream_cache": served_by_upstream_cache}, ensure_ascii=False),
             ),
         )
         return JSONResponse(
             payload if payload is not None else {"raw": text},
-            headers={CACHE_HEADER: "miss"},
+            headers={CACHE_HEADER: "hit" if served_by_upstream_cache else "miss"},
         )
 
     async def _proxy_stream(request: Request, candidate, target: str, headers: dict[str, str],
@@ -602,26 +685,40 @@ def create_app(config: Config) -> FastAPI:
                             + assembled)
             latency_ms = int((time.perf_counter() - started) * 1000)
             prompt_tokens, completion_tokens = _usage_tokens({"usage": usage_payload})
+            upstream_cache = False
+            if prompt_tokens == 0 and completion_tokens == 0:
+                cached_p, cached_c = _upstream_cached_tokens({"usage": usage_payload})
+                if cached_p or cached_c:
+                    saved_prompt, saved_completion = cached_p, cached_c
+                    upstream_cache = True
+                else:
+                    saved_prompt = saved_completion = 0
+            else:
+                saved_prompt = saved_completion = 0
             # Le flux est stocké BRUT (appels d'outils compris) et rejoué à l'identique.
-            # Une fin de génération anormale (tronqué, filtré, mal formé) n'est pas cachée.
+            # Une fin de génération anormale (tronquée, filtrée, mal formée) n'est pas cachée.
             _persist(
                 cache_row=(
                     key,
                     json.dumps(gateway.canonicalizer.canonical_body(body),
                                ensure_ascii=False, sort_keys=True),
                     None, raw_response, 1, candidate.name, str(body.get("model") or ""), None,
-                    prompt_tokens, completion_tokens,
-                ) if cacheable else None,
+                    prompt_tokens or saved_prompt, completion_tokens or saved_completion,
+                ) if (cacheable and not upstream_cache) else None,
                 llm_event=(
-                    "miss", key, candidate.name, body.get("model"), 1,
-                    prompt_tokens, completion_tokens, 0, 0, latency_ms,
-                    candidate.name, request.headers.get("x-client"),
+                    "hit" if upstream_cache else "miss", key, candidate.name,
+                    body.get("model"), 1,
+                    prompt_tokens, completion_tokens, saved_prompt, saved_completion,
+                    latency_ms, candidate.name, request.headers.get("x-client"),
                 ),
                 ledger_row=(
-                    "llm_call", None, request.headers.get("x-client"), candidate.name,
-                    str(body.get("model") or ""), prompt_tokens, completion_tokens, 0, 0,
+                    "llm_cache_hit" if upstream_cache else "llm_call",
+                    None, request.headers.get("x-client"), candidate.name,
+                    str(body.get("model") or ""), prompt_tokens, completion_tokens,
+                    saved_prompt + saved_completion, 0,
                     latency_ms, 0,
-                    json.dumps({"cache_key": key, "stream": True}, ensure_ascii=False),
+                    json.dumps({"cache_key": key, "stream": True,
+                                "upstream_cache": upstream_cache}, ensure_ascii=False),
                 ),
             )
 

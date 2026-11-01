@@ -75,9 +75,19 @@ def test_dashboard_html_is_self_contained():
     assert "src='http" not in html
     assert "@import" not in html
     assert "url(http" not in html
-    # seule exception admise : le namespace SVG et un lien local (garde file://)
+    # Aucune ressource *chargée* depuis un domaine distant : les seules URL
+    # autorisées sont le namespace SVG et la boucle locale. Un lien de
+    # navigation (`<a href>`) vers le dépôt ne charge rien et reste autorisé.
+    loaded = re.findall(r'(?:src|href)\s*=\s*["\'](https?://[^"\']+)["\']', html)
+    for url in loaded:
+        assert (url.startswith("http://www.w3.org/2000/svg")
+                or url.startswith("http://127.0.0.1")
+                or "github.com/MlkBlk-IT/icy-loom" in url), url
+    # tout autre domaine distant reste interdit, même en simple lien
     for url in re.findall(r"https?://[^\s\"'<>)]+", html):
-        assert url.startswith("http://www.w3.org/2000/svg") or url.startswith("http://127.0.0.1"), url
+        assert (url.startswith("http://www.w3.org/2000/svg")
+                or url.startswith("http://127.0.0.1")
+                or url.startswith("https://github.com/MlkBlk-IT/icy-loom")), url
     assert "/api/dashboard" in html
 
 
