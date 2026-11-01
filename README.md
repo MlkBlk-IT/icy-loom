@@ -6,11 +6,11 @@
 
 **One MCP server. One SQLite file. One ledger that tells you what it actually saved.**
 
-[![Python](https://img.shields.io/badge/python-3.11%20%7C%203.12%20%7C%203.13-8a5bff?style=flat-square&labelColor=0d0a2b&logo=python&logoColor=white)](https://www.python.org/)
-[![License](https://img.shields.io/badge/license-MIT-ff5fa2?style=flat-square&labelColor=0d0a2b&logo=open-source-init&logoColor=white)](LICENSE)
-[![MCP](https://img.shields.io/badge/MCP-13%20tools-2de2ff?style=flat-square&labelColor=0d0a2b)](src/icyloom/mcpserver.py)
-[![Tests](https://img.shields.io/badge/tests-131%20passing-2de2ff?style=flat-square&labelColor=0d0a2b&logo=pytest&logoColor=white)](tests/)
-[![Bind](https://img.shields.io/badge/bind-127.0.0.1%20only-8a5bff?style=flat-square&labelColor=0d0a2b&logo=lock&logoColor=white)](icyloom.yaml)
+[![Python](https://img.shields.io/badge/python-3.11%20%7C%203.12%20%7C%203.13-34a853?style=flat-square&labelColor=0b1f4d&logo=python&logoColor=white)](https://www.python.org/)
+[![License](https://img.shields.io/badge/license-MIT-ea4335?style=flat-square&labelColor=0b1f4d&logo=open-source-init&logoColor=white)](LICENSE)
+[![MCP](https://img.shields.io/badge/MCP-13%20tools-4285f4?style=flat-square&labelColor=0b1f4d)](src/icyloom/mcpserver.py)
+[![Tests](https://img.shields.io/badge/tests-131%20passing-4285f4?style=flat-square&labelColor=0b1f4d&logo=pytest&logoColor=white)](tests/)
+[![Bind](https://img.shields.io/badge/bind-127.0.0.1%20only-34a853?style=flat-square&labelColor=0b1f4d&logo=lock&logoColor=white)](icyloom.yaml)
 [![PyPI](https://img.shields.io/pypi/v/icyloom?style=flat-square&logo=pypi&logoColor=white)](https://pypi.org/project/icyloom/)
 [![GitHub stars](https://img.shields.io/github/stars/MlkBlk-IT/icy-loom?style=flat-square)](https://github.com/MlkBlk-IT/icy-loom/stargazers)
 ![README views](https://hits.sh/github.com/MlkBlk-IT/icy-loom.svg?label=README%20views)
