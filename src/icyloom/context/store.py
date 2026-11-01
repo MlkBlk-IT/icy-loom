@@ -124,6 +124,17 @@ class ContextStore:
             max_invariants=self.config.compression.max_invariants,
         )
         anchor_tokens = count_tokens(anchor)
+        # Seuil de rentabilite : sous ce volume, l'ancre (squelette structurel a
+        # taille quasi fixe) coute PLUS CHER que le contenu qu'elle resume. La
+        # garder ferait perdre des tokens a chaque appel, sans que le ledger le
+        # montre (le max(0, ...) plus bas masquait la perte). On sert donc le
+        # contenu brut : gain nul au pire, jamais negatif.
+        # Les invariants sont CONSERVES : ce sont eux qui rendent le contenu
+        # verifiable (verify()/coverage). Seul le resume-cadratin est redondant
+        # ici, pas les faits extraits.
+        if anchor_tokens >= tokens_before:
+            anchor = redacted
+            anchor_tokens = tokens_before
         units = split_units(redacted)
 
         # La session « default » est stable : on ne crée pas un identifiant à
@@ -150,7 +161,9 @@ class ContextStore:
         self.ledger.record(LedgerEntry(
             kind="context_compress",
             session_id=real_session,
-            tokens_saved=max(0, tokens_before - anchor_tokens),
+            # Valeur SIGNEE (pas de max(0, ...)) : une compression non rentable
+            # doit apparaitre comme une perte, pas etre masquee a zero.
+            tokens_saved=tokens_before - anchor_tokens,
             latency_ms=int((time.perf_counter() - started) * 1000),
             meta={"source_id": source_id, "profile": resolved.name,
                   "token_counter": counter_name(), "redactions": redactions},
