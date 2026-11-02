@@ -143,3 +143,48 @@ def test_C_response_stays_small(config) -> None:
     assert len(json.dumps(shown).encode("utf-8")) < 20000
 
 
+# ---------------------------------------------------------------- D · client
+def test_D_client_of_http_request() -> None:
+    from icyloom.gateway import _client_of
+
+    class Peer:
+        host = "127.0.0.1"
+
+    class Request:
+        def __init__(self, headers, client=None):
+            self.headers = headers
+            self.client = client
+
+    assert _client_of(Request({"x-client": "claude"})) == "claude"
+    assert _client_of(Request({"user-agent": "curl/8.0"})) == "curl/8.0"
+    assert _client_of(Request({}, Peer())) == "127.0.0.1"
+    assert _client_of(Request({})) == "http"
+
+
+def test_D_client_of_mcp_context() -> None:
+    from icyloom.mcpserver import _client_of
+
+    class Info:
+        name = "Claude Code"
+
+    class Params:
+        clientInfo = Info()
+
+    class Session:
+        client_params = Params()
+
+    class Ctx:
+        session = Session()
+
+    assert _client_of(Ctx()) == "Claude Code"
+    assert _client_of(None) == "mcp"
+
+
+def test_D_tool_events_carry_the_client(config) -> None:
+    proxy = ToolProxy(config)
+    proxy._log_event("tool_call", "fs", "read_text_file", {}, 12, client="tester")
+    with proxy.db.cursor(commit=False) as cur:
+        row = cur.execute("SELECT client FROM tool_events ORDER BY id DESC LIMIT 1").fetchone()
+    assert row[0] == "tester"
+
+

@@ -545,13 +545,16 @@ class ToolProxy:
 
     # -- journal ----------------------------------------------------------
     def _log_event(self, kind: str, server: str, tool: str, args: Any,
-                   latency_ms: int, saved_latency_ms: int = 0, detail: str = "") -> None:
+                   latency_ms: int, saved_latency_ms: int = 0, detail: str = "",
+                   client: str = "") -> None:
         with self.db.transaction() as cur:
             cur.execute(
                 "INSERT INTO tool_events"
-                " (kind, server, tool, args_hash, bytes, latency_ms, saved_latency_ms, detail)"
-                " VALUES (?,?,?,?,?,?,?,?)",
-                (kind, server, tool, args_hash(args), 0, latency_ms, saved_latency_ms, detail),
+                " (kind, server, tool, args_hash, bytes, latency_ms, saved_latency_ms, detail,"
+                "  client)"
+                " VALUES (?,?,?,?,?,?,?,?,?)",
+                (kind, server, tool, args_hash(args), 0, latency_ms, saved_latency_ms, detail,
+                 client or None),
             )
 
     # -- appels -----------------------------------------------------------
@@ -728,7 +731,7 @@ class ToolProxy:
 
     async def call(self, server: str, tool: str, args: dict[str, Any] | None = None,
                    *, role: str = "", intent: str = "", confirmed: bool = False,
-                   actor: str = "") -> dict[str, Any]:
+                   actor: str = "", client: str = "") -> dict[str, Any]:
         """Appelle un outil descendant, via le cache si possible."""
         cfg = self._servers.get(server)
         if cfg is None:
@@ -773,7 +776,7 @@ class ToolProxy:
                 verdict = self.guard.record(server, tool, args, cached["result"])
                 if verdict.get("blocked"):
                     self._log_event("tool_blocked", server, tool, args, 0,
-                                    detail=str(verdict.get("reason", "")))
+                                    detail=str(verdict.get("reason", "")), client=client)
                     return {"ok": False, "error": "loop_blocked",
                             "message": verdict.get("reason"), "server": server,
                             "tool": tool, "repeats": verdict.get("repeats")}
@@ -784,9 +787,10 @@ class ToolProxy:
                     json.dumps(cached["result"], ensure_ascii=False, default=str))
                 self._log_event("tool_hit", server, tool, args, int(cached["latency_ms"]),
                                 saved_latency_ms=int(cached["latency_ms"]),
-                                detail=matched)
+                                detail=matched, client=client)
                 self.ledger.record(LedgerEntry(
-                    kind="tool_cache_hit", upstream=server, tool_tokens_saved=tokens_saved,
+                    kind="tool_cache_hit", upstream=server, client=client,
+                    tool_tokens_saved=tokens_saved,
                     saved_latency_ms=int(cached["latency_ms"]),
                     meta={"tool": tool, "cache_key": key, "matched": matched,
                           "counter": counter_name(), "bytes": int(cached["bytes"])},
@@ -812,7 +816,7 @@ class ToolProxy:
                 # l'effet de bord a pu avoir lieu malgré l'échec
                 self._bump_epoch(server)
             self._log_event("tool_error", server, tool, args, latency,
-                            detail=f"{type(exc).__name__}: {exc}")
+                            detail=f"{type(exc).__name__}: {exc}", client=client)
             self.audit.record(actor=actor, role=decision.role, intent=intent,
                               server=server, tool=tool, args_hash=args_hash(args),
                               decision="error", reason=f"{type(exc).__name__}: {exc}",
@@ -828,14 +832,14 @@ class ToolProxy:
         verdict = self.guard.record(server, tool, args, payload)
         if verdict.get("blocked"):
             self._log_event("tool_blocked", server, tool, args, latency,
-                            detail=str(verdict.get("reason", "")))
+                            detail=str(verdict.get("reason", "")), client=client)
             return {"ok": False, "error": "loop_blocked",
                     "message": verdict.get("reason"), "server": server, "tool": tool,
                     "repeats": verdict.get("repeats")}
 
-        self._log_event("tool_call", server, tool, args, latency)
+        self._log_event("tool_call", server, tool, args, latency, client=client)
         self.ledger.record(LedgerEntry(
-            kind="tool_call", upstream=server, latency_ms=latency,
+            kind="tool_call", upstream=server, client=client, latency_ms=latency,
             meta={"tool": tool},
         ))
         shown, meta = self._present(server, tool, args, payload)

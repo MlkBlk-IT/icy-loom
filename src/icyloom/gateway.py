@@ -302,6 +302,23 @@ def _forward_headers(request: Request, upstream_cfg) -> dict[str, str]:
     return headers
 
 
+def _client_of(request: Request) -> str:
+    """Nom du client appelant.
+
+    Priorité : en-tête ``x-client`` (explicite), puis ``User-Agent``, puis
+    l'hôte TCP. Sans cela, ``client`` reste NULL sur tous les événements et le
+    tableau « par client » du dashboard reste vide.
+    """
+    headers = request.headers
+    for key in ("x-client", "user-agent"):
+        value = headers.get(key)
+        if value:
+            return str(value)
+    if request.client is not None:
+        return str(request.client.host)
+    return "http"
+
+
 def create_app(config: Config) -> FastAPI:
     """Construit l'application FastAPI de la passerelle."""
     gateway = Gateway(config)
@@ -438,10 +455,10 @@ def create_app(config: Config) -> FastAPI:
             llm_event=(
                 "hit", key, entry.provider, entry.model, int(entry.is_stream),
                 0, 0, prompt_tokens, completion_tokens, 0,
-                entry.provider, request.headers.get("x-client"),
+                entry.provider, _client_of(request),
             ),
             ledger_row=(
-                "llm_cache_hit", None, request.headers.get("x-client"), entry.provider,
+                "llm_cache_hit", None, _client_of(request), entry.provider,
                 entry.model, 0, 0, prompt_tokens + completion_tokens, 0, 0, 0,
                 json.dumps({"cache_key": key}, ensure_ascii=False),
             ),
@@ -461,10 +478,10 @@ def create_app(config: Config) -> FastAPI:
             llm_event=(
                 "hit", key, entry.provider, entry.model, 1,
                 0, 0, prompt_tokens, completion_tokens, 0,
-                entry.provider, request.headers.get("x-client"),
+                entry.provider, _client_of(request),
             ),
             ledger_row=(
-                "llm_cache_hit", None, request.headers.get("x-client"), entry.provider,
+                "llm_cache_hit", None, _client_of(request), entry.provider,
                 entry.model, 0, 0, prompt_tokens + completion_tokens, 0, 0, 0,
                 json.dumps({"cache_key": key, "stream": True}, ensure_ascii=False),
             ),
@@ -687,7 +704,7 @@ def create_app(config: Config) -> FastAPI:
             _log_llm_event("error", key, candidate.name, body.get("model"),
                             bool(body.get("stream")), prompt_tokens, completion_tokens,
                             0, 0, latency_ms, candidate.name,
-                            request.headers.get("x-client"))
+                            _client_of(request))
             return JSONResponse(
                 {"error": {"message": text[:2000], "status": response.status_code}},
                 status_code=response.status_code,
@@ -705,11 +722,11 @@ def create_app(config: Config) -> FastAPI:
                 "hit" if served_by_upstream_cache else "miss", key, candidate.name,
                 body.get("model"), 0,
                 prompt_tokens, completion_tokens, saved_prompt, saved_completion,
-                latency_ms, candidate.name, request.headers.get("x-client"),
+                latency_ms, candidate.name, _client_of(request),
             ),
             ledger_row=(
                 "llm_cache_hit" if served_by_upstream_cache else "llm_call",
-                None, request.headers.get("x-client"), candidate.name,
+                None, _client_of(request), candidate.name,
                 str(body.get("model") or ""), prompt_tokens, completion_tokens,
                 saved_prompt + saved_completion, 0,
                 latency_ms, 0,
@@ -777,11 +794,11 @@ def create_app(config: Config) -> FastAPI:
                     "hit" if upstream_cache else "miss", key, candidate.name,
                     body.get("model"), 1,
                     prompt_tokens, completion_tokens, saved_prompt, saved_completion,
-                    latency_ms, candidate.name, request.headers.get("x-client"),
+                    latency_ms, candidate.name, _client_of(request),
                 ),
                 ledger_row=(
                     "llm_cache_hit" if upstream_cache else "llm_call",
-                    None, request.headers.get("x-client"), candidate.name,
+                    None, _client_of(request), candidate.name,
                     str(body.get("model") or ""), prompt_tokens, completion_tokens,
                     saved_prompt + saved_completion, 0,
                     latency_ms, 0,

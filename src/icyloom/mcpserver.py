@@ -33,6 +33,23 @@ from .ledger import Ledger
 from .normalize import Canonicalizer
 from .toolproxy import ToolProxy
 
+
+def _client_of(ctx: Any) -> str:
+    """Nom du client MCP : celui déclaré dans le message ``initialize``.
+
+    Sans ce nom, ``client`` reste NULL sur tous les événements d'outils et le
+    tableau « par client » du dashboard reste vide.
+    """
+    try:
+        params = getattr(getattr(ctx, "session", None), "client_params", None)
+        info = getattr(params, "clientInfo", None)
+        name = getattr(info, "name", None)
+        if name:
+            return str(name)
+    except Exception:      # pragma: no cover - SDK différent
+        pass
+    return "mcp"
+
 log = logging.getLogger("icyloom.mcp")
 
 #: Outils destructeurs : sans `confirm=true`, l'appel est refusé.
@@ -286,7 +303,8 @@ def build_server(config: Config) -> FastMCP:
         if ctx is not None:
             await _forward_roots(ctx)
         return await tools.call(server, tool, args or {}, role=role,
-                                intent=intent, confirmed=confirm)
+                                intent=intent, confirmed=confirm,
+                                client=_client_of(ctx))
 
     @mcp.tool(
         name="run_tool_script",
