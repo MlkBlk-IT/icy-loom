@@ -1,0 +1,271 @@
+server:
+  name: icyloom
+  host: 127.0.0.1
+  instructions: IcyLoom réunit un cache LLM local et un tiroir de contexte compressé.
+    ctx_store sort le gros du contexte et rend une ancre dense ; ctx_get rend les
+    octets d'origine ; ctx_verify prouve qu'aucun invariant n'a été perdu. Les actions
+    destructrices exigent confirm=true.
+  remote_access_token: null
+ports:
+  gateway_http: 8150
+  mcp_http: 8151
+  mcp_sse: 8152
+  admin: 8153
+database:
+  path: icyloom.db
+  journal_mode: WAL
+  busy_timeout_ms: 5000
+  synchronous: NORMAL
+cache:
+  ttl_seconds: 604800
+  max_entries: 50000
+  semantic_enabled: false
+  semantic_threshold: 0.95
+  semantic_provider: ''
+  semantic_url: ''
+  semantic_collection: icyloom
+compression:
+  enabled: true
+  profile: strict
+  auto_store_threshold: 500
+  max_anchor_chars: 6000
+  max_invariants: 40
+context:
+  session_ttl_days: 30
+  redact_enabled: true
+  rate_limit_per_minute: 120
+  allowed_dirs:
+  - D:\Icy-Loom
+  - C:\Users\Tech\AppData\Local\hermes\cache\scratch
+  - C:\Users\Tech\AppData\Local\hermes
+  audit_enabled: true
+  audit_retention_days: 30
+  sandbox_enabled: true
+  sandbox_timeout_seconds: 30.0
+breaker:
+  failure_threshold: 3
+  reset_seconds: 30.0
+  half_open_probes: 1
+ledger:
+  enabled: true
+  retention_days: 90
+tool_proxy:
+  default_ttl_seconds: 3600
+  loop_window_seconds: 300
+  loop_warn_after: 3
+  loop_block_after: 5
+  loop_max_cycle: 3
+  max_result_bytes: 1048576
+  connect_timeout_seconds: 20.0
+  call_timeout_seconds: 300.0
+  servers: []
+  catalog:
+  - name: playwright
+    command: npx
+    args:
+    - '@playwright/mcp@latest'
+    description: Browser automation (Microsoft) - 82k recherches/mois
+    cache_enabled: true
+    ttl_seconds: 3600
+    enabled: false
+  - name: github
+    command: npx
+    args:
+    - '@modelcontextprotocol/server-github'
+    description: GitHub repos/PR/issues - 889k downloads
+    cache_enabled: true
+    ttl_seconds: 3600
+    enabled: false
+  - name: filesystem
+    command: npx
+    args:
+    - '@modelcontextprotocol/server-filesystem'
+    description: Fichiers locaux controles (Anthropic) - 575k
+    cache_enabled: true
+    ttl_seconds: 3600
+    enabled: false
+  - name: context7
+    command: npx
+    args:
+    - '@upstash/context7-mcp'
+    description: Docs de librairies a jour - 590k downloads
+    cache_enabled: true
+    ttl_seconds: 3600
+    enabled: false
+  - name: chrome-devtools
+    command: npx
+    args:
+    - chrome-devtools-mcp
+    description: Chrome DevTools (Google) - 1.7M visites/sem
+    cache_enabled: true
+    ttl_seconds: 3600
+    enabled: false
+  - name: sequential-thinking
+    command: npx
+    args:
+    - '@modelcontextprotocol/server-sequential-thinking'
+    description: Raisonnement structure (Anthropic)
+    cache_enabled: true
+    ttl_seconds: 3600
+    enabled: false
+  - name: git
+    command: uvx
+    args:
+    - mcp-server-git
+    description: Operations Git (Anthropic)
+    cache_enabled: true
+    ttl_seconds: 3600
+    enabled: false
+  - name: time
+    command: uvx
+    args:
+    - mcp-server-time
+    description: Heure/fuseaux (Anthropic)
+    cache_enabled: true
+    ttl_seconds: 3600
+    enabled: false
+  - name: sqlite
+    command: uvx
+    args:
+    - mcp-server-sqlite
+    description: SQLite (Anthropic)
+    cache_enabled: true
+    ttl_seconds: 3600
+    enabled: false
+  - name: notion
+    command: npx
+    args:
+    - '@notionhq/notion-mcp-server'
+    description: Notion officiel
+    cache_enabled: true
+    ttl_seconds: 3600
+    enabled: false
+  - name: slack
+    command: npx
+    args:
+    - '@modelcontextprotocol/server-slack'
+    description: Slack (Salesforce)
+    cache_enabled: true
+    ttl_seconds: 3600
+    enabled: false
+  - name: postgres
+    command: npx
+    args:
+    - '@modelcontextprotocol/server-postgres'
+    description: PostgreSQL
+    cache_enabled: true
+    ttl_seconds: 3600
+    enabled: false
+  - name: brave-search
+    command: npx
+    args:
+    - '@modelcontextprotocol/server-brave-search'
+    description: Recherche Brave
+    cache_enabled: true
+    ttl_seconds: 3600
+    enabled: false
+  - name: everything
+    command: uvx
+    args:
+    - mcp-server-everything
+    description: Serveur test/reference MCP
+    cache_enabled: true
+    ttl_seconds: 3600
+    enabled: false
+  - name: puppeteer
+    command: npx
+    args:
+    - '@modelcontextprotocol/server-puppeteer'
+    description: Puppeteer (legacy)
+    cache_enabled: true
+    ttl_seconds: 3600
+    enabled: false
+  - name: figma
+    command: npx
+    args:
+    - figma-developer-mcp
+    description: Figma design - 74k recherches/mois
+    cache_enabled: true
+    ttl_seconds: 3600
+    enabled: false
+  - name: supabase
+    command: npx
+    args:
+    - '@supabase/mcp-server-supabase'
+    description: Supabase DB - 26k recherches/mois
+    cache_enabled: true
+    ttl_seconds: 3600
+    enabled: false
+  - name: sentry
+    command: npx
+    args:
+    - '@sentry/mcp-server'
+    description: Monitoring erreurs
+    cache_enabled: true
+    ttl_seconds: 3600
+    enabled: false
+  - name: exa
+    command: npx
+    args:
+    - exa-mcp-server
+    description: Recherche Exa (web actuel)
+    cache_enabled: true
+    ttl_seconds: 3600
+    enabled: false
+  - name: tavily
+    command: npx
+    args:
+    - tavily-mcp@latest
+    description: Recherche Tavily
+    cache_enabled: true
+    ttl_seconds: 3600
+    enabled: false
+  - name: redis
+    command: npx
+    args:
+    - '@modelcontextprotocol/server-redis'
+    description: Redis
+    cache_enabled: true
+    ttl_seconds: 3600
+    enabled: false
+  - name: mongodb
+    command: npx
+    args:
+    - mongodb-mcp-server
+    description: MongoDB/Atlas
+    cache_enabled: true
+    ttl_seconds: 3600
+    enabled: false
+  - name: duckdb
+    command: uvx
+    args:
+    - mcp-server-duckdb
+    description: DuckDB analytique
+    cache_enabled: true
+    ttl_seconds: 3600
+    enabled: false
+  - name: fetch
+    command: uvx
+    args:
+    - mcp-server-fetch
+    description: Web fetch -> markdown (Anthropic) - 801k downloads
+    cache_enabled: true
+    ttl_seconds: 3600
+    enabled: false
+  - name: memory
+    command: npx
+    args:
+    - '@modelcontextprotocol/server-memory'
+    description: Memoire graphe de connaissances (Anthropic)
+    cache_enabled: true
+    ttl_seconds: 3600
+    enabled: false
+upstreams:
+- name: hermes
+  base_url: http://127.0.0.1:8080/v1
+  priority: 10
+  kind: openai
+  api_key_env: HERMES_CUSTOM_OMNIROUTE_API_KEY
+  timeout_seconds: 120.0
+  sticky: true
+  enabled: true

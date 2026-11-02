@@ -12,12 +12,15 @@ expirée est ignorée à la lecture et purgée par ``purge_expired``.
 from __future__ import annotations
 
 import json
-import sqlite3
+import logging
 import time
 from dataclasses import dataclass
+from datetime import datetime
 from typing import Any
 
 from .db import Database
+
+log = logging.getLogger("icyloom.cache")
 
 
 @dataclass(frozen=True)
@@ -225,13 +228,19 @@ class CacheStore:
 
     # -- interne ----------------------------------------------------------
     def _expired(self, created_at: str) -> bool:
+        """Vrai si l'entrée dépasse le TTL (calcul local, sans SQL).
+
+        L'ancien calcul SQL utilisait ``FROM ?`` (un nom de table paramétré,
+        invalide) : la requête levait toujours ``OperationalError``, avalée
+        par le ``except`` -> le cache n'expirait jamais. Le calcul est
+        maintenant fait en Python, et un horodatage illisible est traité
+        comme **expiré** (on ne ressert pas une donnée qu'on ne sait pas
+        dater) au lieu de « non expiré ».
+        """
         try:
-            with self.db.cursor(commit=False) as cur:
-                row = cur.execute(
-                    "SELECT (julianday('now') - julianday(?)) * 86400 AS age FROM ?",
-                    (created_at, created_at),
-                ).fetchone()
-            age = float(row["age"]) if row and row["age"] is not None else 0.0
-        except sqlite3.Error:
-            return False
-        return age > self.ttl_seconds
+            created = datetime.strptime(created_at, "%Y-%m-%d %H:%M:%S")
+        except (TypeError, ValueError):
+            log.warning("created_at illisible (%r) : entrée traitée comme expirée",
+                        created_at)
+            return True
+        return (datetime.utcnow() - created).total_seconds() > self.ttl_seconds

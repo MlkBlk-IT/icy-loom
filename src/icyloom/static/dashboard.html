@@ -116,7 +116,7 @@ body {
 .sep i { flex: 1; height: 2px; background: repeating-linear-gradient(90deg, var(--ink) 0 6px, transparent 6px 11px); opacity: .45; }
 .sep span { font-family: var(--font-sans); font-size: 9px; font-weight: 800; letter-spacing: .16em; text-transform: uppercase; color: rgba(70,35,26,.55); }
 
-.nav { display: flex; flex-direction: column; gap: 3px; }
+.side .nav { display: flex; flex-direction: column; gap: 3px; }
 .nav-item {
   position: relative; display: flex; align-items: center; gap: 9px; width: 100%;
   padding: 8px 10px; border: 2px solid transparent; border-radius: 12px;
@@ -188,6 +188,7 @@ body {
   .app { grid-template-columns: 1fr; grid-template-rows: auto 1fr; }
   .side { flex-direction: row; flex-wrap: wrap; align-items: center; border-right: none; border-bottom: 3px solid var(--ink); }
   .side .nav { flex-direction: row; flex-wrap: wrap; }
+  .side .nav-item { width: auto; }
   .side .sep, .side-status { display: none; }
   .side-actions { grid-template-columns: repeat(4, auto); }
 }
@@ -206,19 +207,19 @@ body {
 .brand { display: flex; align-items: center; gap: 10px; text-decoration: none; color: inherit; }
 .brand-name { display: block; font-family: var(--font-sans); font-size: 19px; font-weight: 800; letter-spacing: -.02em; line-height: 1; }
 .brand-sub { display: block; font-size: 11px; color: rgba(70, 35, 26, .6); line-height: 1.45; }
-.nav { margin-left: auto; display: none; gap: 1px; }
-.nav a {
+.topbar .nav { margin-left: auto; display: none; gap: 1px; }
+.topbar .nav a {
   padding: 5px 10px; border-radius: 11px; text-decoration: none;
   color: rgba(70, 35, 26, .74); font-size: 14px;
   transition: transform .15s ease, background .15s ease;
 }
-.nav a:hover { transform: rotate(-2deg); background: var(--paper3); color: var(--ink); }
+.topbar .nav a:hover { transform: rotate(-2deg); background: var(--paper3); color: var(--ink); }
 .live {
   margin-left: auto; display: flex; align-items: center; gap: 8px;
   padding: 4px 12px; border: 2px solid var(--ink); border-radius: 999px;
   background: var(--paper2); font-size: 13px;
 }
-@media (min-width: 1180px) { .nav { display: flex; } .live { margin-left: 0; } }
+@media (min-width: 1180px) { .topbar .nav { display: flex; } .live { margin-left: 0; } }
 
 .pulse-dot { width: 9px; height: 9px; border-radius: 999px; border: 1px solid var(--ink); background: var(--hit); animation: pulse 1.7s ease-in-out infinite; }
 @keyframes pulse { 0%, 100% { transform: scale(1); opacity: 1 } 50% { transform: scale(1.45); opacity: .55 } }
@@ -257,6 +258,7 @@ body {
 /* ── layout ────────────────────────────────────────────────── */
 main { margin: 0 auto; max-width: 1400px; padding: 0 20px 70px; }
 .grid { display: grid; grid-template-columns: repeat(12, 1fr); gap: 16px; }
+.grid > * { min-width: 0; }
 .c4 { grid-column: span 12; } .c5 { grid-column: span 12; } .c6 { grid-column: span 12; }
 .c7 { grid-column: span 12; } .c8 { grid-column: span 12; } .c12 { grid-column: span 12; }
 @media (min-width: 900px) {
@@ -330,7 +332,7 @@ table.sk th {
   background: var(--paper3);
   font-family: var(--font-sans); font-size: 9.5px; font-weight: 800;
   letter-spacing: .11em; text-transform: uppercase; color: rgba(70, 35, 26, .68);
-  border-bottom: 2.5px solid var(--ink); cursor: pointer; white-space: nowrap;
+  border-bottom: 2.5px solid var(--ink); white-space: nowrap;
 }
 table.sk th:hover { color: var(--ink); }
 table.sk td { padding: 4px 9px; border-bottom: 1.5px dashed var(--border); white-space: nowrap; }
@@ -360,12 +362,13 @@ table.sk td.mono { font-family: var(--font-mono); font-size: 11px; }
 
 /* ── mini stat boxes ───────────────────────────────────────── */
 .mini { display: grid; grid-template-columns: repeat(auto-fit, minmax(118px, 1fr)); gap: 9px; }
+.mini > * { min-width: 0; }
 .mini .box {
   padding: 8px 10px; border: 2.5px solid var(--ink); border-radius: 13px 22px 11px 18px / 16px 11px 20px 13px;
   background: var(--paper2); box-shadow: 3px 3px 0 rgba(70, 35, 26, .82);
 }
 .mini .box .k { font-family: var(--font-sans); font-size: 9.5px; font-weight: 800; letter-spacing: .12em; text-transform: uppercase; color: rgba(70, 35, 26, .6); }
-.mini .box .v { font-family: var(--font-sans); font-size: 18px; font-weight: 800; }
+.mini .box .v { font-family: var(--font-sans); font-size: 18px; font-weight: 800; overflow-wrap: anywhere; }
 .mini .box .s { font-size: 11px; color: rgba(70, 35, 26, .55); }
 
 /* ── guide ─────────────────────────────────────────────────── */
@@ -805,6 +808,44 @@ footer { border-top: 3px dashed var(--ink); margin-top: 0; flex: 0 0 auto; backg
             <p class="cap">Only tools on the <code>cache_tools</code> allow-list are cached — deny by default.</p>
           </div>
         </div>
+        <div class="cat-wrap">
+          <div class="card c12">
+            <div class="phead"><h3>MCP catalog — pick what IcyLoom may relay</h3><span class="hint" id="catalog-count">—</span></div>
+            <p class="cap">Checked servers are active: their tools are exposed to the relay. Unchecked stay dormant in the catalog, ready to be switched on. Toggling writes <code>icyloom.yaml</code> (timestamped backup) and hot-reloads the proxy.</p>
+          </div>
+          <div class="cat-grid" id="catalog-grid"></div>
+        </div>
+        <style>
+          .cat-wrap { margin-top: 16px; }
+          .cat-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
+            gap: 10px;
+            margin-top: 12px;
+            width: 100%;
+          }
+          .cat-grid .cat-card {
+            display: flex;
+            align-items: flex-start;
+            gap: 9px;
+            padding: 10px 11px;
+            border: 1px solid rgba(70,35,26,.22);
+            border-radius: 10px;
+            background: rgba(255,255,255,.42);
+            cursor: pointer;
+            transition: background .12s, border-color .12s;
+            min-width: 0;
+          }
+          .cat-grid .cat-card:hover { background: rgba(255,255,255,.72); border-color: rgba(70,35,26,.4); }
+          .cat-grid .cat-card.on { background: rgba(15,181,166,.14); border-color: rgba(15,181,166,.55); }
+          .cat-grid .cat-card input { width: 16px; height: 16px; margin: 2px 0 0; accent-color: #0fb5a6; cursor: pointer; flex: 0 0 auto; }
+          .cat-grid .cat-body { min-width: 0; flex: 1 1 auto; }
+          .cat-grid .cat-top { display: flex; align-items: center; gap: 7px; }
+          .cat-grid .cat-name { font-family: var(--font-mono); font-size: 13px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; flex: 1 1 auto; }
+          .cat-grid .cat-badge { font-size: 10px; padding: 2px 7px; border-radius: 20px; white-space: nowrap; flex: 0 0 auto; background: rgba(70,35,26,.12); color: rgba(70,35,26,.7); }
+          .cat-grid .cat-card.on .cat-badge { background: rgba(15,181,166,.9); color: #fff; }
+          .cat-grid .cat-desc { font-size: 11.5px; line-height: 1.35; color: rgba(70,35,26,.6); margin-top: 3px; overflow-wrap: anywhere; }
+        </style>
         <div class="grid" style="margin-top:16px">
           <div class="card c12">
             <div class="phead"><h3>Per-tool breakdown</h3><span class="hint">live</span></div>
@@ -877,7 +918,7 @@ footer { border-top: 3px dashed var(--ink); margin-top: 0; flex: 0 0 auto; backg
           <div class="card c4 guide">
             <h4>Shortcuts &amp; tips</h4>
             <ul>
-              <li><code>1</code>…<code>8</code> jump to a view, <code>R</code> refreshes, <code>P</code> pauses, <code>E</code> exports, <code>C</code> compacts.</li>
+              <li><code>1</code>…<code>9</code> and <code>0</code> jump to a view, <code>R</code> refreshes, <code>P</code> pauses, <code>E</code> exports, <code>C</code> compacts.</li>
               <li>The <b>side panel</b> switches view: every view is live, none of them is a static page.</li>
               <li>The 3D relief spins with the mouse; the map is read with the finger.</li>
               <li>Ports: gateway <code>8150</code>, MCP HTTP <code>8151</code>, SSE <code>8152</code>, console <code>8153</code>.</li>
@@ -1268,6 +1309,7 @@ const state = {
   snap: null, prev: null, prevTs: 0, rate: 0, paused: false, view: "overview",
   window: { hours: 24, days: 14, label: "24h" },
   history: { calls: [], hit: [], paid: [], saved: [], gain: [] },
+  catalogAt: 0, catalogSig: "", catalogActive: null,
   shown: {}, spin: { rotate: -Math.PI / 4, drag: null },
   filters: { cache: "", llm: "", tool: "" },
 };
@@ -1327,6 +1369,7 @@ const KPIS = [
   { key: "tokens_saved", label: "Tokens avoided", icon: "↑", color: C.hit, fmt: compact, sub: "cache + compression + tools" },
   { key: "gain_pct", label: "Gain", icon: "%", color: C.mango, fmt: (v) => v.toFixed(1), unit: "%", sub: "threshold 35%" },
 ];
+const HISTORY_KEY = { calls: "calls", hit_rate_pct: "hit", tokens_paid: "paid", tokens_saved: "saved", gain_pct: "gain" };
 function mountKpis() {
   const host = $("#kpis");
   KPIS.forEach((def) => {
@@ -1382,7 +1425,7 @@ function renderKpis(snap) {
       delta = target - (kpi.threshold_pct || 35);
       positive = delta >= 0;
     } else {
-      const key = def.key === "hit_rate_pct" ? "hit" : def.key;
+      const key = HISTORY_KEY[def.key] || def.key;
       const series = state.history[key];
       if (series && series.length > 5 && series[0] !== 0) {
         delta = ((series[series.length - 1] - series[0]) / Math.abs(series[0])) * 100;
@@ -1395,7 +1438,7 @@ function renderKpis(snap) {
       def.node.badge.className = "sticker sm " + (positive ? "hit" : "miss");
       def.node.badge.textContent = (positive ? "▲ +" : "▼ −") + Math.abs(delta).toFixed(1) + "%";
     }
-    const key = def.key === "hit_rate_pct" ? "hit" : def.key;
+    const key = HISTORY_KEY[def.key] || def.key;
     sparkline(def.node.svg, state.history[key] || [], def.color, 310 + def.key.length * 17);
   });
 }
@@ -1508,6 +1551,7 @@ function drawVolcano() {
 }
 function bindSpin() {
   const svg = $("#ch-volcano"), st = state.spin;
+  st.rotate = Iso.rotate;   // une seule source de verite : le drag pilote Iso.rotate
   svg.style.cursor = "grab";
   svg.addEventListener("pointerdown", (e) => {
     st.drag = { x: e.clientX, angle: st.rotate };
@@ -1516,6 +1560,7 @@ function bindSpin() {
   svg.addEventListener("pointermove", (e) => {
     if (!st.drag) return;
     st.rotate = st.drag.angle + (e.clientX - st.drag.x) * 0.012;
+    Iso.rotate = st.rotate;   // <- la projection lit Iso.rotate, pas state.spin : sans cette ligne le drag ne dessine rien
     drawVolcano();
   });
   const end = (e) => { st.drag = null; svg.style.cursor = "grab"; try { svg.releasePointerCapture(e.pointerId); } catch (x) {} };
@@ -1680,21 +1725,22 @@ function drawLine() {
   const snap = state.snap;
   while (svg.firstChild) svg.removeChild(svg.firstChild);
   if (!snap) return;
-  const series = snap.registry.daily || [];
+  const series = (snap.registry.daily || []).slice().sort((a, b) => String(a.day || "").localeCompare(String(b.day || "")));
   const W = 700, H = 380, M = { l: 74, r: 120, t: 34, b: 52 };
   const pw = W - M.l - M.r, ph = H - M.t - M.b;
   if (series.length < 2) { txt(svg, W / 2, H / 2, "not enough days measured yet", { size: 14, anchor: "middle", soft: true }); return; }
   const saved = series.map((d) => d.saved || 0);
   const paid = series.map((d) => d.paid || 0);
   const maxV = Math.max(1, ...saved, ...paid);
+  const minV = Math.min(0, ...saved, ...paid);
   const base = M.t + ph;
   const X = (i) => M.l + (i / (series.length - 1)) * pw;
-  const Y = (v) => base - (v / maxV) * ph;
+  const Y = (v) => base - ((v - minV) / (maxV - minV)) * ph;
   const pts = saved.map((v, i) => [X(i), Y(v)]);
   const ppts = paid.map((v, i) => [X(i), Y(v)]);
 
   for (let g = 0; g <= 4; g++) {
-    const v = (maxV / 4) * g, y = Y(v);
+    const v = minV + ((maxV - minV) / 4) * g, y = Y(v);
     svg.appendChild(el("path", { d: Rough.line(M.l - 5, y, M.l + pw, y, { seed: 700 + g, roughness: 1.2, bowing: 2 }), fill: "none", stroke: C.border, "stroke-width": 1.3 }));
     txt(svg, M.l - 9, y + 4, compact(Math.round(v)), { size: 11, anchor: "end", soft: true });
   }
@@ -1882,7 +1928,7 @@ function drawTools() {
     const g = el("g", {});
     g.setAttribute("class", "rough-bar-group");
     sketch(g, "M" + M.l + " " + y + " h" + w.toFixed(1) + " v" + bh.toFixed(1) + " h" + (-w).toFixed(1) + " Z", { fill: heat(0.4 + 0.5 * ((r.n || 0) / maxV)), tint: 0.32, angle: 45, gap: 5, weight: 1.8, sw: 1.8 });
-    txt(g, M.l - 7, y + bh / 2 + 4, (r.tool || "?") + "", { size: 12, anchor: "end" });
+    txt(g, M.l - 7, y + bh / 2 + 4, String(r.tool || "?").slice(0, 16), { size: 12, anchor: "end" });
     txt(g, M.l + w + 7, y + bh / 2 + 4, num(r.n), { size: 11.5 });
     svg.appendChild(g);
   });
@@ -1922,6 +1968,7 @@ function drawFlow() {
 /* ══ the eight views ═════════════════════════════════════════ */
 const ICONS = {
   overview: '<circle cx="12" cy="12" r="8"/><path d="M12 4v16M4 12h16"/>',
+  quickstart: '<path d="M5 3h8l6 6v12H5z"/><path d="M13 3v6h6"/><path d="M9 14h6M9 18h4"/>',
   activity: '<path d="M3 19h18M6 16l4-6 4 4 4-8"/>',
   economy: '<path d="M12 3v18M16 7c0-1.7-1.8-3-4-3S8 5.3 8 7s1.8 3 4 3 4 1.3 4 3-1.8 3-4 3-4-1.3-4-3"/>',
   cache: '<ellipse cx="12" cy="6" rx="8" ry="3"/><path d="M4 6v6c0 1.7 3.6 3 8 3s8-1.3 8-3V6M4 12v6c0 1.7 3.6 3 8 3s8-1.3 8-3v-6"/>',
@@ -1954,7 +2001,7 @@ function mountNav() {
     button.type = "button";
     const ico = el("svg", { viewBox: "0 0 24 24", fill: "none", stroke: "currentColor",
       "stroke-width": "2.2", "stroke-linecap": "round", "stroke-linejoin": "round" });
-    ico.innerHTML = ICONS[view.id];
+    ico.innerHTML = ICONS[view.id] || "";
     const icon = htm("span", "ico");
     icon.appendChild(ico);
     const label = htm("span", "lbl", view.label);
@@ -2122,7 +2169,7 @@ function renderTools(snap) {
     row.appendChild(badge); row.appendChild(name); row.appendChild(gauge); row.appendChild(val); row.appendChild(sub);
     host.appendChild(row);
   });
-  if (!list.length) host.appendChild(htm("div", "", "no tool server configured"));
+  if (!list.length) host.appendChild(htm("div", "", "no tool result cached yet — no server has a cached tool call"));
 
   const mini = $("#tools-mini");
   mini.innerHTML = "";
@@ -2130,7 +2177,7 @@ function renderTools(snap) {
   const boxes = [
     ["Calls", num((kinds.find((k) => k.kind === "tool_call") || {}).n)],
     ["Cache hits", num((kinds.find((k) => k.kind === "tool_hit") || {}).n)],
-    ["Servers", num(list.length)],
+    ["Servers", num(state.catalogActive != null ? state.catalogActive : list.length)],
     ["Latency saved", ms(snap.kpi.saved_latency_ms)],
   ];
   boxes.forEach(([k, v]) => {
@@ -2287,6 +2334,77 @@ function renderEconomy(snap) {
     });
 }
 
+async function renderCatalog(force) {
+  const host = $("#catalog-grid");
+  const count = $("#catalog-count");
+  if (!host) return;
+  state.catalogAt = Date.now();
+  try {
+    const res = await fetch("/api/tools/catalog", { cache: "no-store" });
+    if (!res.ok) throw new Error("HTTP " + res.status);
+    const data = await res.json();
+    const catalog = data.catalog || [];
+    const active = new Set(data.active || []);
+    state.catalogActive = active.size;
+    if (count) count.textContent = active.size + " active / " + catalog.length + " available";
+    const sig = catalog.map((s) => s.name + ":" + ((active.has(s.name) || s.enabled) ? 1 : 0)).join("|");
+    if (!force && sig === state.catalogSig && host.childElementCount) return;
+    state.catalogSig = sig;
+    host.innerHTML = "";
+    if (!catalog.length) {
+      host.appendChild(htm("div", "", "catalog is empty — add servers under tool_proxy.catalog in icyloom.yaml"));
+      return;
+    }
+    catalog.forEach((srv) => {
+      const on = active.has(srv.name) || !!srv.enabled;
+      const card = htm("div", "cat-card" + (on ? " on" : ""));
+      const box = document.createElement("input");
+      box.type = "checkbox";
+      box.checked = on;
+      const body = htm("div", "cat-body");
+      const top = htm("div", "cat-top");
+      const name = htm("b", "cat-name", srv.name);
+      name.title = srv.name;
+      const badge = htm("span", "cat-badge", on ? "active" : "dormant");
+      top.appendChild(name); top.appendChild(badge);
+      const desc = htm("div", "cat-desc", srv.description || (srv.command ? srv.command + " " + ((srv.args || []).join(" ")) : ""));
+      body.appendChild(top); body.appendChild(desc);
+      card.appendChild(box); card.appendChild(body);
+      const toggle = async (want) => {
+        box.disabled = true;
+        try {
+          const r = await fetch("/api/tools/enable", {
+            method: "POST",
+            headers: { "Content-Type": "application/json", "X-IcyLoom-Confirm": "1" },
+            body: JSON.stringify({ name: srv.name, enabled: want }),
+          });
+          const out = await r.json();
+          if (!r.ok) throw new Error((out.detail && (out.detail.error || out.detail.message)) || ("HTTP " + r.status));
+          card.classList.toggle("on", want);
+          badge.className = "cat-badge";
+          badge.textContent = want ? "active" : "dormant";
+          state.catalogSig = "";
+          const detail = out.detail || {};
+          const bak = String(detail.backup || "—");
+          const bakShort = bak.split(String.fromCharCode(92)).pop().split("/").pop();
+          toast((want ? "enabled " : "disabled ") + srv.name + " · backup " + bakShort);
+        } catch (e) {
+          box.checked = !want;
+          toast("failed to toggle " + srv.name + ": " + e.message);
+        } finally {
+          box.disabled = false;
+        }
+      };
+      box.addEventListener("change", () => toggle(box.checked));
+      card.addEventListener("click", (e) => { if (e.target !== box) { box.checked = !box.checked; box.dispatchEvent(new Event("change")); } });
+      host.appendChild(card);
+    });
+  } catch (e) {
+    host.innerHTML = "";
+    host.appendChild(htm("div", "", "catalog unavailable: " + e.message + " (restart IcyLoom to load the tool catalog API)"));
+  }
+}
+
 function renderToolsDetail(snap) {
   const list = snap.breakdown.tool_events_by_tool || [];
   const total = list.reduce((a, r) => a + (r.n || 0), 0) || 1;
@@ -2395,6 +2513,7 @@ const VIEW_RENDERERS = {
   },
   tools: (snap) => {
     renderTools(snap); drawTools(); renderToolsDetail(snap);
+    if (Date.now() - (state.catalogAt || 0) > 30000) renderCatalog();
   },
   audit: (snap) => {
     renderAudit(snap);
@@ -2511,7 +2630,7 @@ async function poll() {
     push(h.paid, snap.kpi.tokens_paid || 0);
     push(h.saved, snap.kpi.tokens_saved || 0);
     push(h.gain, snap.kpi.gain_pct || 0);
-    render(snap);
+    try { render(snap); } catch (err) { console.error("IcyLoom: render failed", err); }
     $("#tb-evcount").textContent = num(snap.kpi.calls) + " events";
     $("#rate-pill").textContent = state.rate.toFixed(1) + " req/min";
     setStream("live");

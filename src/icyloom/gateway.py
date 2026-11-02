@@ -14,11 +14,13 @@ utilisée pour calculer la clé de cache est normalisée.
 
 from __future__ import annotations
 
+import asyncio
 import json
 import logging
 import re
 import time
 import uuid
+from contextlib import asynccontextmanager
 from typing import Any, AsyncIterator, Iterator, Mapping
 
 import httpx
@@ -46,6 +48,9 @@ CACHE_HEADER = "X-IcyLoom-Cache"
 #: Marqueur d'un flux stocké BRUT : l'amont est rejoué octet pour octet
 #: (functionCall, tool_calls, tool_use, thoughtSignature, ids d'appel).
 RAW_MAGIC = "icyloom-raw/1"
+
+#: Délai maximal qu'un suiveur attend la production d'un autre (single-flight).
+_FLIGHT_TIMEOUT_S = 120.0
 
 #: Fins de génération qui rendent une réponse rejouable. Une réponse tronquée
 #: ou refusée (max_tokens, safety, appel d'outil mal formé...) n'est jamais cachée.
@@ -383,6 +388,47 @@ def create_app(config: Config) -> FastAPI:
                  saved_prompt, saved_completion, latency_ms, upstream, client),
             )
 
+    # -- single-flight ------------------------------------------------------
+    #: Clés en cours de calcul : la première requête « mène », les autres
+    #: attendent sa production puis relisent le cache au lieu de payer
+    #: l'amont une seconde fois (N appels identiques simultanés = 1 appel).
+    _flights: dict[str, asyncio.Future] = {}
+    _flights_lock = asyncio.Lock()
+
+    @asynccontextmanager
+    async def _flight_gate(key: str) -> AsyncIterator[bool]:
+        """Rend True si l'appelant doit produire, False s'il doit attendre."""
+        async with _flights_lock:
+            fut = _flights.get(key)
+            if fut is None:
+                _flights[key] = asyncio.get_running_loop().create_future()
+                leader = True
+            else:
+                leader = False
+        try:
+            yield leader
+        finally:
+            if leader:
+                await _release_flight(key)
+
+    async def _release_flight(key: str) -> None:
+        """Libère les suiveurs et retire la clé de la table des vols."""
+        async with _flights_lock:
+            fut = _flights.pop(key, None)
+        if fut is not None and not fut.done():
+            fut.set_result(None)
+
+    async def _await_flight(key: str) -> Any:
+        """Attend la fin du calcul mené par un autre, puis relit le cache."""
+        async with _flights_lock:
+            fut = _flights.get(key)
+        if fut is not None:
+            try:
+                await asyncio.wait_for(asyncio.shield(fut), timeout=_FLIGHT_TIMEOUT_S)
+            except (asyncio.TimeoutError, asyncio.CancelledError):
+                log.warning("single-flight : attente expirée pour la clé %.12s", key)
+        return gateway.cache.get(key, bump=False)
+
     def _cache_hit_response(entry, request: Request, key: str) -> JSONResponse:
         """Rejoue une entrée de cache et journalise l'économie de l'opération."""
         payload = entry.payload()
@@ -566,13 +612,36 @@ def create_app(config: Config) -> FastAPI:
             target = _build_target(candidate.base_url, path, candidate.strip_v1,
                                    request.url.query)
             headers = _forward_headers(request, candidate)
+
+            # -- single-flight -------------------------------------------------
+            # N requêtes identiques simultanées (même clé) ne doivent coûter
+            # qu'UN appel amont : le premier produit, les suivantes rejouent.
+            # Le verrou ne couvre que la fenêtre d'appel ; un stream est
+            # laissé passer (le consommateur doit voir les octets en direct).
+            if not wants_stream:
+                async with _flight_gate(key) as leader:
+                    if not leader:
+                        entry = await _await_flight(key)
+                        if entry is not None:
+                            return _cache_hit_response(entry, request, key)
+                        leader = True
+                    started = time.perf_counter()
+                    try:
+                        result = await _proxy_json(request, candidate, target, headers,
+                                                   body, key, started)
+                    except httpx.HTTPError as exc:
+                        breaker.record_failure()
+                        last_error = f"{type(exc).__name__}: {exc}"
+                        log.warning("amont %s en échec (%s) : bascule", candidate.name, last_error)
+                        continue
+                    finally:
+                        await _release_flight(key)
+                    breaker.record_success()
+                    return result
             started = time.perf_counter()
             try:
-                if wants_stream:
-                    return await _proxy_stream(request, candidate, target, headers, body,
-                                               key, started)
-                return await _proxy_json(request, candidate, target, headers, body,
-                                         key, started)
+                return await _proxy_stream(request, candidate, target, headers, body,
+                                           key, started)
             except httpx.HTTPError as exc:
                 breaker.record_failure()
                 last_error = f"{type(exc).__name__}: {exc}"

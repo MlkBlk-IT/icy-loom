@@ -203,6 +203,56 @@ def create_app(config: Config) -> FastAPI:
     async def tools_list():
         return {"servers": tools.server_names(), "stats": tools.stats()}
 
+    @app.get("/api/tools/catalog")
+    async def tools_catalog():
+        """Catalogue des serveurs MCP disponibles + etat (actif/inactif)."""
+        active = {s.get("name") for s in tools.server_configs()}
+        items = []
+        for s in [*config.tool_proxy.servers, *config.tool_proxy.catalog]:
+            items.append({
+                "name": s.name,
+                "command": s.command,
+                "args": list(s.args),
+                "description": s.description,
+                "cache_enabled": s.cache_enabled,
+                "ttl_seconds": s.ttl_seconds,
+                "enabled": s.name in active,
+            })
+        seen, unique = set(), []
+        for it in items:
+            if it["name"] in seen:
+                continue
+            seen.add(it["name"])
+            unique.append(it)
+        return {"catalog": unique, "active": sorted(active), "count": len(unique)}
+
+    @app.post("/api/tools/enable")
+    async def tools_enable(request: Request):
+        """Active ou desactive un serveur du catalogue (ecriture YAML + hot-reload)."""
+        if request.headers.get("X-IcyLoom-Confirm", "").lower() not in ("1", "true", "yes"):
+            raise HTTPException(status_code=400, detail={
+                "error": "confirmation_required",
+                "message": "Envoyer X-IcyLoom-Confirm: 1 pour confirmer.",
+            })
+        payload = await request.json() if await request.body() else {}
+        if not isinstance(payload, dict):
+            raise HTTPException(status_code=400, detail={"error": "payload_invalide"})
+        name = str(payload.get("name") or "").strip()
+        want = bool(payload.get("enabled", True))
+        if not name:
+            raise HTTPException(status_code=400, detail={"error": "name_requis"})
+        known = {s.name: s for s in [*config.tool_proxy.servers, *config.tool_proxy.catalog]}
+        target = known.get(name)
+        if target is None:
+            raise HTTPException(status_code=404, detail={"error": "serveur_inconnu", "name": name})
+        if not target.command:
+            raise HTTPException(status_code=400, detail={"error": "commande_absente", "name": name})
+        try:
+            result = tools.set_server_enabled(name, want)
+        except Exception as exc:  # noqa: BLE001 - remonte l'erreur au client
+            raise HTTPException(status_code=500, detail={"error": "activation_echouee", "message": str(exc)}) from exc
+        return {"ok": True, "name": name, "enabled": want, "detail": result}
+
     @app.post("/api/tools/clear")
     async def tools_clear(request: Request):
         if request.headers.get("X-IcyLoom-Confirm", "").lower() not in ("1", "true", "yes"):

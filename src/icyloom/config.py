@@ -137,12 +137,16 @@ class ToolServerConfig(BaseModel):
     #: Allowlist stricte d'outils cachables ; vide = rien n'est mis en cache.
     cache_tools: dict[str, bool] = Field(default_factory=dict)
     enabled: bool = True
+    #: Description lisible (catalogue) : sert au choix offert dans le dashboard.
+    description: str = ""
 
 
 class ToolProxyConfig(BaseModel):
     """Relais d'outils MCP : cache, TTL par serveur, garde anti-boucle."""
 
     servers: list[ToolServerConfig] = Field(default_factory=list)
+    #: Catalogue de serveurs disponibles mais inactifs : le dashboard propose ce choix.
+    catalog: list[ToolServerConfig] = Field(default_factory=list)
     default_ttl_seconds: int = 3600
     loop_window_seconds: int = 300
     loop_warn_after: int = 3

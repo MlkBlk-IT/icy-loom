@@ -402,11 +402,11 @@ tokens saved / (tokens paid + tokens saved)
 
 The tokens of an **LLM cache hit** are the **real** tokens measured on the original call: they are never estimated. Compression tokens come from the local counter (tiktoken if available, otherwise an estimator), and the counter used is recorded in every entry.
 
-**Tool path:** a tool-cache hit is ledgered with `saved_latency_ms` only; `tool_tokens_saved` is 0. The tool cache saves latency, not tokens.
+**Tool path:** a tool-cache hit is ledgered with `saved_latency_ms` **and** the tokens actually spared (`tool_tokens_saved`, measured by the local counter on the cached payload). A tool-cache hit therefore saves latency and tokens: the model never re-encodes a result it already has.
 
 ## Known limitations
 
-- **No measured token savings on tool calls.** See the Status section.
+- **Tool-call token savings are measured by a local counter**, not by the upstream API: exact with `tiktoken` installed, estimated otherwise. The counter used is recorded on every ledger entry. See the Status section.
 - **Compression quality is not proven.** In a prototype run on a real model (carried over from earlier notes, details in `PROGRESS.md`), estimated prompt tokens dropped by about 84 to 92 percent, but the model answered incorrectly: the anchor keeps only a header, the invariants and the first 800 characters, so a key line in the middle of a log was lost. Compression therefore stays **opt-in**; "strict" guarantees that the invariants are kept, not that the text the model sees is unchanged.
 - The gateway cache uses one slot per key shared by JSON and streaming responses, so a streamed request can miss a hit created by the JSON one.
 - An upstream `ReadTimeout` during streaming is not caught in `gateway.py` (around line 578) and can end a client run.

@@ -4,6 +4,50 @@ All notable changes to this project are documented here.
 Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) — versioning:
 [SemVer](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.1] — 2026-11-01
+
+Correctness fixes to the cache expiry, the tool-cache TTL and the token
+accounting, plus a stampede guard and a safe configuration reload. No
+breaking change, no schema migration required.
+
+### Fixed
+
+- **The cache never expired (silent).** `CacheStore._expired` built its SQL
+  with a parameterised **table name** (`FROM ?`), which SQLite always rejects
+  with `OperationalError`; the `except` swallowed it, so every entry lived
+  forever. The age is now computed in Python (`datetime.strptime` on the
+  stored timestamp). An unreadable timestamp is treated as **expired**
+  (fail-closed: never serve a result whose age cannot be proven) instead of
+  "not expired", and the anomaly is logged instead of being dropped.
+- **Tool-cache rows recorded the wrong TTL.** `cache_set` stored the global
+  `default_ttl_seconds` even when a per-server `ttl_seconds` was the value
+  actually applied on read (`_ttl(server)`). The stored TTL now matches the
+  enforced one, so any maintenance performed from the table is truthful.
+- **`tool_tokens_saved` was hard-coded to 0 on every tool-cache hit.** The
+  ledger published "0 tokens saved" whatever the payload size, so the
+  tool cache looked like a pure latency win. The hit now measures the tokens
+  of the cached payload with the local counter (`tiktoken` when installed,
+  estimator otherwise) and records the counter name and byte size in the
+  entry metadata.
+- **A first entry created by one caller was recomputed by its N twins.**
+  Identical concurrent non-streaming requests all missed and all paid the
+  upstream. A single-flight gate now lets the first request produce while the
+  others await its result and re-read the cache (one upstream call for N
+  simultaneous identical requests). Streaming requests are deliberately left
+  out: the consumer must see the bytes as they arrive.
+- **A configuration change was applied by overwriting the file.** Writing the
+  tool registry now keeps a timestamped `.bak` copy first, reloads the
+  catalog from disk, and reports the backup path and the active servers, so a
+  bad edit is always reversible.
+
+### Changed
+
+- Version `1.0.0` → `1.0.1`.
+- README: the tool path now documents the measured token saving, and the
+  "no measured token savings on tool calls" limitation is replaced by the
+  real constraint — the counter is **local** (exact with `tiktoken`,
+  estimated otherwise), never the upstream's own count.
+
 ## [1.0.0] — 2026-10-31
 
 First public release. Everything below was verified by an executed command on

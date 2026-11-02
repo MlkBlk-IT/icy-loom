@@ -33,11 +33,20 @@ from typing import Any, Iterable
 from mcp import ClientSession, StdioServerParameters
 from mcp.client.stdio import stdio_client
 
+import yaml
+
+from . import paths
 from .config import Config, ToolServerConfig
 from .db import Database
 from .ledger import Ledger, LedgerEntry
+from .tokenizer import count_tokens, counter_name
 
 log = logging.getLogger("icyloom.toolproxy")
+
+
+def _stamp() -> str:
+    """Horodatage compact pour nommer une sauvegarde de configuration."""
+    return datetime.now().strftime("%Y%m%d_%H%M%S")
 
 #: Indices de nom d'outil considérés comme « d'écriture » : leur résultat ne
 #: doit jamais être rejoué depuis le cache.
@@ -230,6 +239,69 @@ class ToolProxy:
     def server_names(self) -> list[str]:
         return sorted(self._servers)
 
+    def server_configs(self) -> list[dict[str, Any]]:
+        """Serveurs actifs, sous forme serialisable (pour l'API/dashboard)."""
+        return [
+            {
+                "name": s.name,
+                "command": s.command,
+                "args": list(s.args),
+                "cache_enabled": s.cache_enabled,
+                "ttl_seconds": s.ttl_seconds,
+            }
+            for s in self._servers.values()
+        ]
+
+    def set_server_enabled(self, name: str, enabled: bool) -> dict[str, Any]:
+        """Active/desactive un serveur du catalogue : ecrit le YAML et recharge.
+
+        Le serveur est cherche d'abord parmi les actifs, puis dans le
+        catalogue. L'activation ajoute le serveur a ``tool_proxy.servers``
+        (en le retirant du catalogue) ; la desactivation fait l'inverse.
+        Une sauvegarde horodatee du YAML est faite avant toute ecriture.
+        """
+        from .config import load_config  # import local : evite un cycle
+
+        path = paths.config_path()
+        raw = yaml.safe_load(path.read_text(encoding="utf-8")) or {}
+        if not isinstance(raw, dict):
+            raise ValueError("configuration YAML invalide")
+        proxy = raw.setdefault("tool_proxy", {})
+        servers = list(proxy.get("servers") or [])
+        catalog = list(proxy.get("catalog") or [])
+        entry = next((s for s in servers if s.get("name") == name), None)
+        origin = "servers"
+        if entry is None:
+            entry = next((s for s in catalog if s.get("name") == name), None)
+            origin = "catalog"
+        if entry is None:
+            raise KeyError(f"serveur inconnu : {name}")
+
+        backup = path.with_suffix(path.suffix + f".bak-{_stamp()}")
+        backup.write_text(path.read_text(encoding="utf-8"), encoding="utf-8")
+
+        servers = [s for s in servers if s.get("name") != name]
+        catalog = [s for s in catalog if s.get("name") != name]
+        record = dict(entry)
+        record["enabled"] = bool(enabled)
+        if enabled:
+            servers.append(record)
+        else:
+            catalog.append(record)
+        proxy["servers"] = servers
+        proxy["catalog"] = catalog
+        path.write_text(
+            yaml.safe_dump(raw, sort_keys=False, allow_unicode=True, default_flow_style=False),
+            encoding="utf-8",
+        )
+
+        fresh = load_config(path)
+        self.config = fresh
+        self._servers = {s.name: s for s in fresh.tool_proxy.servers if s.enabled}
+        self._catalog.clear()
+        self._schemas.clear()
+        return {"backup": str(backup), "from": origin, "active": self.server_names()}
+
     def server_config(self, name: str) -> ToolServerConfig | None:
         return self._servers.get(name)
 
@@ -333,12 +405,25 @@ class ToolProxy:
             "matched_key": str(row["key"]),
         }
 
+    @staticmethod
+    def _payload_bytes(payload: Any) -> int:
+        """Taille UTF-8 de la charge utile telle qu'un outil la renvoie."""
+        return len(json.dumps(payload, ensure_ascii=False, default=str)
+                   .encode("utf-8"))
+
     def cache_set(self, key: str, server: str, tool: str, result: Any,
-                  latency_ms: int, canon: str | None = None) -> int:
+                  latency_ms: int, canon: str | None = None,
+                  ttl: int | None = None) -> int:
         payload = json.dumps(result, ensure_ascii=False, default=str)
         if len(payload.encode("utf-8")) > self.config.tool_proxy.max_result_bytes:
             return 0
         ckey = canon if canon is not None else canon_key(server, tool, {})
+        # la TTL portée par la ligne est celle **réellement** appliquée à la
+        # relecture (`_ttl(cfg)`), pas le défaut global : la valeur stockée
+        # doit décrire l'entrée, sinon toute maintenance fondée dessus ment.
+        if ttl is None:
+            cfg = self._servers.get(server)
+            ttl = self._ttl(cfg) if cfg is not None else self.config.tool_proxy.default_ttl_seconds
         with self.db.transaction() as cur:
             cur.execute(
                 "INSERT INTO tool_cache"
@@ -347,10 +432,11 @@ class ToolProxy:
                 "  datetime('now'), 0,?)"
                 " ON CONFLICT(key) DO UPDATE SET result_json=excluded.result_json,"
                 "  bytes=excluded.bytes, latency_ms=excluded.latency_ms,"
+                "  ttl=excluded.ttl,"
                 "  created_at=datetime('now'), last_accessed=datetime('now'),"
                 "  hits=tool_cache.hits + 1, canon_key=excluded.canon_key",
                 (key, server, tool, payload, len(payload.encode("utf-8")), latency_ms,
-                 self.config.tool_proxy.default_ttl_seconds, ckey),
+                 int(ttl), ckey),
             )
         return len(payload.encode("utf-8"))
 
@@ -465,13 +551,19 @@ class ToolProxy:
                     return {"ok": False, "error": "loop_blocked",
                             "message": verdict.get("reason"), "server": server,
                             "tool": tool, "repeats": verdict.get("repeats")}
+                # un hit évite réellement d'encoder le résultat côté modèle :
+                # on mesure les tokens que le cache vient d'épargner au lieu
+                # de publier un 0 en dur.
+                tokens_saved = count_tokens(
+                    json.dumps(cached["result"], ensure_ascii=False, default=str))
                 self._log_event("tool_hit", server, tool, args, int(cached["latency_ms"]),
                                 saved_latency_ms=int(cached["latency_ms"]),
                                 detail=matched)
                 self.ledger.record(LedgerEntry(
-                    kind="tool_cache_hit", upstream=server, tool_tokens_saved=0,
+                    kind="tool_cache_hit", upstream=server, tool_tokens_saved=tokens_saved,
                     saved_latency_ms=int(cached["latency_ms"]),
-                    meta={"tool": tool, "cache_key": key, "matched": matched},
+                    meta={"tool": tool, "cache_key": key, "matched": matched,
+                          "counter": counter_name(), "bytes": int(cached["bytes"])},
                 ))
                 answer = {"ok": True, "server": server, "tool": tool,
                           "result": cached["result"], "cached": True}
@@ -518,7 +610,7 @@ class ToolProxy:
             response["warning"] = verdict["warning"]
         failed = isinstance(payload, dict) and bool(payload.get("is_error"))
         if cacheable and not failed:
-            self.cache_set(key, server, tool, payload, latency,
+            self.cache_set(key, server, tool, payload, latency, ttl=ttl,
                            canon=canon_key(server, tool, args, epoch,
                                            self._schema_of(server, tool)))
         return response
