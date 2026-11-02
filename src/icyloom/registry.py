@@ -125,6 +125,53 @@ _CAMEL_RE = re.compile(r"(?<=[a-z0-9])(?=[A-Z])|(?<=[A-Z])(?=[A-Z][a-z])")
 _CJK_RE = re.compile(r"[\u3040-\u30ff\u3400-\u4dbf\u4e00-\u9fff\uac00-\ud7af]")
 
 
+#: Mots vides : ils ne portent aucun signal et perturbent le score
+#: (« lis **un** fichier **du** depot » -> « lis fichier depot »).
+STOPWORDS: frozenset[str] = frozenset({
+    "un", "une", "le", "la", "les", "de", "des", "du", "au", "aux", "et", "ou",
+    "en", "pour", "par", "sur", "dans", "avec", "sans", "ce", "cet", "cette",
+    "ces", "mon", "ma", "mes", "ton", "ta", "tes", "son", "sa", "ses", "notre",
+    "nos", "votre", "vos", "leur", "leurs", "ne", "pas", "plus", "que", "qui",
+    "quoi", "est", "sont", "etre", "avoir", "fait", "faire", "donne", "veut",
+    "the", "of", "for", "to", "in", "on", "with", "and", "or", "is", "are", "be",
+    "it", "its", "this", "that", "these", "those", "my", "me", "you", "your",
+    "we", "our", "do", "does", "can", "will", "from", "by", "please", "want",
+})
+
+
+#: Concepts qui désignent un **objet** (« issue », « fichier », « note »).
+#: Si un outil porte un objet que la demande ne mentionne pas, il agit sur
+#: autre chose : ``add_issue_comment`` pour « crée un ticket » est hors sujet
+#: (il crée un commentaire, pas un ticket).
+OBJECT_CONCEPTS: frozenset[str] = frozenset({
+    "issue", "comment", "file", "repo", "branch", "commit", "pull", "release",
+    "label", "milestone", "discussion", "wiki", "note", "project", "document",
+    "page", "message", "database", "table", "directory", "session", "entity",
+    "entities", "task", "image", "config", "script", "query", "cache", "key",
+    "secret", "container", "server", "user", "attachment", "tag", "blob",
+    "tree", "folder", "workspace", "package", "review", "team",
+})
+
+
+def expand_concepts(terms: Iterable[str]) -> set[str]:
+    """Ramène les mots de la requête aux concepts canoniques.
+
+    Les intentions du registre sont en anglais (``read``, ``delete``...) et
+    les noms d'outils aussi (``read_file``). Sans cette traduction, une
+    demande française ne déclenche jamais le bonus d'intention et le
+    classement se fait au hasard : « supprime un fichier » remontait un
+    outil de diagnostic. « supprime » devient ici ``delete``.
+    """
+    out: set[str] = set()
+    for term in terms:
+        key = strip_accents(term)
+        if not key:
+            continue
+        out.add(key)
+        out |= TERM_CONCEPTS.get(key, set())
+    return out
+
+
 def strip_accents(text: str) -> str:
     """Minuscules sans diacritiques : la recherche lexicale ignore les accents."""
     folded = unicodedata.normalize("NFKD", text or "")
@@ -158,6 +205,49 @@ def _hits(hints: tuple[str, ...], tokens: list[str]) -> bool:
     return any(h in tokens for h in hints)
 
 
+#: Formes françaises qui manquent au lexique principal : celui-ci ne
+#: contient que l'infinitif (« lire », « supprimer »), or une demande
+#: d'agent s'exprime à l'impératif ou à la première personne.
+FR_FORMS: dict[str, str] = {
+    "create": "cree,ajoute,creation",
+    "read": "lis,lecture,ouvre,lisons",
+    "write": "ecris,ecriture,sauvegarde",
+    "update": "modifie,mise a jour",
+    "delete": "supprime,suppression,efface,effacement",
+    "search": "cherche,recherche,cherchons",
+    "list": "liste,listing",
+    "execute": "execute,lance,lancement,execution",
+    "download": "telecharge,telechargement",
+    "upload": "televerse,envoi,attache",
+    "comment": "commente,commentaire",
+    "approve": "approuve,approbation,accepte",
+    "move": "deplace,deplacement,renomme",
+    "copy": "copie,duplique",
+    "export": "exporte,exportation",
+    "import": "importe,importation,charge",
+    "monitor": "surveille,surveillance,observe",
+    "test": "teste,verification,verifie",
+    "navigate": "navigue,navigation,parcourt",
+    "send": "envoie,envoi",
+    "deploy": "deploie,deploiement,publie",
+    "merge": "fusionne,fusion",
+    "file": "fichier,fichiers",
+    "repo": "depot,depot git",
+    "issue": "ticket,tickets",
+    "branch": "branche",
+    "commit": "commit",
+    "database": "base de donnees,bd",
+    "server": "serveur",
+    "container": "conteneur,docker",
+    "message": "message",
+    "user": "utilisateur",
+    "project": "projet",
+    "document": "document,doc",
+    "page": "page",
+    "terminal": "terminal,shell",
+}
+
+
 def _parse_lexicon() -> dict[str, set[str]]:
     """Déplie le lexique : concept -> ensemble de formes (sans accents)."""
     out: dict[str, set[str]] = {}
@@ -169,6 +259,13 @@ def _parse_lexicon() -> dict[str, set[str]]:
                 if term:
                     forms.add(term)
         out[concept] = forms
+    for concept, extra in FR_FORMS.items():
+        if concept not in out:
+            continue
+        for term in extra.split(","):
+            term = strip_accents(term.strip())
+            if term:
+                out[concept].add(term)
     return out
 
 
@@ -472,12 +569,13 @@ class ToolRegistry:
         du domaine et de l'effet de bord demandé.
         """
         terms = [strip_accents(w) for w in words(query)]
-        terms = [t for t in terms if len(t) > 1]
+        terms = [t for t in terms if len(t) > 1 and t not in STOPWORDS]
         if not terms:
             return []
-        # La requête n'est PAS élargie aux synonymes : c'est l'index qui
-        # porte les variantes. La précision de la requête reste intacte.
-        terms = sorted(set(terms))
+        # La requête est ramenée aux concepts canoniques (anglais) : c'est la
+        # seule façon d'aligner une demande en français sur des intentions
+        # ("read", "delete") et des noms d'outils ("read_file") en anglais.
+        terms = sorted(expand_concepts(terms))
         candidates = self._candidates(terms, server)
         scored: list[tuple[float, dict[str, Any]]] = []
         for row in candidates:
@@ -558,6 +656,14 @@ class ToolRegistry:
             score += 4.0
         if row["domain"] in terms:
             score += 2.0
+        # L'outil porte un objet que la demande ne mentionne pas : il agit sur
+        # autre chose (« crée un ticket » ne doit pas remonter un commentaire).
+        query_concepts = {t for t in terms if t in CONCEPTS}
+        name_concepts: set[str] = set()
+        for token in name_tokens:
+            name_concepts |= TERM_CONCEPTS.get(token, set())
+        if (name_concepts & OBJECT_CONCEPTS) - query_concepts:
+            score -= 6.0
         if row["qualified_name"].lower() == (query or "").strip().lower():
             score += 20.0
         return score
