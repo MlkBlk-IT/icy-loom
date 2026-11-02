@@ -91,8 +91,10 @@ tool_proxy:
   - name: sqlite
     command: uvx
     args:
-    - mcp-server-sqlite
-    description: SQLite (Anthropic)
+    - mcp-server-sqlite==2025.4.25
+    - --db-path
+    - 'D:\Icy-Loom\var\mcp-sqlite.db'
+    description: SQLite (Anthropic) - version epinglee, base explicite
     cache_enabled: true
     ttl_seconds: 3600
     enabled: true
@@ -100,10 +102,10 @@ tool_proxy:
     command: uvx
     args:
     - mcp-server-everything
-    description: Serveur test/reference MCP
+    description: Serveur test/reference MCP - paquet ABSENT de PyPI (npm seulement)
     cache_enabled: true
     ttl_seconds: 3600
-    enabled: true
+    enabled: false
   - name: fetch
     command: uvx
     args:
