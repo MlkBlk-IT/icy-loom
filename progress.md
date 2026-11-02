@@ -275,12 +275,12 @@ passage que le périmètre des racines est réellement appliqué par le serveur 
 
 | Mesure | Valeur |
 |---|---|
-| Outils indexés | **188** sur **13** serveurs |
-| Lecture seule / écriture / destructif | **130** (69,1 %) / **43** (22,9 %) / **15** (8,0 %) |
+| Outils indexés | **194** sur **14** serveurs |
+| Lecture seule / écriture / destructif | **134** (69,1 %) / **45** (23,2 %) / **15** (7,7 %) |
 | Décisions tracées | **58** — 40 autorisées, 17 approbations, 1 refus (hors périmètre projet) |
-| Tokens gagnés à la compression | **386 183** — dont **30 093** sur un seul `read_file` |
-| Tokens mesurés (7 jours) | **577 064** |
-| Tests | **186 verts**, exit 0 |
+| Tokens gagnés par la compression d'outils | **118 654** — tokens réels (tiktoken) |
+| Tokens mesurés (fenêtre) | **837 431** — 812 407 schémas, 25 024 résultats |
+| Tests | **20 tests de mission** (un par constat) + suite complète verte, exit 0 |
 
 ### Passage en charge (mesuré)
 
@@ -291,11 +291,11 @@ Charge réelle sur le gateway, même instance, aucun mock — 40 appels, 10 prom
 | Appels traversant le gateway | **40** — 0 erreur |
 | Servis par le cache local IcyLoom | **30** — ~215 ms chacun, 0 token dépensé |
 | Générations réelles (miss amont) | **10** — p50 6,2 s, p95 10,4 s |
-| Taux de hit (fenêtre console) | **75,6 %** — 102 hits / 28 misses |
-| Tokens évités | **254 536** |
-| Gain sur la fenêtre | **92,1 %** |
+| Taux de hit (fenêtre console) | **78.5 %** — 102 hits / 28 misses (13 erreurs exclues) |
+| Tokens évités | **373 190** — cache 20 250 + compression 234 286 + outils 118 654 |
+| Gain sur la fenêtre | **93.7 %** — 373 190 évités / 398 367 payés |
 | Cache local après le passage | **8 entrées**, 4 réusages chacune |
-| Lignes du ledger | **497** |
+| Lignes du ledger | **623** |
 
 Deux faits trouvés par ce passage :
 

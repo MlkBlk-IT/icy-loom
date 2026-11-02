@@ -88,15 +88,15 @@ Measured on the development instance (Windows 11, i7 vPro, no GPU) against a liv
 
 | Metric | Value |
 |---|---|
-| Tools indexed | **188** across **13** servers |
-| Read-only tools | **130** (69.1 %) |
-| Write tools | **43** (22.9 %) |
-| Destructive tools | **15** (8.0 %) — approval required |
+| Tools indexed | **194** across **14** servers |
+| Read-only tools | **134** (69.1 %) |
+| Write tools | **45** (23.2 %) |
+| Destructive tools | **15** (7.7 %) — approval required |
 | Decisions traced | **58** — 40 allowed, 17 approvals, 1 refused (outside project scope) |
-| Tokens saved by compression | **386 383** |
-| Tokens saved on a single `read_file` | **30 093** |
-| Tokens measured (7 days) | **577 064** — 559 811 in tool schemas, 17 253 in tool results |
-| Test suite | **186 tests passing**, exit code 0 |
+| Tokens saved by tool compression | **118 654** — real tokens (tiktoken) |
+| Tokens saved by context compression | **234 286** |
+| Tokens measured (window) | **837 431** — 812 407 in tool schemas, 25 024 in tool results |
+| Test suite | **20 mission tests** (one per finding) + full suite green, exit code 0 |
 
 The console was put under load in the same run — **40 real calls** through the gateway, no mock:
 
@@ -105,9 +105,9 @@ The console was put under load in the same run — **40 real calls** through the
 | Calls through the gateway | **40** — 0 error |
 | Served from IcyLoom's own cache | **30** — ~215 ms each, 0 token spent |
 | Real generations (upstream miss) | **10** — p50 6.2 s, p95 10.4 s |
-| Hit rate | **75.6 %** — 102 hits / 28 misses |
-| Tokens avoided | **254 536** |
-| Gain | **92.1 %** |
+| Hit rate on the console window | **78.5 %** — 102 hits / 28 misses (13 errors excluded) |
+| Tokens avoided | **373 190** — cache 20 250 + compression 234 286 + tools 118 654 |
+| Gain | **93.7 %** — 373 190 avoided / 398 367 paid |
 
 End-to-end run against the real MCP server over stdio — no mocks:
 
