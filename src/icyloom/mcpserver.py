@@ -17,8 +17,10 @@ Règles de surface :
 
 from __future__ import annotations
 
+import asyncio
 import logging
 import os
+from contextlib import asynccontextmanager, suppress
 from typing import Any
 
 from mcp.server.fastmcp import Context, FastMCP
@@ -26,7 +28,7 @@ from mcp.types import ToolAnnotations
 
 from . import paths
 from .cache import CacheStore
-from .config import Config, load_config
+from .config import Config, ToolServerConfig, load_config
 from .context.store import ContextStore
 from .db import Database
 from .ledger import Ledger
@@ -70,6 +72,52 @@ def _needs_confirm(confirm: bool, action: str) -> dict[str, Any] | None:
     }
 
 
+def active_servers(servers: dict[str, ToolServerConfig]) -> list[str]:
+    """Serveurs d'outils actifs : le registre doit tous les indexer.
+
+    Un serveur désactivé est exclu (et c'est volontaire : le registre ne
+    doit montrer que ce qui répond).
+    """
+    return [name for name, srv in servers.items() if srv.enabled]
+
+
+async def refresh_catalog(tools: ToolProxy, servers: dict[str, ToolServerConfig],
+                          interval: float = 300.0) -> None:
+    """Indexe les outils de chaque serveur actif, puis recommence.
+
+    Sans cette boucle, le registre ne contient que les serveurs qu'un client
+    a déjà appelés : un serveur jamais sollicité reste invisible (c'était le
+    cas de ``sqlite``, jamais listé).
+    """
+    while True:
+        for name in active_servers(servers):
+            try:
+                await tools.list_tools(name)
+            except Exception as exc:  # pragma: no cover - serveur indisponible
+                log.warning("catalogue %s indisponible : %s", name, exc)
+        await asyncio.sleep(interval)
+
+
+def _lifespan(tools: ToolProxy, config: Config):
+    """Cycle de vie du serveur MCP : le catalogue est indexé en tâche de fond.
+
+    L'indexation ne bloque pas le démarrage : elle tourne dans la boucle
+    d'événements du serveur MCP (les sessions descendants y sont liées).
+    """
+
+    @asynccontextmanager
+    async def _span():
+        task = asyncio.create_task(refresh_catalog(tools, config.tool_proxy.servers))
+        try:
+            yield
+        finally:
+            task.cancel()
+            with suppress(asyncio.CancelledError):
+                await task
+
+    return _span
+
+
 def build_server(config: Config) -> FastMCP:
     """Construit l'instance FastMCP et ses 13 outils."""
     db = Database(config)
@@ -86,6 +134,7 @@ def build_server(config: Config) -> FastMCP:
         instructions=config.server.instructions,
         host=config.server.host,
         port=config.ports.mcp_http,
+        lifespan=_lifespan(tools, config),
     )
 
     # ------------------------------------------------------------------

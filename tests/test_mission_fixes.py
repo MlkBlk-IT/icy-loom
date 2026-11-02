@@ -30,6 +30,7 @@ from icyloom import __version__
 from icyloom.config import ToolServerConfig
 from icyloom.dashboard import snapshot
 from icyloom.db import Database
+from icyloom.mcpserver import refresh_catalog
 from icyloom.toolcompress import compress_result
 from icyloom.toolproxy import ToolProxy, cache_key
 
@@ -90,6 +91,29 @@ def test_A2_dead_server_is_not_relaunched(config) -> None:
         errors = cur.execute(
             "SELECT COUNT(*) FROM tool_events WHERE kind='tool_error'").fetchone()[0]
     assert errors == 1, "un seul tool_error pour un serveur mort"
+
+
+# ---------------------------------------------------------------- A3 · registre
+def test_A3_registry_indexes_every_active_server() -> None:
+    """Chaque serveur actif doit etre indexe sans qu'un client le demande."""
+    cfg = yaml.safe_load(YAML_PATH.read_text(encoding="utf-8"))
+    servers = {s["name"]: ToolServerConfig(name=s["name"], command=s["command"],
+                                            args=s.get("args") or [],
+                                            enabled=s.get("enabled", True))
+               for s in cfg["tool_proxy"]["servers"]}
+    listed: list[str] = []
+
+    class FakeProxy:
+        async def list_tools(self, name: str) -> dict:
+            listed.append(name)
+            return {"ok": True}
+
+    with pytest.raises((asyncio.TimeoutError, TimeoutError)):
+        asyncio.run(asyncio.wait_for(
+            refresh_catalog(FakeProxy(), servers, interval=0.01), timeout=0.5))
+    assert "sqlite" in listed, "le serveur sqlite actif n'est pas indexe"
+    assert "filesystem" in listed
+    assert "everything" not in listed, "un serveur desactive ne doit pas etre indexe"
 
 
 # ---------------------------------------------------------------- B · cache outils
