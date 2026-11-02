@@ -191,3 +191,122 @@ Les deux sont sur `origin/main`.
 | `src/icyloom/context/store.py` | seuil de rentabilite + ledger signe |
 | `tests/test_dashboard.py` | assertion self-containment ciblee |
 | `progress.md` | ce document |
+
+---
+
+# Session 2026-11-02 — IcyLoom V2 (passerelle d'outils MCP)
+
+Machine : PC portable i7 vPro, 32 Go, Intel Iris Xe (aucun GPU) · Périmètre : `D:\Icy-Loom`
+Chaîne : V1 (cache + tiroir + relais) → **V2 (registre, sélection, politique, compression, audit)**
+
+## 1. Objectif
+
+Transformer IcyLoom en **passerelle d'outils MCP** conforme au brief « MCP Tool Gateway » :
+registre centralisé des outils, index de sélection, sélection dynamique via meta-tools,
+compression des schémas et des résultats, permissions/scoping, sandbox d'exécution,
+observabilité et traçabilité. Le tout doit rester installable depuis GitHub **sans dépendance
+externe** : pas d'embeddings, pas de GPU, pas de LM Studio.
+
+## 2. Ce qui a été ajouté
+
+| Module | Rôle |
+|---|---|
+| `src/icyloom/registry.py` | registre `tool_registry` + index FTS5/BM25, inférence intention/effets de bord/sécurité, lexique **12 langues** + bigrammes CJK, score nom > tags > description, plafond par serveur |
+| `src/icyloom/policy.py` | rôles `reader`/`writer`/`operator`/`admin`, règles `allow`/`deny`/`approval` (la plus spécifique l'emporte), destructif = approbation obligatoire, portée projet, refus des écritures hors racines |
+| `src/icyloom/toolcompress.py` | compression des schémas (**ordre des propriétés conservé**) + des résultats (JSON/log/diff/HTML) + détection de secrets |
+| `src/icyloom/audit.py` | table `tool_audit` (acteur, rôle, intention, décision, motif, compression, tokens) |
+| `src/icyloom/tokens.py` | compteur par catégorie (`system_prompt`, `tool_schemas`, `tool_results`, `cache_read`, `cache_write`, `llm_calls`) |
+| `src/icyloom/script.py` | bac à sable Python (allowlist AST, pas d'import, budget d'instructions via `sys.settrace`, timeout, `max_steps`) |
+
+Modifiés : `db.py` (nouvelles tables + FTS5 optionnel), `config.py` (`PolicyConfig`,
+`ToolRegistryConfig`, options `tool_proxy`), `toolproxy.py` (registre/policy/compression/audit/
+tokens + transmission des racines), `mcpserver.py` (6 meta-tools), `clientcheck.py` (19 tools,
+27 vérifications).
+
+**Meta-tools exposés** : `search_tools`, `get_tool_schema`, `invoke_tool`, `run_tool_script`,
+`tool_policy`, `gateway_stats` → **19 tools** au total (13 avant).
+
+## 3. Console — vue « Gateway V2 » refaite
+
+La vue était vide et sans la moindre mesure. Refaite avec :
+
+- **5 cartes KPI** et un badge de réussite par carte (`✓ indexed`, `✓ attached`, `✓ harmless`,
+  `✓ 6 stopped`, `✓ compressed`) ;
+- **3 graphiques** : barres « tools per server », donut « side effects », barres « where the
+  tokens go » ;
+- **registre** et **policy in force** en lignes clé/valeur + tables serveurs et rôles ;
+- **audit decisions** (qui · quoi · décision · pourquoi · tokens gagnés) ;
+- libellés, intentions, décisions et motifs **traduits en anglais** (le reste de la console est
+  en anglais : la version française avait été retirée sur demande explicite).
+
+## 4. Trois bugs trouvés par le test, pas par la lecture
+
+| Bug | Symptôme | Cause | Correctif |
+|---|---|---|---|
+| `.row-line` sans style | les lignes du registre s'affichaient en texte brut | la règle CSS n'existait que sous `.hero-card` | règle `.row-line` globale ajoutée |
+| Console vide en API | `/api/dashboard` ne renvoyait **aucun** bloc `gateway` | le serveur tournait depuis le **1er nov.** avec l'ancien code Python | processus `serve` redémarré, bloc `gateway` vérifié à froid |
+| **Classement de la recherche** | `supprime un fichier` → `basic_memory_diagnostics` ; `cree un ticket` → `add_issue_comment` | les intentions du registre sont en anglais (`read`, `delete`) et la requête française n'était **jamais traduite** → le bonus d'intention ne se déclenchait pas, score au hasard | `expand_concepts()` + `STOPWORDS` + `FR_FORMS` (formes non infinitives) + pénalité objet dans `registry.py` |
+
+## 5. Test live (serveur MCP stdio, appels réels, aucun mock)
+
+```
+TOOLS=19  META_OK=True
+
+lis un fichier du depot  -> github.get_file_contents | desktop-commander.read_file | filesystem.read_file
+supprime un fichier      -> github.delete_file | local-rag.delete_file | basic-memory.delete_note
+cree un ticket github    -> github.issue_write | memory.create_entities | github.add_issue_comment
+liste les fichiers       -> desktop-commander.list_directory | filesystem.list_directory
+ecris un fichier         -> desktop-commander.write_file | filesystem.write_file
+
+read_file README.md            -> ok=True, contenu réel retourné
+write_file                     -> ok=True, fichier réellement écrit
+github.delete_file sans confirm-> error=approval_required, appel jamais arrivé au serveur
+run_tool_script                -> ok=True, bac à sable, 1 étape
+tool_policy                    -> role=operator env=dev roots=['C:\\', 'D:\\']
+gateway_stats                  -> 427 289 tokens (422 373 schémas / 4 916 résultats)
+```
+
+Un faux positif a été vérifié puis écarté : la lecture de `D:\Icy-Loom\README.md` échouait avec
+« path outside allowed directories » — c'était une **coquille dans le test** (racine
+`D:/IcyLoom` au lieu de `D:/Icy-Loom`). Corrigée, la lecture passe. L'incident prouve au
+passage que le périmètre des racines est réellement appliqué par le serveur descendant.
+
+## 6. Benchmarks mesurés (instance de développement, pile réelle de 13 serveurs)
+
+| Mesure | Valeur |
+|---|---|
+| Outils indexés | **188** sur **13** serveurs |
+| Lecture seule / écriture / destructif | **130** (69,1 %) / **43** (22,9 %) / **15** (8,0 %) |
+| Décisions tracées | **11** — 5 autorisées, 5 approbations, 1 refus (hors périmètre projet) |
+| Tokens gagnés à la compression | **60 186** — dont **30 093** sur un seul `read_file` |
+| Tokens mesurés (7 jours) | **427 289** |
+| Tests | **182 verts**, exit 0 |
+
+## 7. Commits
+
+| Commit | Contenu |
+|---|---|
+| `f5343af` | V2 gateway : registre, policy, compression, audit, meta-tools |
+| `81a3653` | transmission des racines client |
+| `b765edf` | versions épinglées des serveurs descendants |
+| `62f26e4` | console : vue Gateway V2 |
+| `4684a07` | console : refonte KPI + graphiques + badges de réussite |
+| `e341606` | console : traduction du motif de refus hors périmètre |
+| `2e6595f` | registre : traduction des requêtes en concepts canoniques |
+
+## 8. Reste à faire
+
+- **Release cette semaine** : version taguée + notes de publication (`ANNOUNCEMENT.md` prêt).
+- Test manuel dans les clients (Claude Desktop, MCode, Hermes) avant toute bascule :
+  « liste les outils que tu as » → « lis-moi D:\Icy-Loom\README.md » → « supprime le fichier X »
+  (refus attendu).
+- **Ne rien retirer** des configs clients tant que le test manuel n'est pas concluant.
+
+## 9. Note honnête
+
+Le classement de la recherche est **lexical** : il compare des mots, pas du sens. Le passage en
+français vers l'anglais est géré par un lexique explicite (12 langues), pas par une traduction
+libre — donc « lit le fichier » et « read the file » aboutissent, mais une formulation très
+libre peut encore manquer. Les embeddings restent volontairement exclus (installation sans
+dépendance externe) ; ils pourront revenir en option plus tard.
+

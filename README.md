@@ -8,8 +8,8 @@
 
 [![Python](https://img.shields.io/badge/python-3.11%20%7C%203.12%20%7C%203.13-34a853?style=flat-square&labelColor=0b1f4d&logo=python&logoColor=white)](https://www.python.org/)
 [![License](https://img.shields.io/badge/license-MIT-ea4335?style=flat-square&labelColor=0b1f4d&logo=open-source-init&logoColor=white)](LICENSE)
-[![MCP](https://img.shields.io/badge/MCP-13%20tools-4285f4?style=flat-square&labelColor=0b1f4d)](src/icyloom/mcpserver.py)
-[![Tests](https://img.shields.io/badge/tests-131%20passing-4285f4?style=flat-square&labelColor=0b1f4d&logo=pytest&logoColor=white)](tests/)
+[![MCP](https://img.shields.io/badge/MCP-19%20tools-4285f4?style=flat-square&labelColor=0b1f4d)](src/icyloom/mcpserver.py)
+[![Tests](https://img.shields.io/badge/tests-182%20passing-4285f4?style=flat-square&labelColor=0b1f4d&logo=pytest&logoColor=white)](tests/)
 [![Bind](https://img.shields.io/badge/bind-127.0.0.1%20only-34a853?style=flat-square&labelColor=0b1f4d&logo=lock&logoColor=white)](icyloom.yaml)
 [![PyPI](https://img.shields.io/pypi/v/icyloom?style=flat-square&logo=pypi&logoColor=white)](https://pypi.org/project/icyloom/)
 [![GitHub stars](https://img.shields.io/github/stars/MlkBlk-IT/icy-loom?style=flat-square)](https://github.com/MlkBlk-IT/icy-loom/stargazers)
@@ -37,6 +37,87 @@ IcyLoom is a **standalone** project: no imports, links or paths to any other pro
 <img src="docs/screenshots/overview.png" alt="IcyLoom console — overview" width="860" />
 
 <sub>Overview: the unified registry, five live KPIs, calls per bucket, latency, outcomes, models, upstreams. Captured on a demo database seeded by `tools/seed_demo.py` (synthetic traffic) — not production data.</sub>
+
+---
+
+## IcyLoom V2 — the MCP Tool Gateway
+
+> **The release ships this week.** V2 turns a pile of MCP servers into **one governed gateway**: every tool catalogued, the right tool selected from a plain-language request, permissions enforced, context compressed, every decision logged.
+>
+> **188 tools · 13 servers · 19 MCP tools · zero embeddings · 127.0.0.1 only**
+
+V1 solved the **cost** problem: it cached LLM answers, compressed a context drawer, relayed tools. It did not solve the **control** problem — a client that could see every downstream tool could also *use* every downstream tool. V2 is the missing half.
+
+| | V1 | V2 |
+|---|---|---|
+| Tools | relayed, opaque | **catalogued** — schema, intent, side effects, scope, risk |
+| Selection | the client picks | the **gateway picks**, from a natural-language request |
+| Permissions | one global switch | **roles, rules, approvals, project scope** |
+| Context | raw tool schemas | **compressed schemas and results** |
+| Trail | token ledger | token ledger **+ decision audit** |
+| Install | pip + config | pip + config — **still no embeddings, no GPU, no external service** |
+
+### Six meta-tools
+
+The agent talks to the gateway, not to 188 individual tools.
+
+| Meta-tool | What it does |
+|---|---|
+| `search_tools(query)` | Finds the tools matching an intent written in **12 languages**. Lexical index (SQLite FTS5/BM25), **no embeddings**. |
+| `get_tool_schema(server, tool)` | The compressed contract of one tool — what the agent actually sees. |
+| `invoke_tool(server, tool, args)` | Runs one downstream tool through policy, cache and compression. |
+| `run_tool_script(script)` | Chains several calls inside a **sandboxed** Python script. |
+| `tool_policy()` | The policy in force: roles, scopes, approval rules. |
+| `gateway_stats(days)` | Tokens per category, registry, audit — the observability view. |
+
+**19 tools in total** (13 from V1 + these 6). A destructive action without `confirm=true` is refused **with no side effect**.
+
+### The five pillars
+
+1. **The registry is the source of truth** — every tool described once (schema, domain, intent, side effects, security level, scope, owner, risk), in the same SQLite file as everything else.
+2. **Selection that understands the request** — FTS5 narrows the candidates, Python scores them, and the request is translated into the canonical concepts first, so a French sentence reaches the English-named tool that answers it.
+3. **Policy, roles and approvals** — `reader` / `writer` / `operator` / `admin`, rules `allow` / `deny` / `approval`, most specific rule wins. A destructive effect always needs an approval; a write outside the project roots is refused outright.
+4. **Compression that keeps the prompt small** — schemas and results are compressed, property order is preserved (reordering would invalidate the provider's prompt cache), secrets are detected on the way through, and the raw result stays retrievable by `result_ref`.
+5. **Observability and audit** — every decision is written to `tool_audit`: actor, role, intent, tool, decision, reason, compression applied, tokens saved.
+
+### Benchmarks — measured, not claimed
+
+Measured on the development instance (Windows 11, i7 vPro, no GPU) against a live stack of 13 real MCP servers:
+
+| Metric | Value |
+|---|---|
+| Tools indexed | **188** across **13** servers |
+| Read-only / write / destructive | **130** (69.1 %) / **43** (22.9 %) / **15** (8.0 %) |
+| Decisions traced | **11** — 5 allowed, 5 approvals, 1 refused (outside project scope) |
+| Tokens saved by compression | **60 186** — **30 093** on a single `read_file` |
+| Tokens measured (7 days) | **427 289** — 422 373 in tool schemas, 4 916 in tool results |
+| Test suite | **182 tests passing**, exit code 0 |
+
+End-to-end run against the real MCP server over stdio, no mocks:
+
+```
+TOOLS=19  META_OK=True
+lis un fichier du depot   -> github.get_file_contents | desktop-commander.read_file | filesystem.read_file
+supprime un fichier       -> github.delete_file | local-rag.delete_file | basic-memory.delete_note
+cree un ticket github     -> github.issue_write | memory.create_entities | github.add_issue_comment
+read_file README.md       -> ok=True, real content returned
+write_file                -> ok=True, file really written
+github.delete_file (no confirm) -> error=approval_required, call never reached the server
+run_tool_script           -> ok=True, sandboxed
+policy: role=operator env=dev roots=['C:\\', 'D:\\']
+```
+
+<img src="docs/screenshots/gateway-v2.png" alt="IcyLoom console — Gateway V2" width="900" />
+
+<sub>Gateway V2 view of the console: five KPIs with success badges, three charts, the registry, the policy in force and the decision audit — all live.</sub>
+
+### Release this week
+
+V2 is on `main`. The tagged release ships **this week**: registry, lexical selection in 12 languages, the six meta-tools, roles and approvals, compression, the sandbox, the audit trail, the console view — and **182 passing tests**.
+
+Full announcement: **[ANNOUNCEMENT.md](ANNOUNCEMENT.md)** · Session log: **[progress.md](progress.md)**
+
+---
 
 ## Quick start
 
@@ -318,7 +399,20 @@ Two blocks play the role of an **agent** doing real work:
 
 To prove that a hit returns the **right** answer, the campaign uses `tools/echo_upstream.py`: the upstream returns the fingerprint of the request it received (`echo:<sha256>`). An answer served from the cache therefore carries the fingerprint of its own request, never another one's.
 
-## The 13 tools
+## The 19 tools
+
+### V2 — the meta-tools (gateway)
+
+| Tool | Role | Destructive action |
+|------|------|--------------------|
+| `search_tools(query)` | selects the tools matching an intent (12 languages, lexical index) | none |
+| `get_tool_schema(server, tool)` | compressed contract of one tool | none |
+| `invoke_tool(server, tool, args)` | runs one downstream tool through policy, cache, compression | yes, needs `confirm=true` for a destructive effect |
+| `run_tool_script(script)` | chains calls in a sandboxed script | yes, needs `confirm=true` for a destructive effect |
+| `tool_policy()` | the policy in force: roles, scopes, approval rules | none |
+| `gateway_stats(days)` | tokens per category, registry, audit | none |
+
+### V1 — the base tools
 
 | Tool | Role | Destructive action |
 |------|------|--------------------|
@@ -435,7 +529,7 @@ Measured on the historical cache (read-only): **70 %** of normalised texts coinc
 ## Tests
 
 ```powershell
-.\.venv\Scripts\python.exe -m pytest tests\ -q --ignore=tests\proof_e2e.py   # 102 tests
+.\.venv\Scripts\python.exe -m pytest tests\ -q                                          # 182 tests, exit 0
 .\.venv\Scripts\python.exe tests\proof_e2e.py                              # end-to-end proof
 .\.venv\Scripts\python.exe tests\test_cache_correctness.py                 # stale-hit measurement (prints a report)
 .\.venv\Scripts\python.exe tests\real_mcp_fetch.py                         # real MCP server; needs uvx and Internet
