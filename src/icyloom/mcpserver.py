@@ -106,7 +106,7 @@ def _lifespan(tools: ToolProxy, config: Config):
     """
 
     @asynccontextmanager
-    async def _span():
+    async def _span(_server: FastMCP | None = None):
         task = asyncio.create_task(refresh_catalog(tools, config.tool_proxy.servers))
         try:
             yield
