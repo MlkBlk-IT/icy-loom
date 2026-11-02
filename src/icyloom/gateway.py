@@ -700,8 +700,7 @@ def create_app(config: Config) -> FastAPI:
                            ensure_ascii=False, sort_keys=True),
                 None, text, 0, candidate.name, str(body.get("model") or ""), None,
                 prompt_tokens or saved_prompt, completion_tokens or saved_completion,
-            ) if (not served_by_upstream_cache
-                  and _finish_ok(_event_finish_reasons(payload))) else None,
+            ) if _finish_ok(_event_finish_reasons(payload)) else None,
             llm_event=(
                 "hit" if served_by_upstream_cache else "miss", key, candidate.name,
                 body.get("model"), 0,
@@ -773,7 +772,7 @@ def create_app(config: Config) -> FastAPI:
                                ensure_ascii=False, sort_keys=True),
                     None, raw_response, 1, candidate.name, str(body.get("model") or ""), None,
                     prompt_tokens or saved_prompt, completion_tokens or saved_completion,
-                ) if (cacheable and not upstream_cache) else None,
+                ) if cacheable else None,
                 llm_event=(
                     "hit" if upstream_cache else "miss", key, candidate.name,
                     body.get("model"), 1,

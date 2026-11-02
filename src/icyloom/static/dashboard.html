@@ -433,6 +433,20 @@ table.sk td.mono { font-family: var(--font-mono); font-size: 11px; }
 }
 .toast.show { opacity: 1; transform: none; }
 
+/* ── chart tooltip (hover / pinned) ─────────────────────────── */
+.chart-tip {
+  position: fixed; z-index: 120; display: none; pointer-events: none;
+  max-width: 300px; padding: 9px 12px;
+  border: 2.5px solid var(--ink); border-radius: 13px 7px 13px 7px;
+  background: var(--paper2); box-shadow: 4px 4px 0 rgba(70, 35, 26, .82);
+  font-size: 12px; line-height: 1.45; color: var(--ink);
+}
+.chart-tip b { display: block; font-size: 13px; font-weight: 800; margin-bottom: 4px; }
+.chart-tip .r { display: flex; justify-content: space-between; gap: 16px; }
+.chart-tip .r span:last-child { font-weight: 700; }
+.chart-tip .k { color: rgba(70, 35, 26, .62); }
+.chart-tip .hintline { margin-top: 5px; font-size: 11px; color: rgba(70, 35, 26, .62); }
+
 /* ── compact mode ──────────────────────────────────────────── */
 body.compact .card { padding: 10px 11px; }
 body.compact .kpi { padding: 9px 10px; }
@@ -1134,6 +1148,87 @@ const ms = (v) => {
 };
 const clock = (ts) => String(ts || "").slice(11, 19);
 
+/* ══ interactive chart layer ═════════════════════════════════
+   hover tooltip · crosshair · click to pin · legend toggle      */
+let TIP_NODE = null;
+function tipNode() {
+  if (!TIP_NODE) { TIP_NODE = htm("div", "chart-tip"); document.body.appendChild(TIP_NODE); }
+  return TIP_NODE;
+}
+function tipShow(html, ev) {
+  const t = tipNode();
+  t.innerHTML = html;
+  t.style.display = "block";
+  tipMove(ev);
+}
+function tipMove(ev) {
+  const t = tipNode();
+  const r = t.getBoundingClientRect();
+  let x = ev.clientX + 16, y = ev.clientY + 16;
+  if (x + r.width > window.innerWidth - 10) x = ev.clientX - r.width - 16;
+  if (y + r.height > window.innerHeight - 10) y = ev.clientY - r.height - 16;
+  t.style.left = Math.max(6, x) + "px";
+  t.style.top = Math.max(6, y) + "px";
+}
+function tipHide() { if (TIP_NODE) TIP_NODE.style.display = "none"; }
+function tipRow(k, v) { return '<div class="r"><span class="k">' + k + "</span><span>" + v + "</span></div>"; }
+function tipTitle(s) { return "<b>" + s + "</b>"; }
+function tipNote(s) { return '<div class="hintline">' + s + "</div>"; }
+function svgPoint(svg, ev) {
+  const r = svg.getBoundingClientRect();
+  const vb = svg.viewBox && svg.viewBox.baseVal;
+  if (!vb || !vb.width || !r.width) return [0, 0];
+  return [((ev.clientX - r.left) / r.width) * vb.width, ((ev.clientY - r.top) / r.height) * vb.height];
+}
+function svgClient(svg, p) {
+  const r = svg.getBoundingClientRect();
+  const vb = svg.viewBox && svg.viewBox.baseVal;
+  if (!vb || !vb.width || !r.width) return { clientX: r.left + p[0], clientY: r.top + p[1] };
+  return { clientX: r.left + (p[0] / vb.width) * r.width, clientY: r.top + (p[1] / vb.height) * r.height };
+}
+function bindNearest(svg, points, htmlFor, o) {
+  o = o || {};
+  state.pins = state.pins || {};
+  const cross = o.cross ? el("path", { d: "", fill: "none", stroke: C.inkSoft, "stroke-width": 1.2, "stroke-dasharray": "3 4", opacity: 0 }) : null;
+  const halo = el("path", { d: "", fill: "none", stroke: C.ink, "stroke-width": 2.4, opacity: 0 });
+  if (cross) svg.appendChild(cross);
+  svg.appendChild(halo);
+  let pinned = -1;
+  const pick = (ev) => {
+    const m = svgPoint(svg, ev);
+    let bi = -1, bd = Infinity;
+    points.forEach((p, i) => {
+      const d = Math.hypot(p[0] - m[0], (p[1] - m[1]) * (o.yScale || 1));
+      if (d < bd) { bd = d; bi = i; }
+    });
+    return bi < 0 || bd > (o.radius || 30) ? -1 : bi;
+  };
+  const show = (i, ev) => {
+    if (i < 0) { if (cross) cross.setAttribute("opacity", 0); halo.setAttribute("opacity", 0); tipHide(); return; }
+    const p = points[i];
+    if (cross) {
+      cross.setAttribute("d", "M" + p[0].toFixed(1) + " " + (o.top || 0) + " L" + p[0].toFixed(1) + " " + (o.bottom || 0));
+      cross.setAttribute("opacity", 0.75);
+    }
+    halo.setAttribute("d", Rough.ellipse(p[0], p[1], 13, 13, { seed: 991 + i, roughness: 1.1 }));
+    halo.setAttribute("opacity", 1);
+    tipShow(htmlFor(i), ev);
+  };
+  svg.addEventListener("pointermove", (ev) => { if (pinned < 0) show(pick(ev), ev); });
+  svg.addEventListener("pointerleave", () => { if (pinned < 0) show(-1, null); });
+  svg.addEventListener("click", (ev) => {
+    const i = pick(ev);
+    pinned = i;
+    state.pins[svg.id] = i;
+    show(i, ev);
+  });
+  const kept = state.pins[svg.id];
+  if (kept !== undefined && kept >= 0 && points[kept]) {
+    pinned = kept;
+    show(kept, svgClient(svg, points[kept]));
+  }
+}
+
 /* deterministic PRNG so every redraw looks identical */
 function mulberry32(seed) {
   let a = seed >>> 0;
@@ -1708,6 +1803,17 @@ function drawCalls() {
   });
   svg.appendChild(el("path", { d: Rough.line(M.l - 4, base, M.l + pw + 2, base, { seed: 99, roughness: 1.3 }), fill: "none", stroke: C.ink, "stroke-width": 2.4 }));
   txt(svg, M.l, 12, "calls per hour bucket", { size: 11, soft: true });
+  const bars = rows.map((r, i) => [M.l + step * i + bw / 2, base - (r.total / maxV) * ph]);
+  bindNearest(svg, bars, (i) => {
+    const r = rows[i];
+    return tipTitle(String(r.bucket || "")) +
+      tipRow("calls", num(r.total)) +
+      tipRow("hits / misses", num(r.hits) + " / " + num(r.misses)) +
+      tipRow("hit rate", (r.hit_rate_pct || 0).toFixed(1) + " %") +
+      tipRow("latency p50 / p95", ms(r.latency_p50) + " / " + ms(r.latency_p95)) +
+      tipRow("tokens paid", num((r.prompt_tokens || 0) + (r.completion_tokens || 0))) +
+      tipNote("click to pin");
+  }, { cross: true, top: M.t - 4, bottom: base, radius: 36, yScale: 0.2 });
 }
 
 /* ══ 01 · latency ═══════════════════════════════════════════ */
@@ -1737,6 +1843,16 @@ function drawLatency() {
   svg.appendChild(el("path", { d: Rough.line(M.l - 4, base, M.l + pw + 2, base, { seed: 99, roughness: 1.3 }), fill: "none", stroke: C.ink, "stroke-width": 2.4 }));
   txt(svg, M.l, 12, "p95", { size: 11, fill: C.miss, weight: "700" });
   txt(svg, M.l + 28, 12, "p50", { size: 11, fill: C.bypass, weight: "700" });
+  const lpts = rows.map((r, i) => [X(i), Y(r.latency_p50)]);
+  bindNearest(svg, lpts, (i) => {
+    const r = rows[i];
+    return tipTitle(String(r.bucket || "")) +
+      tipRow("p50", ms(r.latency_p50)) +
+      tipRow("p95", ms(r.latency_p95)) +
+      tipRow("worst", ms(r.latency_max)) +
+      tipRow("calls", num(r.total)) +
+      tipNote("click to pin");
+  }, { cross: true, top: M.t - 4, bottom: base, radius: 36, yScale: 0.2 });
 }
 
 /* ══ 01 · outcomes donut ════════════════════════════════════ */
@@ -1794,6 +1910,7 @@ function drawLine() {
   while (svg.firstChild) svg.removeChild(svg.firstChild);
   if (!snap) return;
   const series = (snap.registry.daily || []).slice().sort((a, b) => String(a.day || "").localeCompare(String(b.day || "")));
+  const flags = (state.chartSeries = state.chartSeries || { avoided: true, paid: true });
   const W = 700, H = 380, M = { l: 74, r: 120, t: 34, b: 52 };
   const pw = W - M.l - M.r, ph = H - M.t - M.b;
   if (series.length < 2) { txt(svg, W / 2, H / 2, "not enough days measured yet", { size: 14, anchor: "middle", soft: true }); return; }
@@ -1806,6 +1923,7 @@ function drawLine() {
   const Y = (v) => base - ((v - minV) / (maxV - minV)) * ph;
   const pts = saved.map((v, i) => [X(i), Y(v)]);
   const ppts = paid.map((v, i) => [X(i), Y(v)]);
+  const avg = saved.reduce((a, b) => a + b, 0) / saved.length;
 
   for (let g = 0; g <= 4; g++) {
     const v = minV + ((maxV - minV) / 4) * g, y = Y(v);
@@ -1813,24 +1931,58 @@ function drawLine() {
     txt(svg, M.l - 9, y + 4, compact(Math.round(v)), { size: 11, anchor: "end", soft: true });
   }
   svg.appendChild(el("path", { d: Rough.line(M.l - 5, base, M.l + pw + 6, base, { seed: 731, roughness: 1.3 }), fill: "none", stroke: C.ink, "stroke-width": 2.6 }));
-  const areaD = "M" + pts.map((p) => p[0].toFixed(1) + " " + p[1].toFixed(1)).join(" L") +
-    " L" + pts[pts.length - 1][0].toFixed(1) + " " + base + " L" + pts[0][0].toFixed(1) + " " + base + " Z";
-  sketch(svg, areaD, { fill: C.pink, tint: 0.1, cross: true, gap: 9, weight: 1.1, stroke: "none" });
-  const avg = saved.reduce((a, b) => a + b, 0) / saved.length, avgY = Y(avg);
-  svg.appendChild(el("path", { d: Rough.line(M.l - 2, avgY, M.l + pw, avgY, { seed: 734, roughness: 1.1, bowing: 3 }), fill: "none", stroke: C.mango, "stroke-width": 2, "stroke-dasharray": "10 8" }));
-  txt(svg, M.l + pw - 4, avgY - 9, "avg " + compact(Math.round(avg)), { size: 12.5, anchor: "end", fill: C.mango, halo: true });
-  svg.appendChild(el("path", { d: Rough.path(ppts, { seed: 741, roughness: 1.2, bowing: 1.5 }), fill: "none", stroke: C.brown, "stroke-width": 2.2, "stroke-dasharray": "3 5" }));
-  svg.appendChild(el("path", { d: Rough.path(pts, { seed: 735, roughness: 1.3, bowing: 1.6 }), fill: "none", stroke: C.lava, "stroke-width": 3.2, "stroke-linecap": "round" }));
-  pts.forEach((p, i) => svg.appendChild(el("path", { d: Rough.ellipse(p[0], p[1], 9, 9, { seed: 740 + i, roughness: 1.1 }), fill: i === pts.length - 1 ? C.gold : C.paper2, stroke: C.ink, "stroke-width": 1.8 })));
+
+  if (flags.avoided) {
+    const areaD = "M" + pts.map((p) => p[0].toFixed(1) + " " + p[1].toFixed(1)).join(" L") +
+      " L" + pts[pts.length - 1][0].toFixed(1) + " " + base + " L" + pts[0][0].toFixed(1) + " " + base + " Z";
+    sketch(svg, areaD, { fill: C.pink, tint: 0.1, cross: true, gap: 9, weight: 1.1, stroke: "none" });
+    const avgY = Y(avg);
+    svg.appendChild(el("path", { d: Rough.line(M.l - 2, avgY, M.l + pw, avgY, { seed: 734, roughness: 1.1, bowing: 3 }), fill: "none", stroke: C.mango, "stroke-width": 2, "stroke-dasharray": "10 8" }));
+    txt(svg, M.l + pw - 4, avgY - 9, "avg " + compact(Math.round(avg)), { size: 12.5, anchor: "end", fill: C.mango, halo: true });
+    svg.appendChild(el("path", { d: Rough.path(pts, { seed: 735, roughness: 1.3, bowing: 1.6 }), fill: "none", stroke: C.lava, "stroke-width": 3.2, "stroke-linecap": "round" }));
+    pts.forEach((p, i) => svg.appendChild(el("path", { d: Rough.ellipse(p[0], p[1], 9, 9, { seed: 740 + i, roughness: 1.1 }), fill: i === pts.length - 1 ? C.gold : C.paper2, stroke: C.ink, "stroke-width": 1.8 })));
+  }
+  if (flags.paid) {
+    svg.appendChild(el("path", { d: Rough.path(ppts, { seed: 741, roughness: 1.2, bowing: 1.5 }), fill: "none", stroke: C.brown, "stroke-width": 2.2, "stroke-dasharray": "3 5" }));
+  }
   series.forEach((d, i) => { if (i % 2 === 0 || i === series.length - 1) txt(svg, X(i), base + 21, (d.day || "").slice(5), { size: 11.5, anchor: "middle" }); });
-  const mi = saved.indexOf(Math.max.apply(null, saved));
-  const last = pts[mi];
-  svg.appendChild(el("path", { d: Rough.ellipse(last[0], last[1], 34, 30, { seed: 760, roughness: 1.8, bowing: 3 }), fill: "none", stroke: C.magenta, "stroke-width": 2.6 }));
-  svg.appendChild(el("path", { d: "M" + (last[0] + 14) + " " + (last[1] - 12) + " C " + (last[0] + 44) + " " + (last[1] - 38) + ", " + (last[0] + 58) + " " + (last[1] - 30) + ", " + (last[0] + 62) + " " + (last[1] - 26), fill: "none", stroke: C.ink, "stroke-width": 2 }));
-  svg.appendChild(el("path", { d: "M" + (last[0] + 62) + " " + (last[1] - 31) + " L" + (last[0] + 66) + " " + (last[1] - 24) + " L" + (last[0] + 58) + " " + (last[1] - 25) + " Z", fill: C.ink }));
-  txt(svg, last[0] + 52, last[1] - 38, "record! " + compact(Math.max.apply(null, saved)), { size: 14, anchor: "middle", weight: "700", fill: C.magenta, halo: true, rotate: -4 });
-  txt(svg, M.l, 18, "tokens avoided", { size: 12, fill: C.lava, weight: "700" });
-  txt(svg, M.l + 90, 18, "tokens paid", { size: 12, fill: C.brown, weight: "700" });
+
+  if (flags.avoided) {
+    const mi = saved.indexOf(Math.max.apply(null, saved));
+    const last = pts[mi];
+    svg.appendChild(el("path", { d: Rough.ellipse(last[0], last[1], 34, 30, { seed: 760, roughness: 1.8, bowing: 3 }), fill: "none", stroke: C.magenta, "stroke-width": 2.6 }));
+    svg.appendChild(el("path", { d: "M" + (last[0] + 14) + " " + (last[1] - 12) + " C " + (last[0] + 44) + " " + (last[1] - 38) + ", " + (last[0] + 58) + " " + (last[1] - 30) + ", " + (last[0] + 62) + " " + (last[1] - 26), fill: "none", stroke: C.ink, "stroke-width": 2 }));
+    svg.appendChild(el("path", { d: "M" + (last[0] + 62) + " " + (last[1] - 31) + " L" + (last[0] + 66) + " " + (last[1] - 24) + " L" + (last[0] + 58) + " " + (last[1] - 25) + " Z", fill: C.ink }));
+    txt(svg, last[0] + 52, last[1] - 38, "record! " + compact(Math.max.apply(null, saved)), { size: 14, anchor: "middle", weight: "700", fill: C.magenta, halo: true, rotate: -4 });
+  }
+
+  /* legend — click a label to show / hide a series */
+  const legend = (label, x, key, color) => {
+    const g = el("g", {});
+    g.style.cursor = "pointer";
+    const t = el("text", { x: x, y: 18, "font-size": 12, fill: color, "font-weight": "700", opacity: flags[key] ? 1 : 0.32 });
+    t.textContent = label;
+    g.appendChild(t);
+    g.appendChild(el("rect", { x: x - 5, y: 4, width: label.length * 7.4 + 10, height: 19, fill: "none", "pointer-events": "all" }));
+    g.addEventListener("click", (ev) => { ev.stopPropagation(); flags[key] = !flags[key]; drawLine(); });
+    svg.appendChild(g);
+  };
+  legend("tokens avoided", M.l, "avoided", C.lava);
+  legend("tokens paid", M.l + 92, "paid", C.brown);
+
+  /* hover — nearest day, crosshair, values; click to pin */
+  const shown = flags.avoided ? pts : ppts;
+  bindNearest(svg, shown, (i) => {
+    const d = series[i] || {};
+    const s = saved[i] || 0, pd = paid[i] || 0;
+    const gain = pd > 0 ? ((s / pd) * 100).toFixed(0) : "—";
+    return tipTitle(String(d.day || "") + (i === series.length - 1 ? " · today" : "")) +
+      tipRow("tokens avoided", num(s)) +
+      tipRow("tokens paid", num(pd)) +
+      tipRow("avoided / paid", gain + (pd > 0 ? " %" : "")) +
+      tipRow("vs daily avg", (s - avg >= 0 ? "+" : "") + num(Math.round(s - avg))) +
+      tipNote("click to pin · click a legend label to hide a series");
+  }, { cross: true, top: M.t - 8, bottom: base, radius: 38, yScale: 0.28 });
 }
 
 /* ══ 02 · economy gauge ═════════════════════════════════════ */
@@ -1975,6 +2127,20 @@ function drawBars() {
     svg.appendChild(g);
   });
   txt(svg, M.l, 18, "reuses per cache entry", { size: 11.5, soft: true });
+  const bars = rows.map((r, i) => {
+    const h = ((r.access_count || 0) / niceMax) * ph, y = base - h;
+    const x = M.l + step * i + (step - bw) / 2;
+    return [x + bw / 2, y];
+  });
+  bindNearest(svg, bars, (i) => {
+    const r = rows[i];
+    return tipTitle(String(r.model || "model")) +
+      tipRow("reuses", num(r.access_count)) +
+      tipRow("hash", "#" + String(r.key || "").slice(0, 12)) +
+      tipRow("provider", String(r.provider || "—")) +
+      tipRow("last access", String(r.last_accessed || "—")) +
+      tipNote("click to pin");
+  }, { radius: 30 });
 }
 
 /* ══ 05 · tools bars ════════════════════════════════════════ */
@@ -2001,6 +2167,18 @@ function drawTools() {
     svg.appendChild(g);
   });
   svg.appendChild(el("path", { d: Rough.line(M.l, M.t - 6, M.l, M.t + ph, { seed: 71, roughness: 1.1 }), fill: "none", stroke: C.ink, "stroke-width": 2.4 }));
+  const total = rows.reduce((a, r) => a + (r.n || 0), 0);
+  const bars = rows.map((r, i) => {
+    const w = ((r.n || 0) / maxV) * pw;
+    return [M.l + w, M.t + step * i + (step - bh) / 2 + bh / 2];
+  });
+  bindNearest(svg, bars, (i) => {
+    const r = rows[i];
+    return tipTitle(String(r.tool || "?")) +
+      tipRow("calls", num(r.n)) +
+      tipRow("share", ((r.n / (total || 1)) * 100).toFixed(1) + " %") +
+      tipNote("click to pin");
+  }, { radius: 26 });
 }
 
 /* ══ request flow diagram ══════════════════════════════════ */
@@ -2506,11 +2684,24 @@ function drawGwServers() {
       " v" + bh.toFixed(1) + " h" + (-w).toFixed(1) + " Z",
       { fill: heat(0.35 + 0.55 * ((r.n || 0) / maxV)), tint: 0.34, angle: 45, gap: 5, weight: 1.8, sw: 1.8 });
     txt(g, M.l - 7, y + bh / 2 + 4, String(r.server || "?").slice(0, 17), { size: 11.5, anchor: "end" });
-    txt(g, M.l + w + 7, y + bh / 2 + 4, num(r.n), { size: 11.5 });
+    txt(g, M.l + w + 7, y + bh / 2 + 4, num(r.n), { size: 11.5, halo: true });
     g.appendChild(el("title", {}, r.server + " · " + num(r.n) + " tools"));
     svg.appendChild(g);
   });
   svg.appendChild(el("path", { d: Rough.line(M.l, M.t - 6, M.l, M.t + ph, { seed: 71, roughness: 1.1 }), fill: "none", stroke: C.ink, "stroke-width": 2.4 }));
+  const total = rows.reduce((a, r) => a + (r.n || 0), 0);
+  const bars = rows.map((r, i) => {
+    const w = ((r.n || 0) / maxV) * pw;
+    return [M.l + w, M.t + step * i + (step - bh) / 2 + bh / 2];
+  });
+  bindNearest(svg, bars, (i) => {
+    const r = rows[i];
+    return tipTitle(String(r.server || "?")) +
+      tipRow("tools", num(r.n)) +
+      tipRow("share of registry", ((r.n / (total || 1)) * 100).toFixed(1) + " %") +
+      tipRow("servers shown", num(rows.length)) +
+      tipNote("click to pin");
+  }, { radius: 26 });
 }
 
 /* ── side effects donut ──────────────────────────────────────── */
@@ -2573,7 +2764,7 @@ function drawGwTokens() {
     .map((k) => ({ k: k, v: Number(cat[k]) || 0 }))
     .filter((r) => r.v > 0)
     .sort((a, b) => b.v - a.v);
-  const W = 460, H = 300, M = { l: 116, r: 48, t: 16, b: 24 };
+  const W = 460, H = 300, M = { l: 116, r: 58, t: 16, b: 24 };
   const pw = W - M.l - M.r, ph = H - M.t - M.b;
   if (!rows.length) { txt(svg, W / 2, H / 2, "no token measured yet", { size: 14, anchor: "middle", soft: true }); return; }
   const maxV = Math.max(1, ...rows.map((r) => r.v));
@@ -2587,11 +2778,23 @@ function drawGwTokens() {
       " v" + bh.toFixed(1) + " h" + (-w).toFixed(1) + " Z",
       { fill: C.bypass, tint: 0.3, angle: 45, gap: 5, weight: 1.8, sw: 1.8 });
     txt(g, M.l - 7, y + bh / 2 + 4, GW_TOKEN_LABEL[r.k] || r.k, { size: 11.5, anchor: "end" });
-    txt(g, M.l + w + 7, y + bh / 2 + 4, compact(r.v), { size: 11.5 });
+    txt(g, M.l + w + 7, y + bh / 2 + 4, compact(r.v), { size: 11.5, halo: true });
     g.appendChild(el("title", {}, (GW_TOKEN_LABEL[r.k] || r.k) + " : " + num(r.v)));
     svg.appendChild(g);
   });
   svg.appendChild(el("path", { d: Rough.line(M.l, M.t - 6, M.l, M.t + ph, { seed: 72, roughness: 1.1 }), fill: "none", stroke: C.ink, "stroke-width": 2.4 }));
+  const total = rows.reduce((a, r) => a + r.v, 0);
+  const bars = rows.map((r, i) => {
+    const w = (r.v / maxV) * pw;
+    return [M.l + w, M.t + step * i + (step - bh) / 2 + bh / 2];
+  });
+  bindNearest(svg, bars, (i) => {
+    const r = rows[i];
+    return tipTitle(GW_TOKEN_LABEL[r.k] || r.k) +
+      tipRow("tokens", num(r.v)) +
+      tipRow("share", ((r.v / (total || 1)) * 100).toFixed(1) + " %") +
+      tipNote("click to pin");
+  }, { radius: 26 });
 }
 
 function renderAudit(snap) {

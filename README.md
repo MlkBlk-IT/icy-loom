@@ -9,7 +9,7 @@
 [![Python](https://img.shields.io/badge/python-3.11%20%7C%203.12%20%7C%203.13-34a853?style=flat-square&labelColor=0b1f4d&logo=python&logoColor=white)](https://www.python.org/)
 [![License](https://img.shields.io/badge/license-MIT-ea4335?style=flat-square&labelColor=0b1f4d&logo=open-source-init&logoColor=white)](LICENSE)
 [![MCP](https://img.shields.io/badge/MCP-19%20tools-4285f4?style=flat-square&labelColor=0b1f4d)](src/icyloom/mcpserver.py)
-[![Tests](https://img.shields.io/badge/tests-182%20passing-4285f4?style=flat-square&labelColor=0b1f4d&logo=pytest&logoColor=white)](tests/)
+[![Tests](https://img.shields.io/badge/tests-186%20passing-4285f4?style=flat-square&labelColor=0b1f4d&logo=pytest&logoColor=white)](tests/)
 [![Bind](https://img.shields.io/badge/bind-127.0.0.1%20only-34a853?style=flat-square&labelColor=0b1f4d&logo=lock&logoColor=white)](icyloom.yaml)
 [![PyPI](https://img.shields.io/pypi/v/icyloom?style=flat-square&logo=pypi&logoColor=white)](https://pypi.org/project/icyloom/)
 [![GitHub stars](https://img.shields.io/github/stars/MlkBlk-IT/icy-loom?style=flat-square)](https://github.com/MlkBlk-IT/icy-loom/stargazers)
@@ -60,16 +60,31 @@ The agent talks to the gateway, not to 188 individual tools.
 
 ### Benchmarks — measured, not claimed
 
-Measured on the development instance (Windows 11, i7 vPro, no GPU) against a live stack of 13 real MCP servers:
+Measured on the development instance (Windows 11, i7 vPro, no GPU) against a live stack of 13 real MCP servers, after a 46-call load pass through the gateway:
 
 | Metric | Value |
 |---|---|
 | Tools indexed | **188** across **13** servers |
 | Read-only / write / destructive | **130** (69.1 %) / **43** (22.9 %) / **15** (8.0 %) |
-| Decisions traced | **11** — 5 allowed, 5 approvals, 1 refused (outside project scope) |
-| Tokens saved by compression | **60 186** — **30 093** on a single `read_file` |
-| Tokens measured (7 days) | **427 289** — 422 373 in tool schemas, 4 916 in tool results |
-| Test suite | **182 tests passing**, exit code 0 |
+| Decisions traced | **58** — 40 allowed, 17 approvals, 1 refused (outside project scope) |
+| Tokens saved by compression | **386 383** — **30 093** on a single `read_file` |
+| Tokens measured (7 days) | **577 064** — 559 811 in tool schemas, 17 253 in tool results |
+| Test suite | **186 tests passing**, exit code 0 |
+
+The console was then put under load in the same run — **40 real calls** through the gateway (10 prompts × 4), no mock:
+
+| Metric | Value |
+|---|---|
+| Calls through the gateway | **40** — 0 error, 10 distinct prompts |
+| Served from IcyLoom's own cache | **30** — ~215 ms each, 0 token spent |
+| Real generations (upstream miss) | **10** — p50 6.2 s, p95 10.4 s |
+| Hit rate on the console window | **75.6 %** — 102 hits / 28 misses |
+| Tokens avoided | **254 536** |
+| Gain on the window | **92.1 %** |
+| Local cache after the run | **8 entries**, 4 reuses each |
+| Ledger rows | **497** |
+
+Every figure above is read from the SQLite file the console itself reads — the same file you can open.
 
 End-to-end run against the real MCP server over stdio, no mocks:
 
@@ -91,7 +106,7 @@ policy: role=operator env=dev roots=['C:\\', 'D:\\']
 
 ### Release this week
 
-V2 is on `main`. The tagged release ships **this week**: registry, lexical selection in 12 languages, the six meta-tools, roles and approvals, compression, the sandbox, the audit trail, the console view — and **182 passing tests**.
+V2 is on `main`. The tagged release ships **this week**: registry, lexical selection in 12 languages, the six meta-tools, roles and approvals, compression, the sandbox, the audit trail, the console view — and **186 passing tests**.
 
 Full announcement: **[ANNOUNCEMENT.md](ANNOUNCEMENT.md)** · Session log: **[progress.md](progress.md)**
 
@@ -302,6 +317,15 @@ http://127.0.0.1:8153/dashboard      (alias: http://127.0.0.1:8153/)
 ![IcyLoom console](docs/images/dashboard.png)
 
 *The console on a demo database seeded by `tools/seed_demo.py` (synthetic traffic) — not production data.*
+
+### Reading the console
+
+Every chart is live and **interactive**:
+
+- **hover** a bar, a point or a slice → the values appear in a tooltip;
+- **click** a point → the tooltip is pinned, and it survives the 2-second refresh;
+- **click a legend label** → that series is hidden, or shown again;
+- the window selector (1 h / 24 h / 7 d / 14 d) re-reads the database on the spot.
 
 ### One console, two consoles fused
 

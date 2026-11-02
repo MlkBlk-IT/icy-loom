@@ -277,10 +277,34 @@ passage que le périmètre des racines est réellement appliqué par le serveur 
 |---|---|
 | Outils indexés | **188** sur **13** serveurs |
 | Lecture seule / écriture / destructif | **130** (69,1 %) / **43** (22,9 %) / **15** (8,0 %) |
-| Décisions tracées | **11** — 5 autorisées, 5 approbations, 1 refus (hors périmètre projet) |
-| Tokens gagnés à la compression | **60 186** — dont **30 093** sur un seul `read_file` |
-| Tokens mesurés (7 jours) | **427 289** |
-| Tests | **182 verts**, exit 0 |
+| Décisions tracées | **58** — 40 autorisées, 17 approbations, 1 refus (hors périmètre projet) |
+| Tokens gagnés à la compression | **386 183** — dont **30 093** sur un seul `read_file` |
+| Tokens mesurés (7 jours) | **577 064** |
+| Tests | **186 verts**, exit 0 |
+
+### Passage en charge (mesuré)
+
+Charge réelle sur le gateway, même instance, aucun mock — 40 appels, 10 prompts distincts :
+
+| Mesure | Valeur |
+|---|---|
+| Appels traversant le gateway | **40** — 0 erreur |
+| Servis par le cache local IcyLoom | **30** — ~215 ms chacun, 0 token dépensé |
+| Générations réelles (miss amont) | **10** — p50 6,2 s, p95 10,4 s |
+| Taux de hit (fenêtre console) | **75,6 %** — 102 hits / 28 misses |
+| Tokens évités | **254 536** |
+| Gain sur la fenêtre | **92,1 %** |
+| Cache local après le passage | **8 entrées**, 4 réusages chacune |
+| Lignes du ledger | **497** |
+
+Deux faits trouvés par ce passage :
+
+- l'amont (IcyCache) sert depuis **son** cache → IcyLoom ne stockait rien en local et la vue Cache restait vide ; le gateway met maintenant en cache local ce que l'amont a servi ;
+- une réponse **tronquée** (`finish_reason: length`) n'est pas mise en cache : le budget `max_tokens` doit laisser la génération se terminer, sinon le cache reste vide et chaque appel repart en amont.
+
+### Console interactive (nouveauté)
+
+Chaque graphique est maintenant interrogeable : **survol** → tooltip avec les valeurs, **clic** → tooltip épinglé (il survit au rafraîchissement de 2 s), **clic sur une légende** → la série s'affiche ou se masque.
 
 ## 7. Commits
 

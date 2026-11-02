@@ -84,7 +84,7 @@ Every decision is written to `tool_audit`: actor, role, intent, server, tool, **
 
 ## Benchmarks — measured, not claimed
 
-Measured on the development instance (Windows 11, i7 vPro, no GPU) against a live stack of 13 real MCP servers:
+Measured on the development instance (Windows 11, i7 vPro, no GPU) against a live stack of 13 real MCP servers, after a 46-call load pass through the gateway:
 
 | Metric | Value |
 |---|---|
@@ -92,11 +92,22 @@ Measured on the development instance (Windows 11, i7 vPro, no GPU) against a liv
 | Read-only tools | **130** (69.1 %) |
 | Write tools | **43** (22.9 %) |
 | Destructive tools | **15** (8.0 %) — approval required |
-| Decisions traced | **11** — 5 allowed, 5 approvals, 1 refused (outside project scope) |
-| Tokens saved by compression | **60 186** |
+| Decisions traced | **58** — 40 allowed, 17 approvals, 1 refused (outside project scope) |
+| Tokens saved by compression | **386 383** |
 | Tokens saved on a single `read_file` | **30 093** |
-| Tokens measured (7 days) | **427 289** — 422 373 in tool schemas, 4 916 in tool results |
-| Test suite | **182 tests passing**, exit code 0 |
+| Tokens measured (7 days) | **577 064** — 559 811 in tool schemas, 17 253 in tool results |
+| Test suite | **186 tests passing**, exit code 0 |
+
+The console was put under load in the same run — **40 real calls** through the gateway, no mock:
+
+| Metric | Value |
+|---|---|
+| Calls through the gateway | **40** — 0 error |
+| Served from IcyLoom's own cache | **30** — ~215 ms each, 0 token spent |
+| Real generations (upstream miss) | **10** — p50 6.2 s, p95 10.4 s |
+| Hit rate | **75.6 %** — 102 hits / 28 misses |
+| Tokens avoided | **254 536** |
+| Gain | **92.1 %** |
 
 End-to-end run against the real MCP server over stdio — no mocks:
 
@@ -163,7 +174,7 @@ V2 is on `main` and pushed. What lands with the release:
 - [x] Sandbox for chained calls
 - [x] Decision audit trail + tokens-per-category metering
 - [x] Gateway V2 console view with KPIs and charts
-- [x] **182 tests passing**
+- [x] **186 tests passing**
 
 **The tagged release ships this week.** The gateway already runs behind Claude Desktop, Claude Code, Hermes and MCode on the development machine, with every decision logged and every destructive action gated behind an explicit approval.
 
