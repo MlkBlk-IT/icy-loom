@@ -60,10 +60,10 @@ tool_proxy:
   call_timeout_seconds: 300.0
   servers:
   - name: github
-    command: npx
+    command: 'D:\AI-Stack\tools\github-mcp-server\2.0.2\github-mcp-server.exe'
     args:
-    - '@modelcontextprotocol/server-github'
-    description: GitHub repos/PR/issues - 889k downloads
+    - stdio
+    description: GitHub repos/PR/issues (binaire local AI-Stack)
     cache_enabled: true
     ttl_seconds: 3600
     enabled: true
@@ -76,10 +76,13 @@ tool_proxy:
     ttl_seconds: 3600
     enabled: true
   - name: chrome-devtools
-    command: npx
+    command: 'C:\Program Files\nodejs\node.exe'
     args:
-    - chrome-devtools-mcp
-    description: Chrome DevTools (Google) - 1.7M visites/sem
+    - 'D:\AI-Stack\envs\chrome-devtools-mcp\node_modules\chrome-devtools-mcp\build\src\bin\chrome-devtools-mcp.js'
+    - --isolated
+    - --headless
+    - '--executablePath=C:\Program Files\Google\Chrome\Application\chrome.exe'
+    description: Chrome DevTools (binaire local AI-Stack)
     cache_enabled: true
     ttl_seconds: 3600
     enabled: true
@@ -115,6 +118,13 @@ tool_proxy:
     cache_enabled: true
     ttl_seconds: 3600
     enabled: true
+  - name: git
+    command: 'D:\AI-Stack\envs\git-mcp\Scripts\mcp-server-git.exe'
+    args: []
+    description: Operations Git (binaire local AI-Stack)
+    cache_enabled: true
+    ttl_seconds: 3600
+    enabled: true
   catalog:
   - name: playwright
     command: npx
@@ -137,14 +147,6 @@ tool_proxy:
     args:
     - '@modelcontextprotocol/server-sequential-thinking'
     description: Raisonnement structure (Anthropic)
-    cache_enabled: true
-    ttl_seconds: 3600
-    enabled: false
-  - name: git
-    command: uvx
-    args:
-    - mcp-server-git
-    description: Operations Git (Anthropic)
     cache_enabled: true
     ttl_seconds: 3600
     enabled: false
@@ -269,3 +271,19 @@ upstreams:
   timeout_seconds: 120.0
   sticky: true
   enabled: true
+
+#: Politique d'execution (V2) : roles, portee projet, approbations.
+#: `reader` et `writer` n'ont pas de regle ici : leurs capacites sont
+#: definies par defaut (lecture seule / lecture + ecriture).
+policy:
+  enabled: true
+  default_role: operator
+  environment: dev
+  project_roots:
+  - 'D:\Icy-Loom'
+  - 'D:\NyxCall'
+  roles:
+    operator:
+    - server: '*'
+      tool: '*'
+      effect: allow

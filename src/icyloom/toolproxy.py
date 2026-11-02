@@ -36,10 +36,15 @@ from mcp.client.stdio import stdio_client
 import yaml
 
 from . import paths
+from .audit import AuditTrail
 from .config import Config, ToolServerConfig
 from .db import Database
 from .ledger import Ledger, LedgerEntry
+from .policy import PolicyEngine
+from .registry import ToolRegistry
 from .tokenizer import count_tokens, counter_name
+from .tokens import TokenMeter
+from .toolcompress import compress_result
 
 log = logging.getLogger("icyloom.toolproxy")
 
@@ -209,6 +214,14 @@ class ToolProxy:
             block_after=config.tool_proxy.loop_block_after,
             max_cycle=config.tool_proxy.loop_max_cycle,
         )
+        #: registre centralisé des outils (catalogue, index de sélection).
+        self.registry = ToolRegistry(self.db)
+        #: politique d'exécution : rôle, portée projet, approbations.
+        self.policy = PolicyEngine(config.policy)
+        #: trace d'audit des invocations.
+        self.audit = AuditTrail(self.db)
+        #: répartition des tokens par catégorie.
+        self.meter = TokenMeter(self.db, self.ledger)
         self._servers: dict[str, ToolServerConfig] = {
             s.name: s for s in config.tool_proxy.servers if s.enabled
         }
@@ -489,15 +502,44 @@ class ToolProxy:
         self._schemas[server] = {
             t.name: (getattr(t, "inputSchema", None) or {}) for t in listed.tools
         }
+        self._register(server, tools, self._schemas[server])
         return {"ok": True, "server": server, "count": len(tools), "tools": tools,
                 "cached": False}
 
+    def _register(self, server: str, tools: list[dict[str, Any]],
+                  schemas: dict[str, Any]) -> None:
+        """Alimente le registre centralisé et mesure le coût des schémas."""
+        try:
+            self.registry.register(
+                server, tools, schemas,
+                domain=self.config.tool_registry.domains.get(server, server),
+                owners=self.config.tool_registry.owners,
+                environment=self.config.policy.environment,
+            )
+        except Exception as exc:      # pragma: no cover - registre indisponible
+            log.warning("registre: catalogue de %s non enregistré (%s)", server, exc)
+            return
+        tokens = self.registry.schema_tokens(server).get(server, 0)
+        self.meter.record("tool_schemas", tokens, server=server)
+
     def search_tools(self, query: str, server: str = "") -> dict[str, Any]:
-        """Cherche un outil dans le catalogue (par nom ou description)."""
+        """Cherche un outil dans le registre (index lexical, score par intention).
+
+        Le registre fournit le classement ; le repli en mémoire couvre les
+        serveurs dont le catalogue n'a pas encore été chargé.
+        """
         needle = (query or "").strip().lower()
         if not needle:
             return {"ok": False, "error": "empty_query"}
-        matches: list[dict[str, Any]] = []
+        matches = self.registry.search(
+            query, server=server,
+            top_k=self.config.tool_registry.search_top_k,
+            max_per_server=self.config.tool_registry.max_per_server,
+        )
+        if matches:
+            return {"ok": True, "query": query, "count": len(matches),
+                    "matches": matches, "catalogued_servers": self.server_names()}
+        matches = []
         for name, (_ts, tools) in self._catalog.items():
             if server and name != server:
                 continue
@@ -521,7 +563,68 @@ class ToolProxy:
                 "matches": matches[:20],
                 "catalogued_servers": sorted(self._catalog)}
 
-    async def call(self, server: str, tool: str, args: dict[str, Any] | None = None) -> dict[str, Any]:
+    def get_tool_schema(self, server: str, tool: str,
+                        raw: bool = False) -> dict[str, Any]:
+        """Contrat d'un outil : schéma compressé (défaut) ou schéma complet.
+
+        Le contrat est ce que l'agent voit : description courte, arguments
+        allégés, effets de bord et niveau de sécurité. Le schéma complet
+        reste dans le registre et n'est réinjecté qu'au moment de l'appel.
+        """
+        if raw:
+            schema = self._schema_of(server, tool)
+            if schema is None:
+                return {"ok": False, "error": "unknown_tool", "server": server,
+                        "tool": tool, "servers": self.server_names()}
+            return {"ok": True, "server": server, "tool": tool, "schema": schema}
+        contract = self.registry.contract(
+            server, tool,
+            max_description_chars=self.config.tool_proxy.schema_max_description_chars)
+        if contract is None:
+            return {"ok": False, "error": "unknown_tool", "server": server,
+                    "tool": tool, "servers": self.server_names()}
+        return {"ok": True, "server": server, "tool": tool, "contract": contract}
+
+    def _present(self, server: str, tool: str, args: dict[str, Any],
+                 payload: Any) -> tuple[Any, dict[str, Any]]:
+        """Comprime le résultat d'un outil ; l'original reste consultable."""
+        if not self.config.tool_proxy.compress_results:
+            return payload, {}
+        text, meta = compress_result(payload, self.config.tool_proxy.max_result_chars)
+        if not meta.get("truncated"):
+            return payload, meta
+        ref = self._store_result(server, tool, args, payload)
+        shown = dict(payload) if isinstance(payload, dict) else {}
+        shown["content"] = [text]
+        shown["truncated"] = True
+        shown["compressed"] = meta.get("kind", "raw")
+        shown["original_chars"] = meta.get("original_chars", 0)
+        shown["result_ref"] = ref
+        saved = max(0, int(meta.get("original_chars", 0)) - int(meta.get("compressed_chars", 0)))
+        meta["result_ref"] = ref
+        meta["saved_chars"] = saved
+        self.meter.record("tool_results", count_tokens(text), server=server, tool=tool,
+                          saved_chars=saved)
+        return shown, meta
+
+    def _store_result(self, server: str, tool: str, args: dict[str, Any],
+                      payload: Any) -> int:
+        """Conserve le résultat brut : il reste lisible par son identifiant."""
+        try:
+            rendered = json.dumps(payload, ensure_ascii=False, default=str)
+        except (TypeError, ValueError):
+            rendered = str(payload)
+        with self.db.transaction() as cur:
+            cur.execute(
+                "INSERT INTO tool_results (server,tool,args_hash,payload,chars)"
+                " VALUES (?,?,?,?,?)",
+                (server, tool, args_hash(args), rendered, len(rendered)),
+            )
+            return int(cur.lastrowid or 0)
+
+    async def call(self, server: str, tool: str, args: dict[str, Any] | None = None,
+                   *, role: str = "", intent: str = "", confirmed: bool = False,
+                   actor: str = "") -> dict[str, Any]:
         """Appelle un outil descendant, via le cache si possible."""
         cfg = self._servers.get(server)
         if cfg is None:
@@ -529,6 +632,25 @@ class ToolProxy:
                     "servers": self.server_names()}
         args = args or {}
         await self._ensure_schema(server, tool)
+        row = self.registry.get(server, tool)
+        side_effects = str((row or {}).get("side_effects") or "none")
+        decision = self.policy.decide(
+            role=role, server=server, tool=tool, side_effects=side_effects,
+            security_level=str((row or {}).get("security_level") or "low"),
+            args=args, confirmed=confirmed, intent=intent,
+        )
+        if decision.effect != "allow":
+            self.audit.record(actor=actor, role=decision.role, intent=intent,
+                              server=server, tool=tool, args_hash=args_hash(args),
+                              decision=decision.effect, reason=decision.reason,
+                              detail=decision.rule)
+            denied = decision.effect == "deny"
+            return {"ok": False,
+                    "error": "policy_denied" if denied else "approval_required",
+                    "message": ("Appel refusé par la politique." if denied else
+                                "Appel soumis à approbation : rejouer avec confirm=true."),
+                    "server": server, "tool": tool,
+                    "decision": decision.as_dict()}
         epoch = self._epoch_of(server)
         key = cache_key(server, tool, args, epoch)
         ttl = self._ttl(cfg)
@@ -565,8 +687,12 @@ class ToolProxy:
                     meta={"tool": tool, "cache_key": key, "matched": matched,
                           "counter": counter_name(), "bytes": int(cached["bytes"])},
                 ))
+                shown, meta = self._present(server, tool, args, cached["result"])
                 answer = {"ok": True, "server": server, "tool": tool,
-                          "result": cached["result"], "cached": True}
+                          "result": shown, "cached": True}
+                if meta.get("truncated"):
+                    answer["compressed"] = meta.get("kind")
+                    answer["result_ref"] = meta.get("result_ref")
                 if matched == "canonical":
                     answer["matched"] = "canonical"
                 if verdict.get("warning"):
@@ -583,6 +709,10 @@ class ToolProxy:
                 self._bump_epoch(server)
             self._log_event("tool_error", server, tool, args, latency,
                             detail=f"{type(exc).__name__}: {exc}")
+            self.audit.record(actor=actor, role=decision.role, intent=intent,
+                              server=server, tool=tool, args_hash=args_hash(args),
+                              decision="error", reason=f"{type(exc).__name__}: {exc}",
+                              latency_ms=latency)
             return {"ok": False, "error": type(exc).__name__, "message": str(exc),
                     "server": server, "tool": tool}
 
@@ -604,8 +734,12 @@ class ToolProxy:
             kind="tool_call", upstream=server, latency_ms=latency,
             meta={"tool": tool},
         ))
-        response = {"ok": True, "server": server, "tool": tool, "result": payload,
+        shown, meta = self._present(server, tool, args, payload)
+        response = {"ok": True, "server": server, "tool": tool, "result": shown,
                     "cached": False, "latency_ms": latency}
+        if meta.get("truncated"):
+            response["compressed"] = meta.get("kind")
+            response["result_ref"] = meta.get("result_ref")
         if verdict.get("warning"):
             response["warning"] = verdict["warning"]
         failed = isinstance(payload, dict) and bool(payload.get("is_error"))
@@ -613,10 +747,21 @@ class ToolProxy:
             self.cache_set(key, server, tool, payload, latency, ttl=ttl,
                            canon=canon_key(server, tool, args, epoch,
                                            self._schema_of(server, tool)))
+        self.registry.record_call(server, tool, latency)
+        self.audit.record(actor=actor, role=decision.role, intent=intent,
+                          server=server, tool=tool, args_hash=args_hash(args),
+                          decision="allow", reason=decision.reason,
+                          compacted=str(meta.get("kind", "")),
+                          tokens_in=count_tokens(json.dumps(shown, ensure_ascii=False,
+                                                           default=str)),
+                          tokens_saved=int(meta.get("saved_chars", 0)),
+                          latency_ms=latency)
         return response
 
     async def call_batch(self, calls: Iterable[dict[str, Any]],
-                         stop_on_error: bool = True) -> list[dict[str, Any]]:
+                         stop_on_error: bool = True, *, role: str = "",
+                         intent: str = "", confirmed: bool = False,
+                         actor: str = "") -> list[dict[str, Any]]:
         """Exécute une série d'appels, dans l'ordre.
 
         Par défaut le lot **s'arrête à la première erreur** (appel invalide,
@@ -642,12 +787,52 @@ class ToolProxy:
                                "error": "missing_server_or_tool"}
                 else:
                     args = call.get("args") if isinstance(call.get("args"), dict) else {}
-                    outcome = await self.call(server, tool, args)
+                    outcome = await self.call(server, tool, args, role=role,
+                                             intent=intent, confirmed=confirmed,
+                                             actor=actor)
                     outcome["index"] = index
             results.append(outcome)
             if failed_at is None and _is_failure(outcome):
                 failed_at = index
         return results
+
+    async def run_script(self, source: str, *, role: str = "", intent: str = "",
+                         confirmed: bool = False,
+                         actor: str = "") -> dict[str, Any]:
+        """Exécute un script d'outils dans le bac à sable.
+
+        Règle du bac à sable : **lecture seule par défaut**. Sans
+        ``confirmed``, le script ne peut appeler que des outils sans effet de
+        bord ; un outil qui écrit est refusé, et un appel qui échoue est
+        remonté tel quel au script.
+        """
+        from .script import run_script as _run
+
+        async def _call(server: str, tool: str,
+                        args: dict[str, Any]) -> dict[str, Any]:
+            row = self.registry.get(server, tool)
+            effects = str((row or {}).get("side_effects") or "none")
+            if not confirmed and effects != "none":
+                return {"ok": False, "error": "read_only_script",
+                        "message": "Le bac à sable n'autorise que les outils "
+                                   "sans effet de bord.",
+                        "server": server, "tool": tool}
+            return await self.call(server, tool, args, role=role, intent=intent,
+                                   confirmed=confirmed, actor=actor)
+
+        outcome = await _run(
+            source, _call,
+            timeout=self.config.tool_proxy.script_timeout_seconds,
+            max_steps=self.config.tool_proxy.script_max_steps,
+            max_instructions=self.config.tool_proxy.script_max_instructions,
+        )
+        self.audit.record(actor=actor, role=role, intent=intent, server="*",
+                          tool="run_tool_script",
+                          args_hash=args_hash({"script": source}),
+                          decision="allow" if outcome.get("ok") else "error",
+                          reason=str(outcome.get("error", "")),
+                          detail=str(outcome.get("steps", 0)))
+        return outcome
 
     async def _invoke(self, cfg: ToolServerConfig, tool: str, args: dict[str, Any]) -> Any:
         """Exécute l'appel sur le serveur descendant et normalise le résultat."""
@@ -741,6 +926,10 @@ class ToolProxy:
             "by_server": [dict(r) for r in by_server],
             "events": [dict(r) for r in events],
             "servers": self.server_names(),
+            "registry": self.registry.stats(),
+            "policy": self.policy.describe(),
+            "audit": self.audit.stats(),
+            "tokens": self.meter.summary(),
         }
 
 

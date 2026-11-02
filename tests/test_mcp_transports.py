@@ -26,6 +26,8 @@ EXPECTED_TOOLS = {
     "cache", "tool_proxy", "proxy_info", "tool_cache_clear",
     "ctx_store", "ctx_get", "ctx_search", "ctx_verify", "ctx_check",
     "ctx_profile", "ctx_session", "ctx_admin", "ledger",
+    "search_tools", "get_tool_schema", "invoke_tool", "run_tool_script",
+    "tool_policy", "gateway_stats",
 }
 
 HTTP_PORT = 8155
@@ -122,7 +124,7 @@ def test_stdio_handshake_lists_exactly_13_tools(tmp_path) -> None:
 
     assert init, "pas de réponse initialize"
     assert set(tools) == EXPECTED_TOOLS, sorted(tools)
-    assert len(tools) == 13
+    assert len(tools) == 19
     assert raw_lines, "stdout vide"
     # Chaque ligne de stdout est du JSON-RPC : aucune trace de log.
     for line in raw_lines:

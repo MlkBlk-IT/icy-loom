@@ -16,6 +16,8 @@ data/*.db-shm
 
 # artefacts de test et sauvegardes de revue
 .pytest-run/
+.pytest-run*/
+sqlite_mcp_server.db
 *.bak_icyloom_*
 *.bak_2026*
 

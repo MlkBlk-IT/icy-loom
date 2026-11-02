@@ -221,6 +221,93 @@ SCHEMA: tuple[str, ...] = (
     """,
     "CREATE INDEX IF NOT EXISTS idx_ledger_ts ON ledger_entries(ts)",
     "CREATE INDEX IF NOT EXISTS idx_ledger_kind ON ledger_entries(kind)",
+    # --- registre centralisé des outils (V2) --------------------------------
+    """
+    CREATE TABLE IF NOT EXISTS tool_registry (
+        server          TEXT NOT NULL,
+        tool            TEXT NOT NULL,
+        qualified_name  TEXT NOT NULL,
+        description     TEXT NOT NULL DEFAULT '',
+        input_schema    TEXT NOT NULL DEFAULT '{}',
+        output_schema   TEXT NOT NULL DEFAULT '{}',
+        domain          TEXT NOT NULL DEFAULT '',
+        intent          TEXT NOT NULL DEFAULT '',
+        tags            TEXT NOT NULL DEFAULT '',
+        required_inputs TEXT NOT NULL DEFAULT '',
+        side_effects    TEXT NOT NULL DEFAULT 'none',
+        security_level  TEXT NOT NULL DEFAULT 'low',
+        scope           TEXT NOT NULL DEFAULT '*',
+        owner           TEXT NOT NULL DEFAULT '',
+        risk            TEXT NOT NULL DEFAULT 'low',
+        environment     TEXT NOT NULL DEFAULT '',
+        calls           INTEGER NOT NULL DEFAULT 0,
+        avg_latency_ms  INTEGER NOT NULL DEFAULT 0,
+        fid             INTEGER,
+        updated_at      TEXT NOT NULL DEFAULT (datetime('now')),
+        PRIMARY KEY (server, tool)
+    )
+    """,
+    "CREATE INDEX IF NOT EXISTS idx_tool_registry_domain ON tool_registry(domain)",
+    "CREATE INDEX IF NOT EXISTS idx_tool_registry_intent ON tool_registry(intent)",
+    # --- politique d'exécution (V2) ----------------------------------------
+    """
+    CREATE TABLE IF NOT EXISTS tool_policy (
+        role       TEXT NOT NULL,
+        server     TEXT NOT NULL DEFAULT '*',
+        tool       TEXT NOT NULL DEFAULT '*',
+        effect     TEXT NOT NULL DEFAULT 'allow',
+        created_at TEXT NOT NULL DEFAULT (datetime('now')),
+        PRIMARY KEY (role, server, tool)
+    )
+    """,
+    # --- trace d'audit (V2) -----------------------------------------------
+    """
+    CREATE TABLE IF NOT EXISTS tool_audit (
+        id           INTEGER PRIMARY KEY AUTOINCREMENT,
+        ts           TEXT NOT NULL DEFAULT (datetime('now')),
+        actor        TEXT NOT NULL DEFAULT '',
+        role         TEXT NOT NULL DEFAULT '',
+        intent       TEXT NOT NULL DEFAULT '',
+        server       TEXT NOT NULL DEFAULT '',
+        tool         TEXT NOT NULL DEFAULT '',
+        args_hash    TEXT NOT NULL DEFAULT '',
+        decision     TEXT NOT NULL DEFAULT '',
+        reason       TEXT NOT NULL DEFAULT '',
+        compacted    TEXT NOT NULL DEFAULT '',
+        tokens_in    INTEGER NOT NULL DEFAULT 0,
+        tokens_out   INTEGER NOT NULL DEFAULT 0,
+        tokens_saved INTEGER NOT NULL DEFAULT 0,
+        latency_ms   INTEGER NOT NULL DEFAULT 0,
+        detail       TEXT NOT NULL DEFAULT ''
+    )
+    """,
+    "CREATE INDEX IF NOT EXISTS idx_tool_audit_ts ON tool_audit(ts)",
+    "CREATE INDEX IF NOT EXISTS idx_tool_audit_tool ON tool_audit(server, tool)",
+    # --- résultats bruts conservés (V2) ------------------------------------
+    """
+    CREATE TABLE IF NOT EXISTS tool_results (
+        id        INTEGER PRIMARY KEY AUTOINCREMENT,
+        ts        TEXT NOT NULL DEFAULT (datetime('now')),
+        server    TEXT NOT NULL DEFAULT '',
+        tool      TEXT NOT NULL DEFAULT '',
+        args_hash TEXT NOT NULL DEFAULT '',
+        payload   TEXT NOT NULL DEFAULT '{}',
+        chars     INTEGER NOT NULL DEFAULT 0
+    )
+    """,
+    "CREATE INDEX IF NOT EXISTS idx_tool_results_ts ON tool_results(ts)",
+)
+
+#: Index FTS5 du registre : **optionnel**, car FTS5 peut manquer dans une
+#: compilation SQLite. Sans lui, la sélection reste lexique (repli Python).
+OPTIONAL_SCHEMA: tuple[str, ...] = (
+    """
+    CREATE VIRTUAL TABLE IF NOT EXISTS tool_registry_fts USING fts5(
+        qualified_name, description, tags, intent, domain,
+        server UNINDEXED, tool UNINDEXED,
+        tokenize='unicode61'
+    )
+    """,
 )
 
 #: Le registre unifié (`MERGE_PLAN.md` §4.3) : une **vue**, pas une table.
@@ -362,6 +449,12 @@ class Database:
         with self._lock, self.cursor() as cur:
             for statement in SCHEMA:
                 cur.execute(statement)
+            for statement in OPTIONAL_SCHEMA:
+                try:
+                    cur.execute(statement)
+                except sqlite3.OperationalError:
+                    # FTS5 absent : la sélection garde son repli lexical.
+                    break
             for statement in VIEWS:
                 cur.execute(statement)
             for table, column, decl in ADDITIVE_COLUMNS:

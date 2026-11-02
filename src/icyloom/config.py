@@ -155,6 +155,51 @@ class ToolProxyConfig(BaseModel):
     max_result_bytes: int = 1048576
     connect_timeout_seconds: float = 20.0
     call_timeout_seconds: float = 300.0
+    #: Compression des résultats avant de les verser dans l'historique.
+    compress_results: bool = True
+    max_result_chars: int = 4000
+    #: Longueur max d'une description dans un contrat d'outil.
+    schema_max_description_chars: int = 160
+    #: Garde-fous du bac à sable d'exécution de scripts.
+    script_timeout_seconds: float = 30.0
+    script_max_steps: int = 20
+    script_max_instructions: int = 200000
+
+
+class PolicyRule(BaseModel):
+    """Une règle de permission : effet autorisé pour un serveur / un outil."""
+
+    server: str = "*"
+    tool: str = "*"
+    effect: Literal["allow", "deny", "approval"] = "allow"
+
+
+class PolicyConfig(BaseModel):
+    """Permissions, portée projet et environnement d'exécution (V2)."""
+
+    enabled: bool = True
+    #: Rôle appliqué quand l'appelant n'en précise aucun. ``operator``
+    #: autorise lecture et écriture ; les outils destructeurs exigent
+    #: toujours une approbation explicite.
+    default_role: str = "operator"
+    #: ``dev``, ``prod``... : l'environnement est indexé avec les outils.
+    environment: str = "dev"
+    #: Racines autorisées : une écriture hors de ces racines est refusée.
+    project_roots: list[str] = Field(default_factory=list)
+    #: Règles par rôle. La plus spécifique l'emporte.
+    roles: dict[str, list[PolicyRule]] = Field(default_factory=dict)
+
+
+class ToolRegistryConfig(BaseModel):
+    """Registre centralisé des outils (V2)."""
+
+    enabled: bool = True
+    #: Propriétaire par serveur (équipe responsable).
+    owners: dict[str, str] = Field(default_factory=dict)
+    #: Domaine métier par serveur (par défaut : le nom du serveur).
+    domains: dict[str, str] = Field(default_factory=dict)
+    search_top_k: int = 10
+    max_per_server: int = 3
 
 
 class BreakerConfig(BaseModel):
@@ -184,6 +229,8 @@ class Config(BaseModel):
     breaker: BreakerConfig = Field(default_factory=BreakerConfig)
     ledger: LedgerConfig = Field(default_factory=LedgerConfig)
     tool_proxy: ToolProxyConfig = Field(default_factory=ToolProxyConfig)
+    policy: PolicyConfig = Field(default_factory=PolicyConfig)
+    tool_registry: ToolRegistryConfig = Field(default_factory=ToolRegistryConfig)
     upstreams: list[UpstreamConfig] = Field(default_factory=list)
 
     # -- accès rapide aux upstreams ------------------------------------

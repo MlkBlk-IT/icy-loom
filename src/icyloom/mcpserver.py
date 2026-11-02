@@ -5,7 +5,7 @@ MCP voit donc un seul serveur, pas deux.
 
 Règles de surface :
 
-* 13 outils, descriptions courtes (chaque schéma coûte des tokens à chaque
+* 19 outils, descriptions courtes (chaque schéma coûte des tokens à chaque
   requête — c'est un budget, pas un détail) ;
 * `ToolAnnotations` sur chaque outil (lecture seule, destructif, idempotent,
   ouvert sur le monde) ;
@@ -186,6 +186,146 @@ def build_server(config: Config) -> FastMCP:
                               "block_after": config.tool_proxy.loop_block_after}}
         return {"ok": False, "error": "unknown_action", "action": topic,
                 "allowed": ["servers", "tools", "search", "stats", "loop"]}
+
+    # ------------------------------------------------------------------
+    # 3 bis. sélection dynamique des outils (V2)
+    # ------------------------------------------------------------------
+    @mcp.tool(
+        name="search_tools",
+        description="Cherche les outils disponibles (index lexical, sans embeddings).",
+        annotations=ToolAnnotations(
+            readOnlyHint=True, destructiveHint=False, idempotentHint=True,
+            openWorldHint=False,
+        ),
+    )
+    async def search_tools_tool(query: str, server: str = "",
+                                top_k: int = 10) -> dict[str, Any]:
+        """Cherche les outils correspondant à une intention.
+
+        Args:
+            query: intention en langage naturel ("lire un fichier du dépôt")
+            server: restreint à un serveur descendant
+            top_k: nombre maximal de résultats
+        """
+        if not (query or "").strip():
+            return {"ok": False, "error": "empty_query"}
+        for name in ([server] if server else tools.server_names()):
+            await tools.list_tools(name)
+        answer = tools.search_tools(query, server)
+        if answer.get("ok") and top_k:
+            answer["matches"] = answer.get("matches", [])[:max(1, int(top_k))]
+            answer["count"] = len(answer["matches"])
+        return answer
+
+    @mcp.tool(
+        name="get_tool_schema",
+        description="Contrat d'un outil (schéma compressé) ou schéma complet.",
+        annotations=ToolAnnotations(
+            readOnlyHint=True, destructiveHint=False, idempotentHint=True,
+            openWorldHint=False,
+        ),
+    )
+    async def get_tool_schema_tool(server: str, tool: str,
+                                   raw: bool = False) -> dict[str, Any]:
+        """Schéma d'un outil.
+
+        Args:
+            server: serveur descendant
+            tool: nom de l'outil
+            raw: vrai pour le schéma complet (par défaut : contrat compressé)
+        """
+        if not server or not tool:
+            return {"ok": False, "error": "missing_server_or_tool"}
+        await tools.list_tools(server)
+        return tools.get_tool_schema(server, tool, raw=raw)
+
+    @mcp.tool(
+        name="invoke_tool",
+        description="Exécute un outil (politique, cache et compression inclus).",
+        annotations=ToolAnnotations(
+            readOnlyHint=False, destructiveHint=True, idempotentHint=False,
+            openWorldHint=True,
+        ),
+    )
+    async def invoke_tool_tool(server: str, tool: str,
+                               args: dict[str, Any] | None = None,
+                               role: str = "", intent: str = "",
+                               confirm: bool = False) -> dict[str, Any]:
+        """Appelle un outil descendant.
+
+        Args:
+            server: serveur descendant
+            tool: nom de l'outil
+            args: arguments de l'appel
+            role: rôle de l'appelant (pilote la politique)
+            intent: intention déclarée (traçabilité)
+            confirm: approuve un appel destructeur ou exigeant approbation
+        """
+        if not server or not tool:
+            return {"ok": False, "error": "missing_server_or_tool"}
+        return await tools.call(server, tool, args or {}, role=role,
+                                intent=intent, confirmed=confirm)
+
+    @mcp.tool(
+        name="run_tool_script",
+        description="Enchaîne plusieurs appels d'outils dans un bac à sable.",
+        annotations=ToolAnnotations(
+            readOnlyHint=False, destructiveHint=True, idempotentHint=False,
+            openWorldHint=True,
+        ),
+    )
+    async def run_tool_script_tool(script: str, role: str = "",
+                                   intent: str = "",
+                                   confirm: bool = False) -> dict[str, Any]:
+        """Exécute un script d'outils.
+
+        Le script appelle `await call(server, tool, args)` et renvoie un
+        résultat. Sans `confirm`, seuls les outils sans effet de bord sont
+        autorisés.
+
+        Args:
+            script: source Python du script
+            role: rôle de l'appelant
+            intent: intention déclarée
+            confirm: autorise les outils à effet de bord
+        """
+        if not (script or "").strip():
+            return {"ok": False, "error": "empty_script"}
+        return await tools.run_script(script, role=role, intent=intent,
+                                      confirmed=confirm)
+
+    @mcp.tool(
+        name="tool_policy",
+        description="Politique d'exécution : rôles, portée, approbations.",
+        annotations=ToolAnnotations(
+            readOnlyHint=True, destructiveHint=False, idempotentHint=True,
+            openWorldHint=False,
+        ),
+    )
+    async def tool_policy_tool() -> dict[str, Any]:
+        """Décrit la politique d'exécution en vigueur."""
+        return {"ok": True, "policy": tools.policy.describe(),
+                "roles": tools.policy.roles()}
+
+    @mcp.tool(
+        name="gateway_stats",
+        description="Observabilité : tokens par catégorie, registre, audit.",
+        annotations=ToolAnnotations(
+            readOnlyHint=True, destructiveHint=False, idempotentHint=True,
+            openWorldHint=False,
+        ),
+    )
+    async def gateway_stats_tool(days: int = 30) -> dict[str, Any]:
+        """Situation du gateway.
+
+        Args:
+            days: période d'agrégation des tokens
+        """
+        return {"ok": True, "tokens": tools.meter.summary(days),
+                "registry": tools.registry.stats(),
+                "audit": tools.audit.stats(),
+                "policy": tools.policy.describe(),
+                "cache": tools.stats()}
 
     # ------------------------------------------------------------------
     # 4. purge du cache d'outils

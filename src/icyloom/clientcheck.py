@@ -25,6 +25,9 @@ from typing import Any
 #: Transports testés par l'auto-test, dans l'ordre d'intérêt.
 TRANSPORTS = ("stdio", "http", "sse")
 
+#: Nombre d'outils que le serveur MCP doit exposer (13 en V1, 19 en V2).
+EXPECTED_TOOL_COUNT = 19
+
 
 # --------------------------------------------------------------------------
 # configuration client
@@ -95,7 +98,8 @@ def install_client_config(target: str = "cursor", config_path: str | None = None
 async def _exercise(session: Any, checks: list[tuple[bool, str]]) -> dict[str, Any]:
     listed = await session.list_tools()
     names = sorted(t.name for t in listed.tools)
-    checks.append((len(names) == 13, f"13 outils exposés ({len(names)})"))
+    checks.append((len(names) == EXPECTED_TOOL_COUNT,
+                   f"{EXPECTED_TOOL_COUNT} outils exposés ({len(names)})"))
 
     marker = f"CLIENT_CHECK_{names[0].upper()}"
     store = _payload(await session.call_tool(
@@ -115,7 +119,9 @@ async def _exercise(session: Any, checks: list[tuple[bool, str]]) -> dict[str, A
     for name, args, label in (
             ("cache", {"action": "stats"}, "cache(stats) répond"),
             ("ledger", {"view": "summary"}, "ledger(summary) répond"),
-            ("proxy_info", {"what": "servers"}, "proxy_info(servers) répond")):
+            ("proxy_info", {"what": "servers"}, "proxy_info(servers) répond"),
+            ("search_tools", {"query": "lire un fichier"}, "search_tools répond"),
+            ("gateway_stats", {"days": 1}, "gateway_stats répond")):
         payload = _payload(await session.call_tool(name, args))
         checks.append((bool(payload.get("ok")), label))
 

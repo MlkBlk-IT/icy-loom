@@ -9,7 +9,7 @@ modèle :
 2. **relais d'outils** — un vrai serveur MCP en stdio est atteint, répond, et
    son résultat est servi depuis le cache au 2e appel identique ;
 3. **installation** — ``icyloom serve`` puis ``icyloom check --transport all``
-   répondent 21/21.
+   répondent 27/27.
 
 Ces tests sont la preuve reproductible : ils tournent dans la CI, sur
 Windows et sur Linux, sans GPU et sans clé d'API.
@@ -134,8 +134,8 @@ def _wait_for_port(host: str, port: int, timeout: float = 45.0) -> bool:
     return False
 
 
-def test_serve_then_check_reports_21_of_21(tmp_path) -> None:
-    """`icyloom serve` puis `icyloom check --transport all` : 21/21."""
+def test_serve_then_check_reports_27_of_27(tmp_path) -> None:
+    """`icyloom serve` puis `icyloom check --transport all` : 27/27."""
     config = _write_service_config(tmp_path / "icyloom.yaml", tmp_path)
     env = {**os.environ,
            "ICYLOOM_CONFIG": str(config),
@@ -167,4 +167,4 @@ def test_serve_then_check_reports_21_of_21(tmp_path) -> None:
             server.kill()
 
     assert result.returncode == 0, result.stdout + result.stderr
-    assert "21/21" in result.stdout, result.stdout + result.stderr
+    assert "27/27" in result.stdout, result.stdout + result.stderr

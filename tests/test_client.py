@@ -50,7 +50,7 @@ def test_install_keeps_other_servers(tmp_path: Path, monkeypatch) -> None:
 
 
 def test_stdio_transport_works_like_a_real_client() -> None:
-    """Le transport stdio doit exposer les 13 outils et répondre."""
+    """Le transport stdio doit exposer les 19 outils et répondre."""
     ok, checks = run_checks(transports=("stdio",))
     assert ok, [label for flag, label in checks if not flag]
     assert len(checks) >= 7

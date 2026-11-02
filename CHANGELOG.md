@@ -4,6 +4,54 @@ All notable changes to this project are documented here.
 Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) — versioning:
 [SemVer](https://semver.org/spec/v2.0.0.html).
 
+## [2.0.0] — 2026-11-02
+
+IcyLoom becomes a **policy-aware MCP tool gateway**. The client no longer sees
+every downstream tool: it sees a small set of meta-tools, and the proxy
+decides what to expose, what to allow, and what to compress.
+
+### Added
+
+- **Central tool registry** (`tool_registry`): one catalogue for every
+  downstream MCP tool — qualified name, description, input/output schema,
+  domain, intent, tags, required inputs, side effects, security level,
+  scope, owner, risk, call count and measured latency.
+- **Lexical selection index** (SQLite FTS5/BM25, with a Python fallback when
+  FTS5 is missing): `search_tools` returns the tools ranked by intent, with
+  a per-server cap so one server cannot take over the list. Synonyms are
+  carried by the index itself, so a French intent ("creer un ticket")
+  reaches an English-named tool (`create_issue`). **No embeddings and no
+  external service**: the app stays installable from GitHub.
+- **Dynamic tool selection**: new meta-tools `search_tools`,
+  `get_tool_schema`, `invoke_tool`, `run_tool_script`, `tool_policy` and
+  `gateway_stats`.
+- **Tool contracts**: the agent sees a compressed schema (short
+  descriptions, no `title`/`examples`); the full schema stays in the
+  registry and is re-injected at call time. Property order is preserved, so
+  the prompt cache still hits.
+- **Permission engine** (`tool_policy`): roles, project scope, environment
+  and risk level. A destructive tool always requires an explicit approval;
+  a write outside the configured project roots is refused.
+- **Execution sandbox** (`run_tool_script`): a restricted Python subset
+  (AST allowlist, no imports, no network, instruction budget, timeout) that
+  chains several tool calls in a single turn. Read-only by default.
+- **Result compression**: oversized results (JSON, logs, diffs, HTML) are
+  summarised before entering the history; the raw payload stays retrievable
+  through its reference.
+- **Policy audit trail** (`tool_audit`): actor, role, intent, tool,
+  arguments hash, decision and reason, what was compressed, final result.
+- **Token accounting per category**: system prompt, tool schemas, tool
+  results, cache reads, cache writes, LLM calls.
+
+### Changed
+
+- Every tool call now goes through the policy engine and the result
+  compressor. The default role is `operator` (read + write); destructive
+  tools still require `confirm=true`.
+- `tool_proxy.search` now ranks through the registry instead of a substring
+  match on names and descriptions; the in-memory catalogue remains as a
+  fallback for servers whose catalogue has not been loaded yet.
+
 ## [1.0.1] — 2026-11-01
 
 Correctness fixes to the cache expiry, the tool-cache TTL and the token
