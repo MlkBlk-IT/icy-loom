@@ -97,7 +97,7 @@ read_file README.md       -> ok=True, real content returned
 write_file                -> ok=True, file really written
 github.delete_file (no confirm) -> error=approval_required, call never reached the server
 run_tool_script           -> ok=True, sandboxed
-policy: role=operator env=dev roots=['C:\\', 'D:\\']
+policy: role=reader env=dev roots=[] (client-declared roots only)
 ```
 
 <img src="docs/screenshots/gateway-v2.png" alt="IcyLoom console — Gateway V2" width="900" />

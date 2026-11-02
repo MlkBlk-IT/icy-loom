@@ -362,11 +362,15 @@ upstreams:
 #: definies par defaut (lecture seule / lecture + ecriture).
 policy:
   enabled: true
-  default_role: operator
+  # Les clients agents ne sont pas administrateurs de la machine : ils n'ont
+  # que les racines qu'ils declarent (protocole MCP) et le role `reader`
+  # (lecture seule). L'administrateur garde son propre acces hors du proxy.
+  default_role: reader
   environment: dev
-  project_roots:
-  - 'C:\'
-  - 'D:\'
+  # Aucune racine ajoutee : IcyLoom ne complete plus les racines declarees
+  # par le client. Liste vide = pas de controle de portee par la politique
+  # (les serveurs descendants gardent leurs propres racines declarees).
+  project_roots: []
   roles:
     operator:
     - server: '*'

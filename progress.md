@@ -262,7 +262,7 @@ read_file README.md            -> ok=True, contenu réel retourné
 write_file                     -> ok=True, fichier réellement écrit
 github.delete_file sans confirm-> error=approval_required, appel jamais arrivé au serveur
 run_tool_script                -> ok=True, bac à sable, 1 étape
-tool_policy                    -> role=operator env=dev roots=['C:\\', 'D:\\']
+tool_policy                    -> role=reader env=dev roots=[] (racines declarees par le client)
 gateway_stats                  -> 427 289 tokens (422 373 schémas / 4 916 résultats)
 ```
 

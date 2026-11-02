@@ -27,10 +27,11 @@ import pytest
 import yaml
 
 from icyloom import __version__
-from icyloom.config import ToolServerConfig
+from icyloom.config import PolicyConfig, ToolServerConfig
 from icyloom.dashboard import snapshot
 from icyloom.db import Database
 from icyloom.mcpserver import refresh_catalog
+from icyloom.policy import PolicyEngine
 from icyloom.toolcompress import compress_result
 from icyloom.toolproxy import ToolProxy, cache_key
 
@@ -128,6 +129,29 @@ def test_A3_downstream_servers_get_a_usable_environment(config) -> None:
     env = proxy._session(custom)._params.env
     assert env and env.get("FOO") == "bar" and env.get("PATH"), \
         "les variables declarees doivent s'ajouter a l'heritage, pas le remplacer"
+
+
+# ---------------------------------------------------------------- I · politique
+def test_I_agents_are_read_only_and_keep_their_own_roots() -> None:
+    """Les clients agents : racines declarees seulement, role lecture seule."""
+    cfg = yaml.safe_load(YAML_PATH.read_text(encoding="utf-8"))
+    pol = cfg["policy"]
+    assert pol["default_role"] == "reader", \
+        "les clients agents ne doivent pas heriter du role administrateur"
+    assert not pol["project_roots"], \
+        "IcyLoom ne doit pas ajouter de racines aux clients (les leurs suffisent)"
+    engine = PolicyEngine(PolicyConfig(**pol))
+    read = engine.decide(role="", server="filesystem", tool="read_text_file",
+                         side_effects="none")
+    write = engine.decide(role="", server="filesystem", tool="write_file",
+                          side_effects="write")
+    assert read.allowed, "un lecteur doit pouvoir lire"
+    assert write.effect == "deny", "un lecteur ne doit pas pouvoir ecrire"
+    assert write.reason == "role_forbids_side_effect"
+    # l'escalade reste possible explicitement (administrateur).
+    escalated = engine.decide(role="operator", server="filesystem", tool="write_file",
+                               side_effects="write")
+    assert escalated.allowed, "l'admin doit pouvoir escalader explicitement"
 
 
 # ---------------------------------------------------------------- B · cache outils
