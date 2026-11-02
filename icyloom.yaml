@@ -100,10 +100,18 @@ tool_proxy:
   - name: sqlite
     command: uvx
     args:
-    - mcp-server-sqlite==2025.4.25
+    - --python
+    - '3.12'
+    - --from
+    - 'mcp-server-sqlite==2025.4.25'
+    - --with
+    - 'mcp==1.9.4'
+    - --with
+    - 'pydantic==2.8.2'
+    - mcp-server-sqlite
     - --db-path
     - 'D:\Icy-Loom\var\mcp-sqlite.db'
-    description: SQLite (Anthropic) - version epinglee, base explicite
+    description: "SQLite (Anthropic) - release epinglee + SDK mcp/pydantic epingles (la 2025.4.25 exige un SDK ancien) + base explicite"
     cache_enabled: true
     ttl_seconds: 3600
     enabled: true

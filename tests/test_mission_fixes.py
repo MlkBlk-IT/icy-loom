@@ -47,8 +47,12 @@ def test_A1_uvx_servers_are_pinned() -> None:
             continue
         if srv.get("command") != "uvx":
             continue
-        first = (srv.get("args") or [""])[0]
-        assert "==" in first or "@" in first, f"{srv['name']} n'est pas épinglé : {first}"
+        # Les drapeaux (--from, --with, --python) ne sont pas des paquets :
+        # on exige qu'au moins un SPÉC de paquet soit épinglé.
+        specs = [a for a in (srv.get("args") or [])
+                 if not a.startswith("-") and a not in ("3.12", "3.11", "3.13")]
+        pinned = [s for s in specs if "==" in s or "@" in s]
+        assert pinned, f"{srv['name']} n'est pas épinglé : {specs}"
 
 
 def test_A1_broken_servers_are_neutralised() -> None:
@@ -56,9 +60,13 @@ def test_A1_broken_servers_are_neutralised() -> None:
     servers = {s["name"]: s for s in cfg["tool_proxy"]["servers"]}
     # `mcp-server-everything` n'existe pas sur PyPI : le serveur est désactivé.
     assert servers["everything"]["enabled"] is False
-    # `mcp-server-sqlite` a besoin d'une base explicite et d'une version fixe.
+    # `mcp-server-sqlite` a besoin d'une base explicite, d'une version fixe et
+    # d'un SDK compatible : sa release 2025.4.25 exige mcp<1.10 / pydantic<2.9.
     assert "--db-path" in servers["sqlite"]["args"]
     assert any("==" in a for a in servers["sqlite"]["args"])
+    assert servers["sqlite"]["enabled"] is True
+    assert "mcp==1.9.4" in servers["sqlite"]["args"]
+    assert "pydantic==2.8.2" in servers["sqlite"]["args"]
 
 
 # ---------------------------------------------------------------- A2 · backoff
