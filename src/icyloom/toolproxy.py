@@ -221,6 +221,22 @@ class LoopGuard:
         return {"ok": True, "blocked": False, "repeats": repeats}
 
 
+def _std_env(cfg: ToolServerConfig) -> dict[str, str] | None:
+    """Environnement du serveur descendant.
+
+    ``None`` = héritage par défaut du SDK MCP (PATH, APPDATA, LOCALAPPDATA,
+    USERPROFILE, TEMP...). Sans lui, un serveur lancé par ``uvx`` ou ``npx``
+    meurt au démarrage : « Connection closed ». Les variables déclarées dans
+    le YAML écrasent l'héritage, elles ne le remplacent pas.
+    """
+    if not cfg.env:
+        return None
+    from mcp.client.stdio import get_default_environment
+
+    return {**get_default_environment(),
+            **{k: str(v) for k, v in cfg.env.items()}}
+
+
 class ToolProxy:
     """Relais d'outils descendants."""
 
@@ -981,7 +997,7 @@ class ToolProxy:
         params = StdioServerParameters(
             command=cfg.command,
             args=list(cfg.args),
-            env={**{k: str(v) for k, v in cfg.env.items()}},
+            env=_std_env(cfg),
         )
         return _SessionContext(params, self.config.tool_proxy.connect_timeout_seconds,
                                self.config.tool_proxy.call_timeout_seconds)
@@ -1001,7 +1017,7 @@ class ToolProxy:
         params = StdioServerParameters(
             command=cfg.command,
             args=list(cfg.args),
-            env={**{k: str(v) for k, v in cfg.env.items()}},
+            env=_std_env(cfg),
         )
         live = _LiveSession(params, self.config.tool_proxy.connect_timeout_seconds,
                             self.config.tool_proxy.call_timeout_seconds,

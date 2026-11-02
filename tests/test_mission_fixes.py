@@ -116,6 +116,20 @@ def test_A3_registry_indexes_every_active_server() -> None:
     assert "everything" not in listed, "un serveur desactive ne doit pas etre indexe"
 
 
+def test_A3_downstream_servers_get_a_usable_environment(config) -> None:
+    """Un env vide tue uvx/npx au demarrage (Connection closed)."""
+    proxy = ToolProxy(config)
+    bare = ToolServerConfig(name="fs", command="uvx", args=["mcp-server-sqlite"],
+                             cache_enabled=True)
+    assert proxy._session(bare)._params.env is None, \
+        "les serveurs descendants doivent heriter de l'environnement (PATH, APPDATA...)"
+    custom = ToolServerConfig(name="fs", command="uvx", args=["x"], cache_enabled=True,
+                              env={"FOO": "bar"})
+    env = proxy._session(custom)._params.env
+    assert env and env.get("FOO") == "bar" and env.get("PATH"), \
+        "les variables declarees doivent s'ajouter a l'heritage, pas le remplacer"
+
+
 # ---------------------------------------------------------------- B · cache outils
 def test_B_cache_allowlist_is_read_only() -> None:
     cfg = yaml.safe_load(YAML_PATH.read_text(encoding="utf-8"))
