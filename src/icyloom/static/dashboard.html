@@ -285,6 +285,11 @@ main { margin: 0 auto; max-width: 1400px; padding: 0 20px 70px; }
 .hero-card .row-line:last-child { border-bottom: none; }
 .hero-card .row-line b { font-family: var(--font-mono); font-size: 12.5px; }
 
+/* ── key/value rows (registre, politique) ────────────────────── */
+.row-line { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; font-size: 13.5px; padding: 5px 0; border-bottom: 1.5px dashed var(--border); }
+.row-line:last-child { border-bottom: none; }
+.row-line b { font-family: var(--font-mono); font-size: 12.5px; text-align: right; }
+
 /* ── section heads ─────────────────────────────────────────── */
 .sect { display: flex; align-items: flex-end; gap: 13px; margin: 40px 0 16px; }
 .sect .num {
@@ -300,7 +305,7 @@ main { margin: 0 auto; max-width: 1400px; padding: 0 20px 70px; }
 /* ── KPI grid ──────────────────────────────────────────────── */
 .kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(178px, 1fr)); gap: 13px; }
 .kpi { display: flex; flex-direction: column; gap: 6px; padding: 13px 14px; }
-.kpi-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 7px; }
+.kpi-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 7px; flex-wrap: wrap; }
 .kpi-label { font-family: var(--font-sans); font-size: 10px; font-weight: 800; letter-spacing: .13em; text-transform: uppercase; color: rgba(70, 35, 26, .68); }
 .kpi-value { display: flex; align-items: baseline; gap: 4px; }
 .kpi-value b { font-family: var(--font-sans); font-size: 26px; font-weight: 800; line-height: 1; }
@@ -889,34 +894,55 @@ footer { border-top: 3px dashed var(--ink); margin-top: 0; flex: 0 0 auto; backg
             <svg class="rule" viewBox="0 0 260 12" preserveAspectRatio="none" aria-hidden="true">
               <path d="M3 7 C 30 1, 55 11, 82 6 S 135 2, 162 8 S 215 3, 257 6" fill="none" stroke="#0fb5a6" stroke-width="4" stroke-linecap="round"/>
             </svg>
-            <p class="sub">Ce que le gateway expose, ce qu'il refuse : registre d'outils, permissions, trace d'audit.</p>
+            <p class="sub">The tool catalog, what the gateway allows, what it refuses, and the trace of every decision.</p>
           </div>
         </div>
+
         <div class="grid">
+          <div class="kpis c12" id="gw-kpis"></div>
+        </div>
+
+        <div class="grid" style="margin-top:16px">
+          <div class="card c4">
+            <div class="phead"><h3>Tools per server</h3><span class="hint">registry</span></div>
+            <svg id="ch-gw-servers" class="chart sk-svg" viewBox="0 0 460 300" role="img" aria-label="Number of tools per server"></svg>
+          </div>
+          <div class="card c4">
+            <div class="phead"><h3>Side effects</h3><span class="hint">what the agent can break</span></div>
+            <svg id="ch-gw-effects" class="chart sk-svg" viewBox="0 0 460 300" role="img" aria-label="Share of tools by side effect"></svg>
+            <div id="gw-effects-legend" style="margin-top:6px"></div>
+          </div>
+          <div class="card c4">
+            <div class="phead"><h3>Where the tokens go</h3><span class="hint">by category</span></div>
+            <svg id="ch-gw-tokens" class="chart sk-svg" viewBox="0 0 460 300" role="img" aria-label="Measured tokens by category"></svg>
+          </div>
+        </div>
+
+        <div class="grid" style="margin-top:16px">
           <div class="card c6">
-            <div class="phead"><h3>Registre d'outils</h3><span class="hint" id="gw-reg-when">—</span></div>
-            <div class="row-line"><span>Outils indexés</span><b id="gw-tools">—</b></div>
-            <div class="row-line"><span>Serveurs descendants</span><b id="gw-servers">—</b></div>
-            <div class="row-line"><span>Sans effet de bord</span><b id="gw-ro">—</b></div>
-            <div class="row-line"><span>Écriture</span><b id="gw-wr">—</b></div>
-            <div class="row-line"><span>Destructifs (approbation exigée)</span><b id="gw-de">—</b></div>
+            <div class="phead"><h3>The registry</h3><span class="hint" id="gw-reg-when">—</span></div>
+            <div class="row-line"><span>Tools indexed</span><b id="gw-tools">—</b></div>
+            <div class="row-line"><span>Servers behind the gateway</span><b id="gw-servers">—</b></div>
+            <div class="row-line"><span>Read-only</span><b id="gw-ro">—</b></div>
+            <div class="row-line"><span>Writes</span><b id="gw-wr">—</b></div>
+            <div class="row-line"><span>Destructive (approval required)</span><b id="gw-de">—</b></div>
+            <div class="row-line"><span>Most requested intents</span><b id="gw-intents">—</b></div>
             <div class="tbl-wrap"><table class="sk" id="tbl-gw-servers"></table></div>
           </div>
           <div class="card c6">
-            <div class="phead"><h3>Politique & tokens</h3><span class="hint">live</span></div>
-            <div class="row-line"><span>Rôle par défaut</span><b id="gw-role">—</b></div>
-            <div class="row-line"><span>Environnement</span><b id="gw-env">—</b></div>
-            <div class="row-line"><span>Racines projet</span><b id="gw-roots">—</b></div>
-            <div class="row-line"><span>Tokens — schémas d'outils</span><b id="gw-t-schema">—</b></div>
-            <div class="row-line"><span>Tokens — résultats d'outils</span><b id="gw-t-result">—</b></div>
-            <div class="row-line"><span>Tokens — cache lu</span><b id="gw-t-read">—</b></div>
-            <div class="row-line"><span>Tokens — cache écrit</span><b id="gw-t-write">—</b></div>
-            <div class="row-line"><span>Économies mesurées (audit)</span><b id="gw-saved">—</b></div>
+            <div class="phead"><h3>Policy in force</h3><span class="hint">what is allowed</span></div>
+            <div class="row-line"><span>Default role</span><b id="gw-role">—</b></div>
+            <div class="row-line"><span>Environment</span><b id="gw-env">—</b></div>
+            <div class="row-line"><span>Allowed roots</span><b id="gw-roots">—</b></div>
+            <div class="row-line"><span>Decisions traced</span><b id="gw-audit">—</b></div>
+            <div class="row-line"><span>Tokens won by compression</span><b id="gw-saved">—</b></div>
+            <div class="tbl-wrap"><table class="sk" id="tbl-gw-roles"></table></div>
           </div>
         </div>
+
         <div class="grid" style="margin-top:16px">
           <div class="card c12">
-            <div class="phead"><h3>Décisions d'audit</h3><span class="hint">qui, quoi, quelle décision</span></div>
+            <div class="phead"><h3>Audit decisions</h3><span class="hint">who · what · which decision · why</span></div>
             <div class="tbl-wrap"><table class="sk" id="tbl-gw-audit"></table></div>
           </div>
         </div>
@@ -2296,41 +2322,152 @@ function renderCache(snap) {
     (row) => !f || (row.key + " " + row.model + " " + row.provider).toLowerCase().includes(f));
 }
 
+/* ══ 07 · gateway V2 ═════════════════════════════════════════ */
+const GW_INTENT_LABEL = {
+  search: "search", read: "read", create: "create", update: "update",
+  delete: "delete", execute: "execute", navigate: "navigate", other: "other",
+};
+const GW_EFFECT_LABEL = { none: "read-only", write: "write", destructive: "destructive" };
+const GW_DECISION_LABEL = { allow: "allowed", deny: "refused", approval: "approval" };
+const GW_REASON_LABEL = {
+  policy_disabled: "policy disabled",
+  policy_deny: "refused by a rule",
+  policy_allow: "allowed by a rule",
+  policy_requires_approval: "rule requires approval",
+  approval_granted: "approval granted",
+  destructive_requires_approval: "destructive: approval required",
+  role_allows: "the role allows it",
+  role_forbids_side_effect: "the role forbids this effect",
+};
+const GW_TOKEN_LABEL = {
+  system_prompt: "system prompt",
+  tool_schemas: "tool schemas",
+  tool_results: "tool results",
+  cache_read: "cache read",
+  cache_write: "cache written",
+  llm_calls: "llm calls",
+};
+const GW_KPIS = [
+  { key: "tools", label: "Tools", icon: "◫", color: C.bypass, sub: "catalogued by the gateway" },
+  { key: "servers", label: "Servers", icon: "⛁", color: C.lava, sub: "mcp servers behind it" },
+  { key: "safe", label: "Harmless", icon: "✓", color: C.hit, sub: "tools that only read" },
+  { key: "decisions", label: "Decisions", icon: "✎", color: C.gold, sub: "allowed, refused, approvals" },
+  { key: "saved", label: "Tokens", icon: "↑", color: C.magenta, sub: "saved by the compressor" },
+];
+let gwKpisMounted = false;
+function mountGatewayKpis() {
+  if (gwKpisMounted) return;
+  const host = $("#gw-kpis");
+  if (!host) return;
+  GW_KPIS.forEach((def) => {
+    const card = htm("article", "card kpi");
+    const head = htm("div", "kpi-head");
+    const left = htm("div", "");
+    left.style.cssText = "display:flex;align-items:center;gap:8px";
+    const blob = htm("span", "icon-blob", def.icon);
+    blob.style.cssText = "width:34px;height:34px;font-size:16px;background:" + def.color + "55";
+    left.appendChild(blob);
+    left.appendChild(htm("span", "kpi-label", def.label));
+    const badge = htm("span", "sticker sm");
+    badge.style.display = "none";
+    head.appendChild(left); head.appendChild(badge);
+    const value = htm("p", "kpi-value");
+    const big = htm("b", "", "—");
+    value.appendChild(big);
+    card.appendChild(head); card.appendChild(value);
+    card.appendChild(htm("div", "sub", def.sub));
+    host.appendChild(card);
+    def.node = { card: card, big: big, badge: badge };
+  });
+  gwKpisMounted = true;
+}
+function gwKpi(key, value, badge, ok) {
+  const def = GW_KPIS.find((d) => d.key === key);
+  if (!def || !def.node) return;
+  def.node.big.textContent = value;
+  if (badge) {
+    def.node.badge.style.display = "";
+    def.node.badge.className = "sticker sm " + (ok ? "hit" : "miss");
+    def.node.badge.textContent = badge;
+  } else {
+    def.node.badge.style.display = "none";
+  }
+}
+
 function renderGateway(snap) {
+  mountGatewayKpis();
   const gw = snap.gateway || {};
   const reg = gw.registry || {};
   const pol = gw.policy || {};
   const aud = gw.audit || {};
-  const cat = gw.tokens ? (gw.tokens.by_category || {}) : {};
   const eff = {};
   (reg.by_side_effects || []).forEach((r) => { eff[r.side_effects] = r.n; });
-  $("#gw-reg-when").textContent = reg.tools ? num(reg.tools) + " tools indexed" : "—";
-  $("#gw-tools").textContent = num(reg.tools);
-  $("#gw-servers").textContent = num(reg.servers);
-  $("#gw-ro").textContent = num(eff.none || 0);
-  $("#gw-wr").textContent = num(eff.write || 0);
-  $("#gw-de").textContent = num(eff.destructive || 0);
+  const dec = {};
+  (aud.by_decision || []).forEach((r) => { dec[r.decision] = r.n; });
+
+  const tools = Number(reg.tools) || 0;
+  const servers = Number(reg.servers) || 0;
+  const ro = Number(eff.none) || 0;
+  const wr = Number(eff.write) || 0;
+  const de = Number(eff.destructive) || 0;
+  const denied = Number(dec.deny) || 0;
+  const approval = Number(dec.approval) || 0;
+  const blocked = denied + approval;
+  const saved = Number(aud.tokens_saved) || 0;
+  const safePct = tools ? (ro / tools) * 100 : 0;
+
+  /* signs of success */
+  gwKpi("tools", num(tools), tools > 0 ? "✓ indexed" : "registry empty", tools > 0);
+  gwKpi("servers", num(servers), servers > 0 ? "✓ attached" : "no server", servers > 0);
+  gwKpi("safe", safePct.toFixed(0) + "%", safePct >= 50 ? "✓ harmless" : "too many writes", safePct >= 50);
+  gwKpi("decisions", num(Number(aud.entries) || 0),
+        blocked > 0 ? "✓ " + num(blocked) + " stopped" : "✓ nothing risky", true);
+  gwKpi("saved", num(saved), saved > 0 ? "✓ compressed" : "no gain yet", saved > 0);
+
+  /* the registry */
+  $("#gw-reg-when").textContent = tools ? num(tools) + " tools indexed" : "—";
+  $("#gw-tools").textContent = num(tools);
+  $("#gw-servers").textContent = num(servers);
+  $("#gw-ro").textContent = num(ro);
+  $("#gw-wr").textContent = num(wr);
+  $("#gw-de").textContent = num(de);
+  $("#gw-intents").textContent = (reg.by_intent || []).slice(0, 3)
+    .map((r) => (GW_INTENT_LABEL[r.intent] || r.intent) + " " + r.n).join(" · ") || "—";
   $("#gw-role").textContent = pol.default_role || "—";
   $("#gw-env").textContent = pol.environment || "—";
   const roots = pol.project_roots || [];
   $("#gw-roots").textContent = roots.length ? roots.join(", ") : "—";
-  $("#gw-t-schema").textContent = num(cat.tool_schemas);
-  $("#gw-t-result").textContent = num(cat.tool_results);
-  $("#gw-t-read").textContent = num(cat.cache_read);
-  $("#gw-t-write").textContent = num(cat.cache_write);
-  $("#gw-saved").textContent = num(aud.tokens_saved);
-  table("tbl-gw-servers", ["Server", "Tools", "Top intents", "Calls"],
+  $("#gw-audit").textContent = num(Number(aud.entries) || 0);
+  $("#gw-saved").textContent = num(saved);
+
+  /* servers */
+  const callsByServer = {};
+  (reg.top_tools || []).forEach((t) => {
+    callsByServer[t.server] = (callsByServer[t.server] || 0) + (t.calls || 0);
+  });
+  table("tbl-gw-servers", ["Server", "Tools", "Calls", "Share"],
     reg.by_server || [],
     (row, tr) => {
       tr.appendChild(htm("td", "", row.server || "—"));
       tr.appendChild(htm("td", "num", num(row.n)));
-      tr.appendChild(htm("td", "", (reg.by_intent || []).slice(0, 3)
-        .map((r) => r.intent + " " + r.n).join(", ") || "—"));
-      tr.appendChild(htm("td", "num", num((reg.top_tools || [])
-        .filter((t) => t.server === row.server)
-        .reduce((a, t) => a + (t.calls || 0), 0))));
+      tr.appendChild(htm("td", "num", num(callsByServer[row.server] || 0)));
+      tr.appendChild(htm("td", "num", tools ? ((row.n / tools) * 100).toFixed(1) + "%" : "—"));
     });
-  table("tbl-gw-audit", ["Time", "Actor", "Role", "Server.Tool", "Decision", "Reason", "Saved"],
+
+  /* roles */
+  const caps = pol.capabilities || {};
+  const roleRules = pol.roles || {};
+  const roles = Object.keys(caps).concat(Object.keys(roleRules).filter((r) => !(r in caps)));
+  table("tbl-gw-roles", ["Role", "Allowed effects", "Rules"],
+    roles.map((r) => ({ role: r, effects: caps[r] || [], rules: (roleRules[r] || []).length })),
+    (row, tr) => {
+      tr.appendChild(htm("td", "", row.role));
+      tr.appendChild(htm("td", "", (row.effects || []).map((e) => GW_EFFECT_LABEL[e] || e).join(", ") || "—"));
+      tr.appendChild(htm("td", "num", num(row.rules)));
+    });
+
+  /* audit */
+  table("tbl-gw-audit", ["Time", "Actor", "Role", "Tool", "Decision", "Why", "Saved"],
     aud.recent || [],
     (row, tr) => {
       tr.appendChild(htm("td", "mono", String(row.ts || "").slice(5, 19)));
@@ -2338,11 +2475,122 @@ function renderGateway(snap) {
       tr.appendChild(htm("td", "", row.role || "—"));
       tr.appendChild(htm("td", "mono", (row.server ? row.server + "." : "") + (row.tool || "—")));
       const td = htm("td", "");
-      td.innerHTML = tag(row.decision || "—", row.decision === "allow" ? "hit" : "miss");
+      td.innerHTML = tag(GW_DECISION_LABEL[row.decision] || row.decision || "—",
+        row.decision === "allow" ? "hit" : row.decision === "approval" ? "gold" : "miss");
       tr.appendChild(td);
-      tr.appendChild(htm("td", "", row.reason || "—"));
+      tr.appendChild(htm("td", "", GW_REASON_LABEL[row.reason] || row.reason || "—"));
       tr.appendChild(htm("td", "num", num(row.tokens_saved)));
     });
+
+  drawGwServers(); drawGwEffects(); drawGwTokens();
+}
+
+/* ── tools per server ────────────────────────────────────────── */
+function drawGwServers() {
+  const svg = $("#ch-gw-servers");
+  while (svg.firstChild) svg.removeChild(svg.firstChild);
+  const reg = (state.snap && state.snap.gateway && state.snap.gateway.registry) || {};
+  const rows = (reg.by_server || []).slice(0, 9);
+  const W = 460, H = 300, M = { l: 116, r: 36, t: 16, b: 24 };
+  const pw = W - M.l - M.r, ph = H - M.t - M.b;
+  if (!rows.length) { txt(svg, W / 2, H / 2, "registry is empty", { size: 14, anchor: "middle", soft: true }); return; }
+  const maxV = Math.max(1, ...rows.map((r) => r.n || 0));
+  const step = ph / rows.length, bh = Math.min(22, step * 0.58);
+  rows.forEach((r, i) => {
+    const w = ((r.n || 0) / maxV) * pw;
+    const y = M.t + step * i + (step - bh) / 2;
+    const g = el("g", {});
+    g.setAttribute("class", "rough-bar-group");
+    sketch(g, "M" + M.l + " " + y.toFixed(1) + " h" + w.toFixed(1) +
+      " v" + bh.toFixed(1) + " h" + (-w).toFixed(1) + " Z",
+      { fill: heat(0.35 + 0.55 * ((r.n || 0) / maxV)), tint: 0.34, angle: 45, gap: 5, weight: 1.8, sw: 1.8 });
+    txt(g, M.l - 7, y + bh / 2 + 4, String(r.server || "?").slice(0, 17), { size: 11.5, anchor: "end" });
+    txt(g, M.l + w + 7, y + bh / 2 + 4, num(r.n), { size: 11.5 });
+    g.appendChild(el("title", {}, r.server + " · " + num(r.n) + " tools"));
+    svg.appendChild(g);
+  });
+  svg.appendChild(el("path", { d: Rough.line(M.l, M.t - 6, M.l, M.t + ph, { seed: 71, roughness: 1.1 }), fill: "none", stroke: C.ink, "stroke-width": 2.4 }));
+}
+
+/* ── side effects donut ──────────────────────────────────────── */
+function drawGwEffects() {
+  const svg = $("#ch-gw-effects");
+  const legend = $("#gw-effects-legend");
+  while (svg.firstChild) svg.removeChild(svg.firstChild);
+  legend.innerHTML = "";
+  const reg = (state.snap && state.snap.gateway && state.snap.gateway.registry) || {};
+  const eff = {};
+  (reg.by_side_effects || []).forEach((r) => { eff[r.side_effects] = r.n; });
+  const slices = [
+    { name: "Read-only", value: Number(eff.none) || 0, color: C.hit },
+    { name: "Write", value: Number(eff.write) || 0, color: C.mango },
+    { name: "Destructive", value: Number(eff.destructive) || 0, color: C.miss },
+  ];
+  const total = slices.reduce((a, s) => a + s.value, 0);
+  const W = 460, H = 300, CX = 230, CY = 122, R = 82, r = 44;
+  if (!total) { txt(svg, W / 2, H / 2, "no tool indexed", { size: 14, anchor: "middle", soft: true }); return; }
+  const pt = (a, rad) => [CX + Math.cos(a) * rad, CY + Math.sin(a) * rad];
+  let angle = -Math.PI / 2;
+  slices.forEach((s, i) => {
+    if (!s.value) return;
+    const sweep = (s.value / total) * Math.PI * 2;
+    const a0 = angle, a1 = angle + sweep, large = sweep > Math.PI ? 1 : 0;
+    const p0 = pt(a0, R), p1 = pt(a1, R), i1 = pt(a1, r), i0 = pt(a0, r);
+    const d = "M" + p0[0].toFixed(1) + " " + p0[1].toFixed(1) +
+      " A" + R + " " + R + " 0 " + large + " 1 " + p1[0].toFixed(1) + " " + p1[1].toFixed(1) +
+      " L" + i1[0].toFixed(1) + " " + i1[1].toFixed(1) +
+      " A" + r + " " + r + " 0 " + large + " 0 " + i0[0].toFixed(1) + " " + i0[1].toFixed(1) + " Z";
+    const g = el("g", {});
+    g.setAttribute("class", "rough-slice");
+    sketch(g, d, { fill: s.color, tint: 0.4, angle: 40 + i * 24, gap: 5.2, weight: 2.2, sw: 2.2 });
+    g.appendChild(el("title", {}, s.name + ": " + num(s.value)));
+    svg.appendChild(g);
+    angle = a1;
+  });
+  svg.appendChild(el("path", { d: Rough.ellipse(CX, CY, r + 3, r + 3, { seed: 121, roughness: 1.8 }), fill: "none", stroke: C.ink, "stroke-width": 2 }));
+  txt(svg, CX, CY - 2, ((slices[0].value / total) * 100).toFixed(0) + "%", { size: 22, anchor: "middle", weight: "800" });
+  txt(svg, CX, CY + 16, "harmless", { size: 11.5, anchor: "middle", soft: true });
+  slices.forEach((s) => {
+    const line = htm("div", "");
+    line.style.cssText = "display:flex;align-items:center;gap:8px;font-size:13px";
+    const sw = htm("span", "");
+    sw.style.cssText = "display:inline-block;width:14px;height:14px;border:2px solid #46231a;border-radius:4px;background:" + s.color + "33;background-image:repeating-linear-gradient(45deg," + s.color + " 0 2px,transparent 2px 5px)";
+    const nm = htm("span", "", s.name); nm.style.flex = "1";
+    line.appendChild(sw); line.appendChild(nm);
+    line.appendChild(htm("b", "", num(s.value) + " · " + ((s.value / total) * 100).toFixed(1) + "%"));
+    legend.appendChild(line);
+  });
+}
+
+/* ── tokens by category ──────────────────────────────────────── */
+function drawGwTokens() {
+  const svg = $("#ch-gw-tokens");
+  while (svg.firstChild) svg.removeChild(svg.firstChild);
+  const gw = (state.snap && state.snap.gateway) || {};
+  const cat = (gw.tokens && gw.tokens.by_category) || {};
+  const rows = Object.keys(cat)
+    .map((k) => ({ k: k, v: Number(cat[k]) || 0 }))
+    .filter((r) => r.v > 0)
+    .sort((a, b) => b.v - a.v);
+  const W = 460, H = 300, M = { l: 116, r: 48, t: 16, b: 24 };
+  const pw = W - M.l - M.r, ph = H - M.t - M.b;
+  if (!rows.length) { txt(svg, W / 2, H / 2, "no token measured yet", { size: 14, anchor: "middle", soft: true }); return; }
+  const maxV = Math.max(1, ...rows.map((r) => r.v));
+  const step = ph / rows.length, bh = Math.min(22, step * 0.58);
+  rows.forEach((r, i) => {
+    const w = (r.v / maxV) * pw;
+    const y = M.t + step * i + (step - bh) / 2;
+    const g = el("g", {});
+    g.setAttribute("class", "rough-bar-group");
+    sketch(g, "M" + M.l + " " + y.toFixed(1) + " h" + w.toFixed(1) +
+      " v" + bh.toFixed(1) + " h" + (-w).toFixed(1) + " Z",
+      { fill: C.bypass, tint: 0.3, angle: 45, gap: 5, weight: 1.8, sw: 1.8 });
+    txt(g, M.l - 7, y + bh / 2 + 4, GW_TOKEN_LABEL[r.k] || r.k, { size: 11.5, anchor: "end" });
+    txt(g, M.l + w + 7, y + bh / 2 + 4, compact(r.v), { size: 11.5 });
+    g.appendChild(el("title", {}, (GW_TOKEN_LABEL[r.k] || r.k) + " : " + num(r.v)));
+    svg.appendChild(g);
+  });
+  svg.appendChild(el("path", { d: Rough.line(M.l, M.t - 6, M.l, M.t + ph, { seed: 72, roughness: 1.1 }), fill: "none", stroke: C.ink, "stroke-width": 2.4 }));
 }
 
 function renderAudit(snap) {
