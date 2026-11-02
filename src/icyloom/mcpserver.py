@@ -21,7 +21,7 @@ import logging
 import os
 from typing import Any
 
-from mcp.server.fastmcp import FastMCP
+from mcp.server.fastmcp import Context, FastMCP
 from mcp.types import ToolAnnotations
 
 from . import paths
@@ -190,6 +190,19 @@ def build_server(config: Config) -> FastMCP:
     # ------------------------------------------------------------------
     # 3 bis. sélection dynamique des outils (V2)
     # ------------------------------------------------------------------
+    async def _forward_roots(ctx: Any) -> None:
+        """Transmet au relais les racines (dossiers de travail) du client.
+
+        Sans cela, un serveur de fichiers placé derrière IcyLoom démarre
+        sans aucun dossier autorisé : ses outils répondent « racine
+        manquante » alors que le client, lui, a bien déclaré les siennes.
+        """
+        try:
+            listed = await ctx.session.list_roots()
+            tools.set_client_roots(list(listed.roots))
+        except Exception:
+            tools.set_client_roots([])
+
     @mcp.tool(
         name="search_tools",
         description="Cherche les outils disponibles (index lexical, sans embeddings).",
@@ -199,7 +212,8 @@ def build_server(config: Config) -> FastMCP:
         ),
     )
     async def search_tools_tool(query: str, server: str = "",
-                                top_k: int = 10) -> dict[str, Any]:
+                                top_k: int = 10,
+                                ctx: Context = None) -> dict[str, Any]:
         """Cherche les outils correspondant à une intention.
 
         Args:
@@ -209,6 +223,8 @@ def build_server(config: Config) -> FastMCP:
         """
         if not (query or "").strip():
             return {"ok": False, "error": "empty_query"}
+        if ctx is not None:
+            await _forward_roots(ctx)
         for name in ([server] if server else tools.server_names()):
             await tools.list_tools(name)
         answer = tools.search_tools(query, server)
@@ -226,7 +242,8 @@ def build_server(config: Config) -> FastMCP:
         ),
     )
     async def get_tool_schema_tool(server: str, tool: str,
-                                   raw: bool = False) -> dict[str, Any]:
+                                   raw: bool = False,
+                                   ctx: Context = None) -> dict[str, Any]:
         """Schéma d'un outil.
 
         Args:
@@ -236,6 +253,8 @@ def build_server(config: Config) -> FastMCP:
         """
         if not server or not tool:
             return {"ok": False, "error": "missing_server_or_tool"}
+        if ctx is not None:
+            await _forward_roots(ctx)
         await tools.list_tools(server)
         return tools.get_tool_schema(server, tool, raw=raw)
 
@@ -250,7 +269,8 @@ def build_server(config: Config) -> FastMCP:
     async def invoke_tool_tool(server: str, tool: str,
                                args: dict[str, Any] | None = None,
                                role: str = "", intent: str = "",
-                               confirm: bool = False) -> dict[str, Any]:
+                               confirm: bool = False,
+                               ctx: Context = None) -> dict[str, Any]:
         """Appelle un outil descendant.
 
         Args:
@@ -263,6 +283,8 @@ def build_server(config: Config) -> FastMCP:
         """
         if not server or not tool:
             return {"ok": False, "error": "missing_server_or_tool"}
+        if ctx is not None:
+            await _forward_roots(ctx)
         return await tools.call(server, tool, args or {}, role=role,
                                 intent=intent, confirmed=confirm)
 
@@ -276,7 +298,8 @@ def build_server(config: Config) -> FastMCP:
     )
     async def run_tool_script_tool(script: str, role: str = "",
                                    intent: str = "",
-                                   confirm: bool = False) -> dict[str, Any]:
+                                   confirm: bool = False,
+                                   ctx: Context = None) -> dict[str, Any]:
         """Exécute un script d'outils.
 
         Le script appelle `await call(server, tool, args)` et renvoie un
@@ -291,6 +314,8 @@ def build_server(config: Config) -> FastMCP:
         """
         if not (script or "").strip():
             return {"ok": False, "error": "empty_script"}
+        if ctx is not None:
+            await _forward_roots(ctx)
         return await tools.run_script(script, role=role, intent=intent,
                                       confirmed=confirm)
 

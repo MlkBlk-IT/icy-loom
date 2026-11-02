@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import asyncio
 import json
+import os
 
 from conftest import build_config
 
@@ -211,6 +212,18 @@ def test_write_outside_project_root_is_refused(tmp_path):
                              args={"path": str(tmp_path / "outside.txt")})
     assert decision.effect == "deny"
     assert decision.reason == "outside_project_scope"
+
+
+def test_scope_root_with_trailing_separator_allows_children(tmp_path):
+    """Une racine terminee par un separateur ne doit pas tout refuser."""
+    root = tmp_path / "project"
+    root.mkdir()
+    engine = PolicyEngine(PolicyConfig(default_role="operator",
+                                       project_roots=[str(root) + os.sep]))
+    decision = engine.decide(role="operator", server="fs", tool="write_file",
+                             side_effects="write",
+                             args={"path": str(root / "fichier.txt")})
+    assert decision.effect == "allow"
 
 
 def test_audit_trail_and_token_meter(config):

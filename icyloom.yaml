@@ -71,7 +71,9 @@ tool_proxy:
     command: npx
     args:
     - '@modelcontextprotocol/server-filesystem'
-    description: Fichiers locaux controles (Anthropic) - 575k
+    - 'C:\'
+    - 'D:\'
+    description: Fichiers locaux controles (memes racines que Claude Desktop)
     cache_enabled: true
     ttl_seconds: 3600
     enabled: true
@@ -122,6 +124,70 @@ tool_proxy:
     command: 'D:\AI-Stack\envs\git-mcp\Scripts\mcp-server-git.exe'
     args: []
     description: Operations Git (binaire local AI-Stack)
+    cache_enabled: true
+    ttl_seconds: 3600
+    enabled: true
+  - name: context7
+    command: 'C:\Program Files\nodejs\node.exe'
+    args:
+    - 'C:\Users\Tech\AppData\Roaming\npm\node_modules\@upstash\context7-mcp\dist\index.js'
+    description: Docs de librairies a jour (Upstash)
+    cache_enabled: true
+    ttl_seconds: 3600
+    enabled: true
+  - name: duckduckgo
+    command: uvx
+    args:
+    - duckduckgo-mcp-server
+    description: Recherche DuckDuckGo
+    cache_enabled: true
+    ttl_seconds: 3600
+    enabled: true
+  - name: pwsh
+    command: 'C:\Users\Tech\Documents\PowerShell\Modules\PowerShell.MCP\1.16.0\bin\win-x64\PowerShell.MCP.Proxy.exe'
+    args:
+    - --no-profile
+    description: PowerShell via le proxy MCP (bac a sable du module)
+    cache_enabled: false
+    ttl_seconds: 3600
+    enabled: true
+  - name: desktop-commander
+    command: 'C:\Program Files\nodejs\node.exe'
+    args:
+    - 'C:\Users\Tech\AppData\Roaming\npm\node_modules\@wonderwhy-er\desktop-commander\dist\index.js'
+    description: Fichiers, edition et processus (WonderWhy)
+    cache_enabled: false
+    ttl_seconds: 3600
+    enabled: true
+  - name: local-rag
+    command: 'C:\Program Files\nodejs\node.exe'
+    args:
+    - 'C:\Users\Tech\AppData\Roaming\npm\node_modules\mcp-local-rag\dist\index.js'
+    description: RAG local (LanceDB)
+    cache_enabled: false
+    ttl_seconds: 3600
+    enabled: true
+    env:
+      BASE_DIRS: '["D:\\Hermes","D:\\LoFT","D:\\Projet Lab-SRV1","D:\\Document Openclaw","D:\\LLM Benchmark","D:\\Redmi Note 10","D:\\99-Archive-Total","D:\\Cours Comptia","D:\\AI","D:\\LabAudit","D:\\Rapports","D:\\Fichier SKILL","D:\\MCP_TEST"]'
+      DB_PATH: 'C:\MCP\local-rag\lancedb-v2'
+      CHUNK_MIN_LENGTH: '300'
+      EMBED_TITLE_PREFIX: 'true'
+      EMBED_HEADING_PREFIX: 'true'
+      CACHE_DIR: 'C:\MCP\local-rag\models'
+  - name: basic-memory
+    command: uvx
+    args:
+    - basic-memory==0.23.2
+    - mcp
+    description: Memoire basic-memory
+    cache_enabled: false
+    ttl_seconds: 3600
+    enabled: true
+  - name: time
+    command: uvx
+    args:
+    - mcp-server-time
+    description: Heure et fuseaux
     cache_enabled: true
     ttl_seconds: 3600
     enabled: true
@@ -280,8 +346,8 @@ policy:
   default_role: operator
   environment: dev
   project_roots:
-  - 'D:\Icy-Loom'
-  - 'D:\NyxCall'
+  - 'C:\'
+  - 'D:\'
   roles:
     operator:
     - server: '*'

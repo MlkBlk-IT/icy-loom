@@ -164,12 +164,21 @@ class PolicyEngine:
 
     @staticmethod
     def _within(path: str, roots: list[str]) -> bool:
+        """Un chemin est-il dans une des racines ?
+
+        Attention à une racine terminée par un séparateur : sans
+        normalisation, la comparaison produirait deux séparateurs et rien
+        ne serait jamais considéré comme autorisé.
+        """
         try:
             target = os.path.normcase(os.path.abspath(os.path.expanduser(path)))
         except (OSError, ValueError):
             return True
         for root in roots:
-            if target == root or target.startswith(root + os.sep):
+            base = root.rstrip("\\/")
+            if not base:
+                continue
+            if target == base or target.startswith(base + os.sep):
                 return True
         return False
 

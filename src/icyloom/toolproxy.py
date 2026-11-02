@@ -32,6 +32,7 @@ from typing import Any, Iterable
 
 from mcp import ClientSession, StdioServerParameters
 from mcp.client.stdio import stdio_client
+from mcp.types import ListRootsResult
 
 import yaml
 
@@ -242,6 +243,10 @@ class ToolProxy:
         #: lancement : le serveur a pu changer pendant que le relais dormait.
         self._boot = str(int(time.time() * 1000))
         self._epoch: dict[str, int] = {}
+        #: racines déclarées par le client (ses dossiers de travail). Les
+        #: serveurs descendants les demandent : c'est IcyLoom qui est leur
+        #: client, donc c'est IcyLoom qui doit les leur transmettre.
+        self._client_roots: list[Any] = []
         for srv in self._servers.values():
             for tool_name, enabled in srv.cache_tools.items():
                 if enabled and is_write_tool(tool_name):
@@ -327,6 +332,25 @@ class ToolProxy:
         if not server.cache_enabled:
             return False
         return bool(server.cache_tools.get(tool, False))
+
+    def set_client_roots(self, roots: list[Any]) -> None:
+        """Mémorise les racines (dossiers de travail) déclarées par le client.
+
+        Un serveur de fichiers MCP demande ses racines au client. Derrière
+        IcyLoom, c'est IcyLoom qui est le client : sans transmission, le
+        serveur démarre sans aucun dossier autorisé et ses outils ne servent
+        à rien.
+        """
+        self._client_roots = list(roots or [])
+
+    async def _roots_callback(self, *args: Any) -> ListRootsResult:
+        """Racines transmises aux serveurs descendants (callback du SDK).
+
+        Le SDK appelle ce callback avec le contexte de requête et attend un
+        ``ListRootsResult`` : on l'accepte sans le nommer, pour rester
+        compatible d'une version à l'autre.
+        """
+        return ListRootsResult(roots=list(self._client_roots))
 
     def _epoch_of(self, server: str) -> str:
         return f"{self._boot}.{self._epoch.get(server, 0)}"
@@ -890,7 +914,8 @@ class ToolProxy:
             env={**{k: str(v) for k, v in cfg.env.items()}},
         )
         live = _LiveSession(params, self.config.tool_proxy.connect_timeout_seconds,
-                            self.config.tool_proxy.call_timeout_seconds)
+                            self.config.tool_proxy.call_timeout_seconds,
+                            list_roots_callback=self._roots_callback)
         self._live[cfg.name] = live
         self.sessions_opened += 1
         return live
@@ -970,10 +995,11 @@ class _LiveSession:
     """
 
     def __init__(self, params: StdioServerParameters, connect_timeout: float,
-                 call_timeout: float) -> None:
+                 call_timeout: float, list_roots_callback: Any = None) -> None:
         self._params = params
         self._connect_timeout = connect_timeout
         self._call_timeout = call_timeout
+        self._list_roots = list_roots_callback
         self.broken = False
         self._loop = asyncio.new_event_loop()
         self._ready: threading.Event = threading.Event()
@@ -1002,7 +1028,8 @@ class _LiveSession:
         stack = AsyncExitStack()
         try:
             read, write = await stack.enter_async_context(stdio_client(self._params))
-            session = await stack.enter_async_context(ClientSession(read, write))
+            session = await stack.enter_async_context(
+                ClientSession(read, write, list_roots_callback=self._list_roots))
             await session.initialize()
         except BaseException as exc:      # pragma: no cover - échec d'ouverture
             self._error = exc
