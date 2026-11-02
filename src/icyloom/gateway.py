@@ -45,6 +45,22 @@ UPSTREAM_HEADER = "X-IcyLoom-Upstream"
 #: En-tête de réponse indiquant si la réponse vient du cache.
 CACHE_HEADER = "X-IcyLoom-Cache"
 
+
+def _session_key(request: Request) -> str | None:
+    """Clé de session d'une requête.
+
+    L'en-tête ``x-session-id`` passe **avant** l'hôte TCP, et il compte même
+    quand la requête n'a pas de pair connu (``request.client`` peut être
+    ``None``). L'ancienne expression
+    ``a or b if request.client else None`` faisait perdre l'en-tête dans ce
+    cas : la précédence de l'opérateur conditionnel liait les deux.
+    """
+    header = request.headers.get("x-session-id")
+    if header:
+        return header
+    return request.client.host if request.client else None
+
+
 #: Marqueur d'un flux stocké BRUT : l'amont est rejoué octet pour octet
 #: (functionCall, tool_calls, tool_use, thoughtSignature, ids d'appel).
 RAW_MAGIC = "icyloom-raw/1"
@@ -584,7 +600,7 @@ def create_app(config: Config) -> FastAPI:
             body = {}
         body.pop("upstream", None) if prefix else None
 
-        client_key = request.headers.get("x-session-id") or request.client.host if request.client else None
+        client_key = _session_key(request)
         routed = gateway.registry.resolve(
             prefix=prefix,
             header=request.headers.get(UPSTREAM_HEADER),

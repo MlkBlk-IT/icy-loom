@@ -188,3 +188,21 @@ def test_D_tool_events_carry_the_client(config) -> None:
     assert row[0] == "tester"
 
 
+# ---------------------------------------------------------------- E · session
+def test_E_session_id_header_without_peer() -> None:
+    from icyloom.gateway import _session_key
+
+    class Request:
+        def __init__(self, headers, client=None):
+            self.headers = headers
+            self.client = client
+
+    class Peer:
+        host = "10.0.0.1"
+
+    assert _session_key(Request({"x-session-id": "sess-1"})) == "sess-1"
+    assert _session_key(Request({"x-session-id": "sess-1"}, Peer())) == "sess-1"
+    assert _session_key(Request({}, Peer())) == "10.0.0.1"
+    assert _session_key(Request({})) is None
+
+
