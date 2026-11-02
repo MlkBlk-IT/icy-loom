@@ -696,6 +696,14 @@ class ToolProxy:
         shown["compressed"] = meta.get("kind", "raw")
         shown["original_chars"] = meta.get("original_chars", 0)
         shown["result_ref"] = ref
+        # Le contenu « structured » dupliqué ne doit pas remonter : il porte
+        # souvent le fichier ENTIER, ce qui annule la compression. La clé reste
+        # présente (le contrat de l'outil ne bouge pas), son contenu part
+        # derrière result_ref.
+        for key in ("structured", "structuredContent"):
+            if key in shown:
+                shown[key] = {"omitted": True, "reason": "compressed",
+                              "result_ref": ref}
         saved = max(0, int(meta.get("original_chars", 0)) - int(meta.get("compressed_chars", 0)))
         meta["result_ref"] = ref
         meta["saved_chars"] = saved

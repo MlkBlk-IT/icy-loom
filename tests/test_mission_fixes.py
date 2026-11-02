@@ -123,3 +123,23 @@ def test_B_write_bumps_the_epoch(config) -> None:
     assert proxy._epoch_of("fs") != before
 
 
+# ---------------------------------------------------------------- C · compression
+def test_C_structured_is_not_duplicated(config) -> None:
+    proxy = ToolProxy(config)
+    big = "x" * 20000
+    payload = {"content": [big], "structured": {"file": big}}
+    shown, meta = proxy._present("fs", "read_text_file", {"path": "a"}, payload)
+    assert shown["truncated"] is True
+    assert shown["structured"]["omitted"] is True
+    assert big not in json.dumps(shown), "le contenu brut est encore sur le fil"
+    # Le gain en tokens est verifie par le test G (compteur tiktoken).
+
+
+def test_C_response_stays_small(config) -> None:
+    proxy = ToolProxy(config)
+    big = "y" * 50000
+    payload = {"content": [big], "structured": {"file": big}}
+    shown, _meta = proxy._present("fs", "read_text_file", {"path": "a"}, payload)
+    assert len(json.dumps(shown).encode("utf-8")) < 20000
+
+
