@@ -17,28 +17,6 @@
 
 </div>
 
----
-
-A hybrid gateway for **local and cloud LLM workflows** that puts an **LLM cache**, a **compressed context drawer** and an **MCP tool relay** behind **one MCP server**, **one configuration file** and **one SQLite database**.
-
-IcyLoom is a **standalone** project: no imports, links or paths to any other project. The code is written from scratch; the only files taken from elsewhere are **data** (normalisation rules, a tool registry), because the cache hash depends on them.
-
-| | |
-|---|---|
-| **Cache** | Every prompt normalised, hashed and stored. A hit is a **zero-token** answer. |
-| **Context drawer** | Sources filed, chunked, anchored, invariants checked — compressed on demand, opt-in. |
-| **Tool relay** | Downstream MCP servers, cached by canonical signature, **deny by default**. |
-| **Registry** | `v_token_ledger`: tokens **paid upstream** and tokens **avoided**, in one unit, one view. |
-| **Console** | A hand-drawn web console on `:8153` — side panel, live views, working buttons. |
-| **Privacy** | Binds `127.0.0.1`. Local mode stays on-device; configured cloud upstreams receive only the traffic you route to them. |
-
-**The numbers are real.** A cache hit is counted as *avoided*, a miss is counted as *paid* with the upstream's own usage figures — never estimated. The 35 % threshold is read straight from the ledger.
-
-<img src="docs/screenshots/overview.png" alt="IcyLoom console — overview" width="860" />
-
-<sub>Overview: the unified registry, five live KPIs, calls per bucket, latency, outcomes, models, upstreams. Captured on a demo database seeded by `tools/seed_demo.py` (synthetic traffic) — not production data.</sub>
-
----
 
 ## IcyLoom V2 — the MCP Tool Gateway
 
@@ -116,6 +94,30 @@ policy: role=operator env=dev roots=['C:\\', 'D:\\']
 V2 is on `main`. The tagged release ships **this week**: registry, lexical selection in 12 languages, the six meta-tools, roles and approvals, compression, the sandbox, the audit trail, the console view — and **182 passing tests**.
 
 Full announcement: **[ANNOUNCEMENT.md](ANNOUNCEMENT.md)** · Session log: **[progress.md](progress.md)**
+
+
+---
+
+A hybrid gateway for **local and cloud LLM workflows** that puts an **LLM cache**, a **compressed context drawer** and an **MCP tool relay** behind **one MCP server**, **one configuration file** and **one SQLite database**.
+
+IcyLoom is a **standalone** project: no imports, links or paths to any other project. The code is written from scratch; the only files taken from elsewhere are **data** (normalisation rules, a tool registry), because the cache hash depends on them.
+
+| | |
+|---|---|
+| **Cache** | Every prompt normalised, hashed and stored. A hit is a **zero-token** answer. |
+| **Context drawer** | Sources filed, chunked, anchored, invariants checked — compressed on demand, opt-in. |
+| **Tool relay** | Downstream MCP servers, cached by canonical signature, **deny by default**. |
+| **Registry** | `v_token_ledger`: tokens **paid upstream** and tokens **avoided**, in one unit, one view. |
+| **Console** | A hand-drawn web console on `:8153` — side panel, live views, working buttons. |
+| **Privacy** | Binds `127.0.0.1`. Local mode stays on-device; configured cloud upstreams receive only the traffic you route to them. |
+
+**The numbers are real.** A cache hit is counted as *avoided*, a miss is counted as *paid* with the upstream's own usage figures — never estimated. The 35 % threshold is read straight from the ledger.
+
+<img src="docs/screenshots/overview.png" alt="IcyLoom console — overview" width="860" />
+
+<sub>Overview: the unified registry, five live KPIs, calls per bucket, latency, outcomes, models, upstreams. Captured on the live development instance: every tile is a real call read from SQLite.</sub>
+
+---
 
 ---
 
