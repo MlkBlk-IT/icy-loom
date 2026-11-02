@@ -49,6 +49,11 @@ from .toolcompress import compress_result
 
 log = logging.getLogger("icyloom.toolproxy")
 
+#: Backoff du coupe-circuit : un serveur mort n'est pas relancé (et journalisé)
+#: à chaque appel. 30 s, 60 s, 120 s… plafonné à 10 min.
+BACKOFF_BASE_SECONDS = 30
+BACKOFF_MAX_SECONDS = 600
+
 
 def _stamp() -> str:
     """Horodatage compact pour nommer une sauvegarde de configuration."""
@@ -262,6 +267,17 @@ class ToolProxy:
         #: serveurs descendants les demandent : c'est IcyLoom qui est leur
         #: client, donc c'est IcyLoom qui doit les leur transmettre.
         self._client_roots: list[Any] = []
+        #: Coupe-circuit par serveur : un serveur mort ne doit pas être
+        #: relancé à chaque appel (c'était 37 échecs par serveur en 3 h).
+        self._failures: dict[str, dict[str, Any]] = {}
+
+        # Le catalogue d'outils est rechargé périodiquement (toutes les
+        # minutes) : sans cette mémoire, chaque rechargement réécrit la
+        # même mesure dans le compteur « tool_schemas » — 243 lignes
+        # pour 188 outils, soit un coût de catalogue 3 fois trop grand.
+        # Le coût réel est mesuré UNE seule fois par serveur, puis la
+        # mesure n'est réécrite que si le catalogue change vraiment.
+        self._schema_tokens_seen: dict[str, int] = {}
         for srv in self._servers.values():
             for tool_name, enabled in srv.cache_tools.items():
                 if enabled and is_write_tool(tool_name):
@@ -549,17 +565,33 @@ class ToolProxy:
         if cached is not None and (time.time() - cached[0]) < self._catalog_ttl:
             return {"ok": True, "server": server, "count": len(cached[1]),
                     "tools": cached[1], "cached": True}
+        # Coupe-circuit : un serveur mort n'est pas relancé à chaque appel.
+        fail = self._failures.get(server)
+        now = time.time()
+        if fail and now < fail["next_at"]:
+            return {"ok": False, "error": fail["error"], "message": fail["message"],
+                    "server": server, "backoff_seconds": round(fail["next_at"] - now, 1),
+                    "failures": fail["count"]}
         started = time.perf_counter()
         try:
             session = await self._live_session(cfg)
             listed = await session.list_tools()
         except Exception as exc:
             await self._drop_session(server)
-            self._log_event("tool_error", server, "list_tools", {},
-                            int((time.perf_counter() - started) * 1000),
-                            detail=f"{type(exc).__name__}: {exc}")
+            count = (fail["count"] + 1) if fail else 1
+            delay = min(BACKOFF_MAX_SECONDS,
+                        BACKOFF_BASE_SECONDS * (2 ** (count - 1)))
+            self._failures[server] = {"count": count, "next_at": now + delay,
+                                      "error": type(exc).__name__, "message": str(exc)}
+            # Le journal ne retient que la PREMIERE erreur : un serveur mort
+            # ne doit pas remplir le journal a chaque appel.
+            if count == 1:
+                self._log_event("tool_error", server, "list_tools", {},
+                                int((time.perf_counter() - started) * 1000),
+                                detail=f"{type(exc).__name__}: {exc}")
             return {"ok": False, "error": type(exc).__name__, "message": str(exc),
-                    "server": server}
+                    "server": server, "backoff_seconds": delay, "failures": count}
+        self._failures.pop(server, None)
         tools = [{"name": t.name, "description": (t.description or "")[:300]}
                  for t in listed.tools]
         self._catalog[server] = (time.time(), tools)

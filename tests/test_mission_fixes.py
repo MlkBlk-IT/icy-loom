@@ -61,3 +61,26 @@ def test_A1_broken_servers_are_neutralised() -> None:
     assert any("==" in a for a in servers["sqlite"]["args"])
 
 
+# ---------------------------------------------------------------- A2 · backoff
+def test_A2_dead_server_is_not_relaunched(config) -> None:
+    proxy = ToolProxy(config)
+    launches = {"n": 0}
+
+    async def boom(_cfg):
+        launches["n"] += 1
+        raise RuntimeError("McpError: Connection closed")
+
+    proxy._live_session = boom
+    proxy._servers["dead"] = ToolServerConfig(name="dead", command="uvx", args=["nope"],
+                                              cache_enabled=True)
+    first = asyncio.run(proxy.list_tools("dead"))
+    second = asyncio.run(proxy.list_tools("dead"))
+    assert first["ok"] is False
+    assert second["backoff_seconds"], "le backoff doit signaler la pause"
+    assert launches["n"] == 1, "le serveur mort ne doit pas être relancé"
+    with proxy.db.cursor(commit=False) as cur:
+        errors = cur.execute(
+            "SELECT COUNT(*) FROM tool_events WHERE kind='tool_error'").fetchone()[0]
+    assert errors == 1, "un seul tool_error pour un serveur mort"
+
+
