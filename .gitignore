@@ -18,3 +18,8 @@ data/*.db-shm
 .pytest-run/
 *.bak_icyloom_*
 *.bak_2026*
+
+# sauvegardes auto de config / dashboard
+*.bak
+*.bak-*
+.pytest-tmp/
