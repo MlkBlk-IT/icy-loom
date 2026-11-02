@@ -107,7 +107,7 @@ tool_proxy:
   - name: fetch
     command: uvx
     args:
-    - mcp-server-fetch
+    - mcp-server-fetch==2026.10.10
     description: Web fetch -> markdown (Anthropic) - 801k downloads
     cache_enabled: true
     ttl_seconds: 3600
@@ -138,7 +138,7 @@ tool_proxy:
   - name: duckduckgo
     command: uvx
     args:
-    - duckduckgo-mcp-server
+    - duckduckgo-mcp-server@0.7.0
     description: Recherche DuckDuckGo
     cache_enabled: true
     ttl_seconds: 3600
@@ -186,7 +186,7 @@ tool_proxy:
   - name: time
     command: uvx
     args:
-    - mcp-server-time
+    - mcp-server-time==2026.10.10
     description: Heure et fuseaux
     cache_enabled: true
     ttl_seconds: 3600
