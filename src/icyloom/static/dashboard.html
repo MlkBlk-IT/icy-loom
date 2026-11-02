@@ -678,7 +678,7 @@ footer { border-top: 3px dashed var(--ink); margin-top: 0; flex: 0 0 auto; backg
             <svg class="rule" viewBox="0 0 260 12" preserveAspectRatio="none" aria-hidden="true">
               <path d="M3 7 C 30 1, 55 11, 82 6 S 135 2, 162 8 S 215 3, 257 6" fill="none" stroke="#ff5a36" stroke-width="4" stroke-linecap="round"/>
             </svg>
-            <p class="sub">Day × hour (UTC), every tile is a measured call; the ink strokes are the isolines.</p>
+            <p class="sub">Each tile = calls in one UTC hour. Column height and colour = call count (√ scale by default, switch to linear with the chip). Flat ground = no measured call.</p>
           </div>
         </div>
         <div class="grid">
@@ -723,12 +723,13 @@ footer { border-top: 3px dashed var(--ink); margin-top: 0; flex: 0 0 auto; backg
           <div class="card c7">
             <div class="phead"><h3>Daily curve — paid vs avoided</h3><span class="hint" id="line-window">14 days</span></div>
             <svg id="ch-line" class="chart sk-svg" viewBox="0 0 700 380" role="img" aria-label="Tokens avoided and paid per day"></svg>
-            <p class="cap">Cross-hatched area = avoided tokens, dashed line = average, the record is circled in felt pen.</p>
+            <p class="cap">Daily tokens, UTC. Red area = tokens avoided, solid brown line = tokens paid, dashed orange = average avoided per day. Daily gain = avoided ÷ (paid + avoided). Click a legend label to hide a series; hover for exact values.</p>
           </div>
           <div class="card c5">
             <div class="phead"><h3>Economy gauge</h3><span class="hint">against the 35% line</span></div>
             <svg id="ch-gauge" class="chart sk-svg" viewBox="0 0 460 300" role="img" aria-label="Gauge of the token saving rate"></svg>
             <div id="gauge-note" style="margin-top:4px"></div>
+            <p class="cap">Share of the token baseline that was avoided (avoided ÷ (paid + avoided)). Green = at or above the target tick.</p>
           </div>
         </div>
         <div class="grid" style="margin-top:16px">
@@ -762,6 +763,7 @@ footer { border-top: 3px dashed var(--ink); margin-top: 0; flex: 0 0 auto; backg
           <div class="card c5">
             <div class="phead"><h3>Most reused entries</h3><span class="hint">hatched ranking</span></div>
             <svg id="ch-bars" class="chart sk-svg" viewBox="0 0 460 400" role="img" aria-label="Cache entries ranked by reuse count"></svg>
+            <p class="cap">Reuses = cache hits served by each stored prompt. Hover a row for model, full hash, provider and last access; click a row to filter the table on the right.</p>
           </div>
           <div class="card c7">
             <div class="phead"><h3>Cache entries</h3><span class="hint" id="cache-count">—</span></div>
@@ -1623,48 +1625,116 @@ function tween(key, target, apply) {
 }
 
 /* ══ 01 · the 3D relief ═══════════════════════════════════ */
+/* Fenetre active (1h / 24h / 7d / 14d) -> grille masquee.
+   Une tuile (jour, heure UTC) est « dans la fenetre » si son heure recoupe
+   [maintenant - fenetre ; maintenant]. Les valeurs ne sont jamais modifiees :
+   hors fenetre, la tuile est seulement mise de cote (fantome en pointilles). */
+function windowedSurface(snap) {
+  const s = snap.surface, dates = s.dates || [];
+  const now = (snap.generated_at_ts || Math.floor(Date.now() / 1000)) * 1000;
+  const from = now - state.window.hours * 3600000;
+  const inside = [], shown = [];
+  let total = 0;
+  for (let r = 0; r < s.calls.length; r++) {
+    inside.push([]); shown.push([]);
+    for (let c = 0; c < s.calls[r].length; c++) {
+      const t0 = Date.parse(dates[r] + "T" + String(c).padStart(2, "0") + ":00:00Z");
+      const ok = isNaN(t0) ? true : (t0 + 3600000 > from && t0 <= now);
+      const v = ok ? s.calls[r][c] : 0;
+      inside[r].push(ok); shown[r].push(v); total += v;
+    }
+  }
+  return { inside: inside, shown: shown, total: total, label: state.window.label };
+}
+/* Couleur d'une tuile non vide : la rampe demarre deja a l'ambre, pour ne jamais
+   ressembler au sol (une tuile vide n'est pas de la donnee). */
+/* The surface spans the whole 14-day fetch but traffic often covers only the last few days.
+   Crop to the first day with data (4 rows minimum) so the plot shows data, not empty ground. */
+function cropSnap(snap) {
+  if (!snap || !snap.surface || !snap.surface.calls || !snap.surface.calls.length) return snap;
+  const s = snap.surface, n = s.calls.length;
+  const f = s.calls.findIndex((row) => row.some((v) => v > 0));
+  if (f < 0) return snap;
+  const a = Math.max(0, Math.min(f, n - 4));
+  const cut = (arr) => (arr || []).slice(a);
+  return Object.assign({}, snap, { surface: Object.assign({}, s, { calls: cut(s.calls), days: cut(s.days), dates: cut(s.dates) }) });
+}
+function surfaceScale(grid) {
+  const mx = Math.max(1, ...[].concat.apply([], grid));
+  const sc = (v) => Math.min(1, state.volLinear ? v / mx : Math.sqrt(v / mx));
+  return { mx: mx, sc: sc, col: (v) => heat(0.14 + 0.86 * sc(v)) };
+}
+function shade(hex, k) {
+  const n = parseInt(hex.slice(1), 16);
+  const f = (x) => Math.max(0, Math.min(255, Math.round(x * k))).toString(16).padStart(2, "0");
+  return "#" + f((n >> 16) & 255) + f((n >> 8) & 255) + f(n & 255);
+}
 function drawVolcano() {
   const svg = $("#ch-volcano");
-  const snap = state.snap;
+  const snap = cropSnap(state.snap);
   while (svg.firstChild) svg.removeChild(svg.firstChild);
   if (!snap || !snap.surface) return;
-  const grid = snap.surface.calls, rows = grid.length, cols = grid[0].length;
-  const peak = snap.surface.peak || 1;
-  const ref = surfaceRef([].concat.apply([], grid));
-  const at = (r, c) => grid[clamp(r, 0, rows - 1)][clamp(c, 0, cols - 1)];
-  const hOf = (r, c) => Math.min(at(r, c) / ref, 1.25);
+  const raw = snap.surface.calls, rows = raw.length, cols = raw[0].length;
+  const win = windowedSurface(snap), grid = win.shown;
+  const S = surfaceScale(grid);
+  // column = one measured tile; height follows the chosen scale, true to the peak (no clamp)
+  const hOf = (r, c) => (grid[r][c] > 0 ? Math.max(0.07, S.sc(grid[r][c])) : 0);
   const P = (r, c, h) => Iso.project(c, r, h);
-
-  const pts = [];
-  for (let r = 0; r < rows; r++) for (let c = 0; c < cols; c++) {
-    pts.push(P(r, c, hOf(r, c)), P(r, c + 1, hOf(r, c + 1)), P(r + 1, c, hOf(r + 1, c)), P(r + 1, c + 1, hOf(r + 1, c + 1)));
-  }
   const W = 700, H = 440;
-  const fit = Iso.fit(pts, W, H, 52);
 
-  const quads = [];
-  for (let r = 0; r < rows - 1; r++) for (let c = 0; c < cols - 1; c++) {
-    const p00 = P(r, c, hOf(r, c)), p10 = P(r, c + 1, hOf(r, c + 1));
-    const p11 = P(r + 1, c + 1, hOf(r + 1, c + 1)), p01 = P(r + 1, c, hOf(r + 1, c));
-    const v = (hOf(r, c) + hOf(r, c + 1) + hOf(r + 1, c + 1) + hOf(r + 1, c)) / 4;
-    quads.push({ p: [p00, p10, p11, p01], depth: (p00.depth + p11.depth) / 2, v: v, r: r, c: c });
+  const pts = [P(0, 0, 0), P(0, cols, 0), P(rows, cols, 0), P(rows, 0, 0)];
+  for (let r = 0; r < rows; r++) for (let c = 0; c < cols; c++) {
+    const h = hOf(r, c);
+    if (h > 0) pts.push(P(r, c, h), P(r, c + 1, h), P(r + 1, c, h), P(r + 1, c + 1, h));
   }
-  quads.sort((a, b) => a.depth - b.depth);
-  for (const q of quads) {
-    const d = "M" + q.p.map((p) => { const a = fit.at(p); return a[0].toFixed(1) + " " + a[1].toFixed(1); }).join(" L") + " Z";
+  const fit = Iso.fit(pts, W, H, 52);
+  const poly = (ps) => "M" + ps.map((p) => { const a = fit.at(p); return a[0].toFixed(1) + " " + a[1].toFixed(1); }).join(" L") + " Z";
+
+  // le sol : plaque, puis les tuiles sans colonne (vides = neutres, hors fenetre = fantomes)
+  svg.appendChild(el("path", { d: poly([P(0, 0, 0), P(0, cols, 0), P(rows, cols, 0), P(rows, 0, 0)]), fill: C.paper3, opacity: 0.55, stroke: "none" }));
+  for (let r = 0; r < rows; r++) for (let c = 0; c < cols; c++) {
+    if (hOf(r, c) > 0) continue;
+    const out = raw[r][c] > 0 && !win.inside[r][c];
     const g = el("g", {});
-    g.appendChild(el("path", { d: d, fill: heat(Math.min(q.v, 1)), opacity: 0.92, stroke: "none" }));
-    g.appendChild(el("path", { d: d, fill: "none", stroke: C.ink, "stroke-width": "0.7", opacity: 0.5 }));
-    g.appendChild(el("title", {}, snap.surface.days[q.r] + " · " + q.c + "h → " + num(at(q.r, q.c)) + " calls"));
+    g.appendChild(el("path", {
+      d: poly([P(r, c, 0), P(r, c + 1, 0), P(r + 1, c + 1, 0), P(r + 1, c, 0)]),
+      fill: out ? "none" : C.paper3, opacity: out ? 1 : 0.6,
+      stroke: C.ink, "stroke-width": "0.6", "stroke-opacity": out ? 0.3 : 0.14, "stroke-dasharray": out ? "3 3" : "none",
+    }));
+    g.appendChild(el("title", {}, snap.surface.days[r] + " · " + c + "h → " + num(raw[r][c]) + " calls" + (out ? " (outside the " + win.label + " window)" : "")));
     svg.appendChild(g);
   }
 
-  // footprint: the ground plate the relief stands on
+  // les colonnes, de l'arriere vers l'avant ; seules les 2 faces tournees vers nous sont dessinees
+  const cs = Math.cos(Iso.rotate), sn = Math.sin(Iso.rotate);
+  const uFace = (cs + sn) > 0 ? 1 : 0, vFace = (cs - sn) > 0 ? 1 : 0;
+  const bars = [];
+  for (let r = 0; r < rows; r++) for (let c = 0; c < cols; c++) {
+    if (hOf(r, c) > 0) bars.push({ r: r, c: c, h: hOf(r, c), depth: P(r + 0.5, c + 0.5, 0).depth });
+  }
+  bars.sort((a, b) => a.depth - b.depth);
+  for (const b of bars) {
+    const r = b.r, c = b.c, h = b.h, U = c + uFace, V = r + vFace;
+    const base = S.col(grid[r][c]);
+    const g = el("g", {});
+    const faces = [
+      [[P(r, U, 0), P(r + 1, U, 0), P(r + 1, U, h), P(r, U, h)], shade(base, 0.74)],
+      [[P(V, c, 0), P(V, c + 1, 0), P(V, c + 1, h), P(V, c, h)], shade(base, 0.58)],
+      [[P(r, c, h), P(r, c + 1, h), P(r + 1, c + 1, h), P(r + 1, c, h)], base],
+    ];
+    for (const f of faces) {
+      g.appendChild(el("path", { d: poly(f[0]), fill: f[1], opacity: 0.97, stroke: C.ink, "stroke-width": "0.8", "stroke-opacity": 0.55, "stroke-linejoin": "round" }));
+    }
+    g.appendChild(el("title", {}, snap.surface.days[r] + " · " + c + "h → " + num(raw[r][c]) + " calls"));
+    const tipHtml = tipTitle(snap.surface.days[r] + " · " + c + "h–" + (c + 1) + "h UTC") + tipRow("calls", num(raw[r][c])) +
+      tipRow("share of window", win.total ? (grid[r][c] / win.total * 100).toFixed(1) + " %" : "—") + tipRow("vs peak", (grid[r][c] / S.mx * 100).toFixed(0) + " %");
+    g.addEventListener("pointermove", (ev) => tipShow(tipHtml, ev));
+    g.addEventListener("pointerleave", tipHide);
+    svg.appendChild(g);
+  }
+
+  // contour du sol a l'encre
   const foot = [P(0, 0, 0), P(0, cols, 0), P(rows, cols, 0), P(rows, 0, 0)].map((p) => fit.at(p));
-  svg.appendChild(el("path", {
-    d: "M" + foot.map((p) => p[0].toFixed(1) + " " + p[1].toFixed(1)).join(" L") + " Z",
-    fill: C.paper3, opacity: 0.55, stroke: "none",
-  }));
   svg.appendChild(el("path", {
     d: Rough.path(foot, { seed: 3210, roughness: 1.2, bowing: 1 }),
     fill: "none", stroke: C.ink, "stroke-width": 2.2, "stroke-linecap": "round", opacity: 0.85,
@@ -1672,31 +1742,54 @@ function drawVolcano() {
 
   // day axis (left edge) and hour axis (front edge)
   const dayStep = rows > 10 ? 2 : 1;
-  for (let r = 0; r < rows; r += dayStep) {
-    const p = fit.at(P(r, 0, 0));
-    const q = fit.at(P(r, 0, 0.0));
+  for (let r = 0; r < rows; r++) {
+    if ((rows - 1 - r) % dayStep) continue;   // the last day is always labelled
+    const p = fit.at(P(r + 0.5, -0.35, 0));   // label just outside the plate, centred on the tile row
+    const q = fit.at(P(r + 0.5, 0, 0));
     svg.appendChild(el("path", {
       d: Rough.line(q[0], q[1], q[0] - 7, q[1], { seed: 3300 + r, roughness: 0.8, passes: 1 }),
       fill: "none", stroke: C.ink, "stroke-width": 1.4,
     }));
-    txt(svg, p[0] - 10, p[1] + 4, (snap.surface.days[r] || "").split(" ")[1] || "", { size: 10.5, anchor: "end", soft: true });
+    txt(svg, p[0] - 10, p[1] + 4, (snap.surface.days[r] || "").split(" ")[1] || "", { size: 10.5, anchor: "end", soft: true, halo: true });
   }
   const hourStep = cols > 14 ? 3 : 2;
   for (let c = 0; c < cols; c += hourStep) {
-    const p = fit.at(P(rows - 1, c, 0));
+    const p = fit.at(P(rows + 0.35, c + 0.5, 0));
     svg.appendChild(el("path", {
       d: Rough.line(p[0], p[1], p[0], p[1] + 6, { seed: 3400 + c, roughness: 0.8, passes: 1 }),
       fill: "none", stroke: C.ink, "stroke-width": 1.4,
     }));
-    txt(svg, p[0], p[1] + 19, c + "h", { size: 10.5, anchor: "middle", soft: true });
+    txt(svg, p[0], p[1] + 19, c + "h", { size: 10.5, anchor: "middle", soft: true, halo: true });
   }
-  txt(svg, fit.at(P(rows / 2, 0, 0))[0] - 10, fit.at(P(rows / 2, 0, 0))[1] - 12, "day", { size: 10.5, anchor: "middle", soft: true });
-  txt(svg, fit.at(P(rows - 1, cols / 2, 0))[0], fit.at(P(rows - 1, cols / 2, 0))[1] + 33, "hour of the day", { size: 10.5, anchor: "middle", soft: true });
+  const d0 = fit.at(P(0, 0, 0)), h0 = fit.at(P(rows, cols / 2, 0));
+  txt(svg, d0[0] - 10, d0[1] - 14, "day (UTC)", { size: 10.5, anchor: "end", soft: true, halo: true });
+  txt(svg, h0[0], h0[1] + 33, "hour of the day (UTC)", { size: 10.5, anchor: "middle", soft: true, halo: true });
+
+  // legend: colour ramp + height-scale switch
+  txt(svg, 20, H - 32, "calls per hour", { size: 10.5, soft: true });
+  for (let i = 0; i < 6; i++) svg.appendChild(el("rect", { x: 20 + i * 16, y: H - 26, width: 16, height: 9, fill: heat(0.14 + 0.86 * i / 5), stroke: C.ink, "stroke-opacity": 0.4, "stroke-width": 0.6 }));
+  txt(svg, 20, H - 6, "low", { size: 10.5, soft: true });
+  txt(svg, 116, H - 6, "peak " + num(S.mx), { size: 10.5, anchor: "end", soft: true });
+  const chip0 = el("g", {});
+  chip0.style.cursor = "pointer";
+  chip0.appendChild(el("rect", { x: W - 246, y: H - 34, width: 226, height: 22, rx: 6, fill: C.paper2, stroke: C.ink, "stroke-width": 1.4 }));
+  txt(chip0, W - 133, H - 19, "height: " + (state.volLinear ? "linear" : "√ scale") + " · click to switch", { size: 11, anchor: "middle", weight: "700" });
+  chip0.addEventListener("pointerdown", (ev) => ev.stopPropagation());
+  chip0.addEventListener("click", (ev) => { ev.stopPropagation(); state.volLinear = !state.volLinear; drawVolcano(); drawTopo(); });
+  svg.appendChild(chip0);
 
   let best = { v: -1, r: 0, c: 0 };
   for (let r = 0; r < rows; r++) for (let c = 0; c < cols; c++) if (grid[r][c] > best.v) best = { v: grid[r][c], r: r, c: c };
   if (best.v > 0) {
     const p = fit.at(P(best.r + 0.5, best.c + 0.5, hOf(best.r, best.c)));
+    // halo pulse ; la phase suit l'horloge, donc il ne redemarre pas quand le relief se redessine
+    if (!(window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches)) {
+      const begin = "-" + ((Date.now() % 1800) / 1000).toFixed(2) + "s";
+      const halo = el("circle", { cx: p[0].toFixed(1), cy: (p[1] - 12).toFixed(1), r: 13, fill: "none", stroke: C.magenta, "stroke-width": 2.2, opacity: 0.6 });
+      halo.appendChild(el("animate", { attributeName: "r", from: 13, to: 30, dur: "1.8s", begin: begin, repeatCount: "indefinite" }));
+      halo.appendChild(el("animate", { attributeName: "opacity", from: 0.65, to: 0, dur: "1.8s", begin: begin, repeatCount: "indefinite" }));
+      svg.appendChild(halo);
+    }
     svg.appendChild(el("path", { d: Rough.ellipse(p[0], p[1] - 12, 13, 13, { seed: 777, roughness: 1 }), fill: C.gold, stroke: C.ink, "stroke-width": "1.8" }));
     txt(svg, p[0], p[1] - 8, "▲", { size: 13, anchor: "middle" });
     // the caption lives in its own chip at the top, with a leader line down
@@ -1709,15 +1802,23 @@ function drawVolcano() {
       size: 13, anchor: "middle", weight: "700", fill: C.magenta, halo: true,
     });
     chip.setAttribute("stroke", C.paper2);
-    $("#cap-volcano").textContent = "The peak lands on " + (snap.surface.days[best.r] || "") + " at " + best.c + "h (" + num(best.v) + " calls). Drag the relief to spin it.";
+    $("#cap-volcano").textContent = "Window " + win.label + " · " + num(win.total) + " calls (UTC). Data starts " + (snap.surface.days[raw.findIndex((row) => row.some((v) => v > 0))] || "—") + ". The peak lands on " + (snap.surface.days[best.r] || "") + " at " + best.c + "h (" + num(best.v) + " calls). Drag the relief to spin it.";
+  } else {
+    $("#cap-volcano").textContent = "No call in the last " + win.label + " — the relief is flat. Pick a wider window.";
   }
 }
 function bindSpin() {
   const svg = $("#ch-volcano"), st = state.spin;
   st.rotate = Iso.rotate;   // une seule source de verite : le drag pilote Iso.rotate
+  st.base = Iso.rotate;
+  st.auto = !(window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches);
+  st.hover = false;
   svg.style.cursor = "grab";
+  svg.addEventListener("pointerenter", () => { st.hover = true; });
+  svg.addEventListener("pointerleave", () => { st.hover = false; });
   svg.addEventListener("pointerdown", (e) => {
-    st.drag = { x: e.clientX, angle: st.rotate };
+    st.auto = false;   // l'utilisateur prend la main : fin du balancement
+    st.drag = { x: e.clientX, angle: Iso.rotate };
     svg.setPointerCapture(e.pointerId); svg.style.cursor = "grabbing";
   });
   svg.addEventListener("pointermove", (e) => {
@@ -1729,35 +1830,52 @@ function bindSpin() {
   const end = (e) => { st.drag = null; svg.style.cursor = "grab"; try { svg.releasePointerCapture(e.pointerId); } catch (x) {} };
   svg.addEventListener("pointerup", end);
   svg.addEventListener("pointercancel", end);
+  // balancement lent au repos (±18°) : jamais pendant le survol (tooltips), le drag,
+  // la pause, un onglet cache ou une vue masquee
+  setInterval(() => {
+    if (!st.auto || st.drag || st.hover || state.paused || document.hidden || svg.getClientRects().length === 0) return;
+    Iso.rotate = st.base + 0.32 * Math.sin(Date.now() / 2300);
+    drawVolcano();
+  }, 80);
 }
 
 /* ══ 01 · topo map ══════════════════════════════════════════ */
 function drawTopo() {
   const svg = $("#ch-topo");
-  const snap = state.snap;
+  const snap = cropSnap(state.snap);
   while (svg.firstChild) svg.removeChild(svg.firstChild);
   if (!snap || !snap.surface) return;
-  const grid = snap.surface.calls, rows = grid.length, cols = grid[0].length;
+  const raw = snap.surface.calls, rows = raw.length, cols = raw[0].length;
+  const win = windowedSurface(snap), grid = win.shown;
   const ref = surfaceRef([].concat.apply([], grid));
+  const S = surfaceScale(grid);
+  const dense = [].concat.apply([], grid).filter((v) => v > 0).length >= 12;   // isolines only mean something with enough tiles
   const W = 460, H = 440, ml = 44, mr = 14, mt = 26, mb = 40;
-  const pw = W - ml - mr, ph = H - mt - mb;
-  const cw = pw / cols, ch = ph / rows;
+  const pw = W - ml - mr, cw = pw / cols;
+  const ch = Math.min((H - mt - mb) / rows, cw * 4.5), ph = ch * rows;   // readable tiles even when few days have data
 
   for (let r = 0; r < rows; r++) for (let c = 0; c < cols; c++) {
-    const t = grid[r][c] / ref;
+    const v = grid[r][c], out = raw[r][c] > 0 && !win.inside[r][c];
+    const box = { x: (ml + c * cw).toFixed(1), y: (mt + r * ch).toFixed(1), width: (cw + 0.6).toFixed(1), height: (ch + 0.6).toFixed(1) };
     const g = el("g", {});
-    g.appendChild(el("rect", {
-      x: (ml + c * cw).toFixed(1), y: (mt + r * ch).toFixed(1),
-      width: (cw + 0.6).toFixed(1), height: (ch + 0.6).toFixed(1),
-      fill: heat(Math.min(t, 1)), opacity: t > 0.02 ? 0.9 : 0.1, stroke: "none",
-    }));
-    g.appendChild(el("title", {}, snap.surface.days[r] + " · " + c + "h → " + num(grid[r][c]) + " calls"));
+    if (v > 0) {
+      g.appendChild(el("rect", Object.assign({}, box, { fill: S.col(v), opacity: 0.95, stroke: "none" })));
+    } else if (out) {
+      // mesuree mais hors fenetre : tuile fantome en pointilles
+      g.appendChild(el("rect", Object.assign({}, box, { fill: "none", stroke: C.ink, "stroke-width": "0.8", "stroke-dasharray": "3 3", opacity: 0.3 })));
+    } else {
+      g.appendChild(el("rect", Object.assign({}, box, { fill: C.paper3, opacity: 0.5, stroke: "none" })));
+    }
+    g.appendChild(el("title", {}, snap.surface.days[r] + " · " + c + "h → " + num(raw[r][c]) + " calls" + (out ? " (outside the " + win.label + " window)" : "")));
+    const tipHtml = tipTitle(snap.surface.days[r] + " · " + c + "h–" + (c + 1) + "h UTC") + tipRow("calls", num(raw[r][c])) + (out ? tipNote("outside the " + win.label + " window") : "");
+    g.addEventListener("pointermove", (ev) => tipShow(tipHtml, ev));
+    g.addEventListener("pointerleave", tipHide);
     svg.appendChild(g);
   }
   const step = niceStep(ref, 8) || 1;
   const levels = [];
   for (let l = Math.ceil(step); l < ref; l += step) levels.push(l);
-  for (const level of levels) {
+  for (const level of (dense ? levels : [])) {
     const t = level / ref;
     for (const poly of chain(isoSegments(grid, level))) {
       const pts = chaikin(poly).map((p) => [ml + p[0] * cw, mt + p[1] * ch]);
@@ -1768,9 +1886,12 @@ function drawTopo() {
     }
   }
   svg.appendChild(el("path", { d: Rough.rect(ml, mt, pw, ph, { seed: 4242, roughness: 1.3 }), fill: "none", stroke: C.ink, "stroke-width": 2.6 }));
-  for (let r = 0; r < rows; r += (rows > 8 ? 3 : 1)) txt(svg, ml - 6, mt + r * ch + ch / 2 + 4, (snap.surface.days[r] || "").split(" ")[1] || "", { size: 10, anchor: "end", soft: true });
+  for (let r = 0; r < rows; r++) if (!((rows - 1 - r) % (rows > 8 ? 3 : 1))) txt(svg, ml - 6, mt + r * ch + ch / 2 + 4, (snap.surface.days[r] || "").split(" ")[1] || "", { size: 10, anchor: "end", soft: true });
   for (let c = 0; c < cols; c += (cols > 14 ? 3 : 2)) txt(svg, ml + c * cw + cw / 2, mt + ph + 15, c + "h", { size: 10, anchor: "middle", soft: true });
-  txt(svg, ml, mt - 9, "one curve = one traffic step", { size: 11.5, soft: true });
+  txt(svg, ml, mt - 9, "calls per hour · day × hour (UTC)", { size: 11.5, soft: true });
+  for (let i = 0; i < 6; i++) svg.appendChild(el("rect", { x: ml + i * 14, y: mt + ph + 26, width: 14, height: 8, fill: heat(0.14 + 0.86 * i / 5), stroke: C.ink, "stroke-opacity": 0.4, "stroke-width": 0.6 }));
+  txt(svg, ml + 92, mt + ph + 34, "1 → " + num(S.mx) + " calls", { size: 10, soft: true });
+  $("#cap-topo").textContent = "Each tile = calls in one UTC hour (window " + win.label + "); colour on a " + (state.volLinear ? "linear" : "√") + " scale, grey = no call. " + (dense ? "Ink curves join equal call counts. " : "") + "Dashed outline = measured but outside the window.";
 }
 
 /* ══ 01 · calls per bucket ═════════════════════════════════ */
@@ -1916,11 +2037,14 @@ function drawLine() {
   if (series.length < 2) { txt(svg, W / 2, H / 2, "not enough days measured yet", { size: 14, anchor: "middle", soft: true }); return; }
   const saved = series.map((d) => d.saved || 0);
   const paid = series.map((d) => d.paid || 0);
-  const maxV = Math.max(1, ...saved, ...paid);
-  const minV = Math.min(0, ...saved, ...paid);
+  const rawMax = Math.max(1, ...saved, ...paid);
+  const maxV = niceStep(rawMax / 4, 1) * 4;   // 4 equal, round divisions
+  const minV = 0;                             // a token count is never negative: baseline = 0
   const base = M.t + ph;
-  const X = (i) => M.l + (i / (series.length - 1)) * pw;
-  const Y = (v) => base - ((v - minV) / (maxV - minV)) * ph;
+  const T = series.map((d) => Date.parse(String(d.day) + "T00:00:00Z"));
+  const tOk = T.every((t) => !isNaN(t)) && T[T.length - 1] > T[0];   // real calendar spacing
+  const X = (i) => M.l + (tOk ? (T[i] - T[0]) / (T[T.length - 1] - T[0]) : i / (series.length - 1)) * pw;
+  const Y = (v) => base - ((Math.max(v, minV) - minV) / (maxV - minV)) * ph;
   const pts = saved.map((v, i) => [X(i), Y(v)]);
   const ppts = paid.map((v, i) => [X(i), Y(v)]);
   const avg = saved.reduce((a, b) => a + b, 0) / saved.length;
@@ -1943,9 +2067,9 @@ function drawLine() {
     pts.forEach((p, i) => svg.appendChild(el("path", { d: Rough.ellipse(p[0], p[1], 9, 9, { seed: 740 + i, roughness: 1.1 }), fill: i === pts.length - 1 ? C.gold : C.paper2, stroke: C.ink, "stroke-width": 1.8 })));
   }
   if (flags.paid) {
-    svg.appendChild(el("path", { d: Rough.path(ppts, { seed: 741, roughness: 1.2, bowing: 1.5 }), fill: "none", stroke: C.brown, "stroke-width": 2.2, "stroke-dasharray": "3 5" }));
+    svg.appendChild(el("path", { d: Rough.path(ppts, { seed: 741, roughness: 1.2, bowing: 1.5 }), fill: "none", stroke: C.brown, "stroke-width": 2.6 }));
   }
-  series.forEach((d, i) => { if (i % 2 === 0 || i === series.length - 1) txt(svg, X(i), base + 21, (d.day || "").slice(5), { size: 11.5, anchor: "middle" }); });
+  series.forEach((d, i) => { if (series.length <= 10 || i % 2 === 0 || i === series.length - 1) txt(svg, X(i), base + 21, (d.day || "").slice(5), { size: 11.5, anchor: "middle" }); });
 
   if (flags.avoided) {
     const mi = saved.indexOf(Math.max.apply(null, saved));
@@ -1953,22 +2077,24 @@ function drawLine() {
     svg.appendChild(el("path", { d: Rough.ellipse(last[0], last[1], 34, 30, { seed: 760, roughness: 1.8, bowing: 3 }), fill: "none", stroke: C.magenta, "stroke-width": 2.6 }));
     svg.appendChild(el("path", { d: "M" + (last[0] + 14) + " " + (last[1] - 12) + " C " + (last[0] + 44) + " " + (last[1] - 38) + ", " + (last[0] + 58) + " " + (last[1] - 30) + ", " + (last[0] + 62) + " " + (last[1] - 26), fill: "none", stroke: C.ink, "stroke-width": 2 }));
     svg.appendChild(el("path", { d: "M" + (last[0] + 62) + " " + (last[1] - 31) + " L" + (last[0] + 66) + " " + (last[1] - 24) + " L" + (last[0] + 58) + " " + (last[1] - 25) + " Z", fill: C.ink }));
-    txt(svg, last[0] + 52, last[1] - 38, "record! " + compact(Math.max.apply(null, saved)), { size: 14, anchor: "middle", weight: "700", fill: C.magenta, halo: true, rotate: -4 });
+    txt(svg, last[0] + 52, last[1] - 38, "peak " + compact(Math.max.apply(null, saved)) + " · " + String(series[mi].day || "").slice(5), { size: 14, anchor: "middle", weight: "700", fill: C.magenta, halo: true, rotate: -4 });
   }
 
   /* legend — click a label to show / hide a series */
   const legend = (label, x, key, color) => {
     const g = el("g", {});
     g.style.cursor = "pointer";
-    const t = el("text", { x: x, y: 18, "font-size": 12, fill: color, "font-weight": "700", opacity: flags[key] ? 1 : 0.32 });
+    g.appendChild(el("rect", { x: x, y: 10, width: 14, height: 5, rx: 2, fill: color, opacity: flags[key] ? 1 : 0.32 }));
+    const t = el("text", { x: x + 20, y: 18, "font-size": 12, fill: color, "font-weight": "700", opacity: flags[key] ? 1 : 0.32 });
     t.textContent = label;
     g.appendChild(t);
-    g.appendChild(el("rect", { x: x - 5, y: 4, width: label.length * 7.4 + 10, height: 19, fill: "none", "pointer-events": "all" }));
+    g.appendChild(el("rect", { x: x - 5, y: 4, width: label.length * 7.4 + 32, height: 19, fill: "none", "pointer-events": "all" }));
     g.addEventListener("click", (ev) => { ev.stopPropagation(); flags[key] = !flags[key]; drawLine(); });
     svg.appendChild(g);
   };
   legend("tokens avoided", M.l, "avoided", C.lava);
-  legend("tokens paid", M.l + 92, "paid", C.brown);
+  legend("tokens paid", M.l + 130, "paid", C.brown);
+  txt(svg, M.l + pw, 18, "tokens per day · UTC", { size: 11.5, anchor: "end", soft: true });
 
   /* hover — nearest day, crosshair, values; click to pin */
   const shown = flags.avoided ? pts : ppts;
@@ -2016,7 +2142,7 @@ function drawGauge() {
   const tp = [CX + Math.cos(tA) * (R + 17), CY - Math.sin(tA) * (R + 17)];
   const tp2 = [CX + Math.cos(tA) * (R - 17), CY - Math.sin(tA) * (R - 17)];
   svg.appendChild(el("path", { d: Rough.line(tp[0], tp[1], tp2[0], tp2[1], { seed: 12, roughness: 1 }), fill: "none", stroke: C.ink, "stroke-width": 2.6 }));
-  txt(svg, tp2[0], tp2[1] - 8, thr + "%", { size: 12, anchor: "middle", weight: "700" });
+  txt(svg, tp[0] + Math.cos(tA) * 8, tp[1] - Math.sin(tA) * 8 - 2, thr + "% target", { size: 12, anchor: "end", weight: "700", halo: true });
   // value arc
   const vA = A0 + (A1 - A0) * clamp(gain / 100, 0, 1);
   svg.appendChild(el("path", {
@@ -2098,15 +2224,66 @@ function drawBars() {
   const snap = state.snap;
   while (svg.firstChild) svg.removeChild(svg.firstChild);
   if (!snap) return;
+  const rows = (snap.tables.cache_top || []).slice(0, 8);
+  const W = 460, H = 400, M = { l: 116, r: 46, t: 52, b: 50 };
+  const pw = W - M.l - M.r, ph = H - M.t - M.b;
+  if (!rows.length) { txt(svg, W / 2, H / 2, "cache is empty", { size: 14, anchor: "middle", soft: true }); return; }
+  const maxV = Math.max(1, ...rows.map((r) => r.access_count || 0));
+  const tickStep = Math.max(1, niceStep(maxV, 5));
+  const niceMax = Math.max(tickStep, Math.ceil(maxV / tickStep) * tickStep);
+  const total = rows.reduce((a, r) => a + (r.access_count || 0), 0);
+  const rh = ph / rows.length, bh = Math.min(28, rh * 0.62);
+  const X = (v) => M.l + (v / niceMax) * pw;
+  txt(svg, 16, 20, "Cache hits served per stored prompt", { size: 13, weight: "700" });
+  txt(svg, 16, 38, "top " + rows.length + " entries · " + num(total) + " reuses in total · click a row to filter the table", { size: 11, soft: true });
+  for (let g = 0; g * tickStep <= niceMax; g++) {
+    const v = g * tickStep, x = X(v);
+    svg.appendChild(el("path", { d: Rough.line(x, M.t - 4, x, M.t + ph, { seed: 900 + g, roughness: 1, bowing: 1 }), fill: "none", stroke: C.border, "stroke-width": 1.3 }));
+    txt(svg, x, M.t + ph + 17, String(v), { size: 11, anchor: "middle", soft: true });
+  }
+  txt(svg, M.l + pw / 2, H - 8, "reuses = cache hits served by this entry", { size: 11, anchor: "middle", soft: true });
+  svg.appendChild(el("path", { d: Rough.line(M.l, M.t - 4, M.l, M.t + ph, { seed: 99, roughness: 1.1 }), fill: "none", stroke: C.ink, "stroke-width": 2.6 }));
+  rows.forEach((r, i) => {
+    const v = r.access_count || 0, key = String(r.key || "");
+    const y = M.t + i * rh + (rh - bh) / 2, w = Math.max(4, X(v) - M.l);
+    const g = el("g", {});
+    g.style.cursor = "pointer";
+    if (state.cacheSel === key) g.appendChild(el("rect", { x: 6, y: y - 6, width: W - 12, height: bh + 12, rx: 8, fill: C.sand, opacity: 0.5 }));
+    sketch(g, "M" + M.l + " " + y + " h" + w + " v" + bh + " h" + (-w) + " Z", { fill: heat(0.35 + 0.6 * (v / maxV)), tint: 0.32, angle: 45, gap: 5, weight: 2, sw: 2 });
+    txt(g, M.l - 8, y + bh / 2 - 1, String(r.model || "model").slice(0, 15), { size: 11.5, anchor: "end", weight: "700" });
+    txt(g, M.l - 8, y + bh / 2 + 12, "#" + key.slice(0, 10), { size: 10, anchor: "end", soft: true });
+    txt(g, M.l + w + 8, y + bh / 2 + 5, num(v), { size: 13.5, weight: "700" });
+    g.appendChild(el("rect", { x: 0, y: M.t + i * rh, width: W, height: rh, fill: "none", "pointer-events": "all" }));
+    const html = tipTitle(String(r.model || "model")) + tipRow("reuses", num(v)) + tipRow("share of top " + rows.length, total ? (v / total * 100).toFixed(0) + " %" : "—") +
+      tipRow("hash", "#" + key.slice(0, 16)) + tipRow("provider", String(r.provider || "—")) + tipRow("last access", String(r.last_accessed || "—")) + tipNote("click to filter the table");
+    g.addEventListener("pointermove", (ev) => tipShow(html, ev));
+    g.addEventListener("pointerleave", tipHide);
+    g.addEventListener("click", () => {
+      state.cacheSel = state.cacheSel === key ? "" : key;
+      const box = $("#cache-search");
+      if (box) { box.value = state.cacheSel ? key.slice(0, 12) : ""; box.dispatchEvent(new Event("input", { bubbles: true })); }
+      drawBars();
+    });
+    svg.appendChild(g);
+  });
+}
+/* superseded vertical bars, kept commented for reference, safe to delete
+function drawBarsVertical() {
+  const svg = $("#ch-bars");
+  const snap = state.snap;
+  while (svg.firstChild) svg.removeChild(svg.firstChild);
+  if (!snap) return;
   const rows = (snap.tables.cache_top || []).slice(0, 6);
   const W = 460, H = 400, M = { l: 52, r: 18, t: 30, b: 62 };
   const pw = W - M.l - M.r, ph = H - M.t - M.b;
   if (!rows.length) { txt(svg, W / 2, H / 2, "cache is empty", { size: 14, anchor: "middle", soft: true }); return; }
   const maxV = Math.max(1, ...rows.map((r) => r.access_count || 0));
-  const niceMax = Math.ceil(maxV / 50) * 50;
+  const tickStep = Math.max(1, niceStep(maxV, 4));   // integer ticks, scaled to the real data
+  const niceMax = Math.max(tickStep, Math.ceil(maxV / tickStep) * tickStep);
+  const nTicks = Math.round(niceMax / tickStep);
   const base = M.t + ph, step = pw / rows.length, bw = step * 0.46, OFF = 11;
-  for (let g = 0; g <= 3; g++) {
-    const v = (niceMax / 3) * g, y = base - (v / niceMax) * ph;
+  for (let g = 0; g <= nTicks; g++) {
+    const v = tickStep * g, y = base - (v / niceMax) * ph;
     if (g > 0) svg.appendChild(el("path", { d: Rough.line(M.l - 5, y, M.l + pw, y, { seed: 900 + g, roughness: 1.2, bowing: 2 }), fill: "none", stroke: C.border, "stroke-width": 1.4 }));
     txt(svg, M.l - 8, y + 4, compact(Math.round(v)), { size: 11, anchor: "end", soft: true });
   }
@@ -2127,6 +2304,7 @@ function drawBars() {
     svg.appendChild(g);
   });
   txt(svg, M.l, 18, "reuses per cache entry", { size: 11.5, soft: true });
+  txt(svg, M.l + pw / 2, H - 6, "top " + rows.length + " entries · model / hash prefix", { size: 11, anchor: "middle", soft: true });
   const bars = rows.map((r, i) => {
     const h = ((r.access_count || 0) / niceMax) * ph, y = base - h;
     const x = M.l + step * i + (step - bw) / 2;
@@ -2142,6 +2320,8 @@ function drawBars() {
       tipNote("click to pin");
   }, { radius: 30 });
 }
+
+*/
 
 /* ══ 05 · tools bars ════════════════════════════════════════ */
 function drawTools() {
