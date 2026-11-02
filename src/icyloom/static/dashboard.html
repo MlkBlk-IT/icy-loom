@@ -880,10 +880,52 @@ footer { border-top: 3px dashed var(--ink); margin-top: 0; flex: 0 0 auto; backg
         </div>
       </section>
 
+      <!-- ══ VIEW · GATEWAY V2 ══════════════════════════════════ -->
+      <section class="view" id="view-gateway">
+        <div class="sect">
+          <span class="num" style="background:var(--mango)">07</span>
+          <div>
+            <h2>Gateway V2</h2>
+            <svg class="rule" viewBox="0 0 260 12" preserveAspectRatio="none" aria-hidden="true">
+              <path d="M3 7 C 30 1, 55 11, 82 6 S 135 2, 162 8 S 215 3, 257 6" fill="none" stroke="#0fb5a6" stroke-width="4" stroke-linecap="round"/>
+            </svg>
+            <p class="sub">Ce que le gateway expose, ce qu'il refuse : registre d'outils, permissions, trace d'audit.</p>
+          </div>
+        </div>
+        <div class="grid">
+          <div class="card c6">
+            <div class="phead"><h3>Registre d'outils</h3><span class="hint" id="gw-reg-when">—</span></div>
+            <div class="row-line"><span>Outils indexés</span><b id="gw-tools">—</b></div>
+            <div class="row-line"><span>Serveurs descendants</span><b id="gw-servers">—</b></div>
+            <div class="row-line"><span>Sans effet de bord</span><b id="gw-ro">—</b></div>
+            <div class="row-line"><span>Écriture</span><b id="gw-wr">—</b></div>
+            <div class="row-line"><span>Destructifs (approbation exigée)</span><b id="gw-de">—</b></div>
+            <div class="tbl-wrap"><table class="sk" id="tbl-gw-servers"></table></div>
+          </div>
+          <div class="card c6">
+            <div class="phead"><h3>Politique & tokens</h3><span class="hint">live</span></div>
+            <div class="row-line"><span>Rôle par défaut</span><b id="gw-role">—</b></div>
+            <div class="row-line"><span>Environnement</span><b id="gw-env">—</b></div>
+            <div class="row-line"><span>Racines projet</span><b id="gw-roots">—</b></div>
+            <div class="row-line"><span>Tokens — schémas d'outils</span><b id="gw-t-schema">—</b></div>
+            <div class="row-line"><span>Tokens — résultats d'outils</span><b id="gw-t-result">—</b></div>
+            <div class="row-line"><span>Tokens — cache lu</span><b id="gw-t-read">—</b></div>
+            <div class="row-line"><span>Tokens — cache écrit</span><b id="gw-t-write">—</b></div>
+            <div class="row-line"><span>Économies mesurées (audit)</span><b id="gw-saved">—</b></div>
+          </div>
+        </div>
+        <div class="grid" style="margin-top:16px">
+          <div class="card c12">
+            <div class="phead"><h3>Décisions d'audit</h3><span class="hint">qui, quoi, quelle décision</span></div>
+            <div class="tbl-wrap"><table class="sk" id="tbl-gw-audit"></table></div>
+          </div>
+        </div>
+      </section>
+
       <!-- ══ VIEW · GUIDE ═══════════════════════════════════ -->
       <section class="view" id="view-guide">
         <div class="sect">
-          <span class="num" style="background:var(--ink);color:var(--paper2)">07</span>
+          <span class="num" style="background:var(--ink);color:var(--paper2)">08</span>
           <div>
             <h2>Guide — how to read this console</h2>
             <svg class="rule" viewBox="0 0 260 12" preserveAspectRatio="none" aria-hidden="true">
@@ -1989,6 +2031,7 @@ const VIEWS = [
   { id: "context", label: "Context", title: "Context drawer", sub: "Sessions, sources, anchors, invariants" },
   { id: "tools", label: "Tools", title: "Tool relay", sub: "Downstream MCP servers and their cache" },
   { id: "audit", label: "Audit", title: "Audit live", sub: "The journal, as it lands" },
+  { id: "gateway", label: "Gateway V2", title: "Gateway V2", sub: "Tool registry, permissions and audit trail" },
   { id: "guide", label: "Guide", title: "Guide", sub: "How to read this console" },
   { id: "help", label: "Help", title: "Help", sub: "Shortcuts, links and the fine print" },
 ];
@@ -2251,6 +2294,55 @@ function renderCache(snap) {
       tr.appendChild(htm("td", "num", num((row.prompt_tokens || 0) + (row.completion_tokens || 0))));
     },
     (row) => !f || (row.key + " " + row.model + " " + row.provider).toLowerCase().includes(f));
+}
+
+function renderGateway(snap) {
+  const gw = snap.gateway || {};
+  const reg = gw.registry || {};
+  const pol = gw.policy || {};
+  const aud = gw.audit || {};
+  const cat = gw.tokens ? (gw.tokens.by_category || {}) : {};
+  const eff = {};
+  (reg.by_side_effects || []).forEach((r) => { eff[r.side_effects] = r.n; });
+  $("#gw-reg-when").textContent = reg.tools ? num(reg.tools) + " tools indexed" : "—";
+  $("#gw-tools").textContent = num(reg.tools);
+  $("#gw-servers").textContent = num(reg.servers);
+  $("#gw-ro").textContent = num(eff.none || 0);
+  $("#gw-wr").textContent = num(eff.write || 0);
+  $("#gw-de").textContent = num(eff.destructive || 0);
+  $("#gw-role").textContent = pol.default_role || "—";
+  $("#gw-env").textContent = pol.environment || "—";
+  const roots = pol.project_roots || [];
+  $("#gw-roots").textContent = roots.length ? roots.join(", ") : "—";
+  $("#gw-t-schema").textContent = num(cat.tool_schemas);
+  $("#gw-t-result").textContent = num(cat.tool_results);
+  $("#gw-t-read").textContent = num(cat.cache_read);
+  $("#gw-t-write").textContent = num(cat.cache_write);
+  $("#gw-saved").textContent = num(aud.tokens_saved);
+  table("tbl-gw-servers", ["Server", "Tools", "Top intents", "Calls"],
+    reg.by_server || [],
+    (row, tr) => {
+      tr.appendChild(htm("td", "", row.server || "—"));
+      tr.appendChild(htm("td", "num", num(row.n)));
+      tr.appendChild(htm("td", "", (reg.by_intent || []).slice(0, 3)
+        .map((r) => r.intent + " " + r.n).join(", ") || "—"));
+      tr.appendChild(htm("td", "num", num((reg.top_tools || [])
+        .filter((t) => t.server === row.server)
+        .reduce((a, t) => a + (t.calls || 0), 0))));
+    });
+  table("tbl-gw-audit", ["Time", "Actor", "Role", "Server.Tool", "Decision", "Reason", "Saved"],
+    aud.recent || [],
+    (row, tr) => {
+      tr.appendChild(htm("td", "mono", String(row.ts || "").slice(5, 19)));
+      tr.appendChild(htm("td", "", row.actor || "—"));
+      tr.appendChild(htm("td", "", row.role || "—"));
+      tr.appendChild(htm("td", "mono", (row.server ? row.server + "." : "") + (row.tool || "—")));
+      const td = htm("td", "");
+      td.innerHTML = tag(row.decision || "—", row.decision === "allow" ? "hit" : "miss");
+      tr.appendChild(td);
+      tr.appendChild(htm("td", "", row.reason || "—"));
+      tr.appendChild(htm("td", "num", num(row.tokens_saved)));
+    });
 }
 
 function renderAudit(snap) {
@@ -2518,6 +2610,9 @@ const VIEW_RENDERERS = {
   audit: (snap) => {
     renderAudit(snap);
   },
+  gateway: (snap) => {
+    renderGateway(snap);
+  },
   guide: (snap) => {
     drawFlow(); renderGuideMini(snap);
   },
@@ -2543,6 +2638,7 @@ function updateNavCounts(snap) {
     context: num(snap.context.sources),
     tools: num(calls ? calls.n : 0),
     audit: num((snap.recent.llm || []).length + (snap.recent.tools || []).length),
+    gateway: num(snap.gateway ? snap.gateway.registry.tools : 0),
     guide: "13",
   };
   document.querySelectorAll("[data-cnt]").forEach((node) => {

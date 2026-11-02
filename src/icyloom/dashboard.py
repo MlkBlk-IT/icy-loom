@@ -363,6 +363,68 @@ def _surface(db: Database, days: int = 14) -> dict[str, Any]:
 # ---------------------------------------------------------------------------
 # agrégat principal
 # ---------------------------------------------------------------------------
+def _gateway(config: Config, db: Database) -> dict[str, Any]:
+    """Bloc V2 : registre d'outils, permissions, audit, tokens par catégorie.
+
+    Le dashboard V1 ne parle que d'économie (cache, ledger). La V2 ajoute ce
+    que le gateway **expose** (registre) et ce qu'il **refuse** (politique,
+    audit).
+    """
+    from .policy import PolicyEngine
+    from .tokens import CATEGORIES
+
+    with db.cursor(commit=False) as cur:
+        by_server = _rows(cur, "SELECT server, COUNT(*) AS n FROM tool_registry"
+                                " GROUP BY server ORDER BY n DESC")
+        by_intent = _rows(cur, "SELECT intent, COUNT(*) AS n FROM tool_registry"
+                               " GROUP BY intent ORDER BY n DESC")
+        by_effect = _rows(cur, "SELECT side_effects, COUNT(*) AS n FROM tool_registry"
+                               " GROUP BY side_effects ORDER BY n DESC")
+        top_tools = _rows(cur, "SELECT server, tool, calls, avg_latency_ms FROM tool_registry"
+                                " WHERE calls > 0 ORDER BY calls DESC LIMIT 12")
+        total = int(cur.execute("SELECT COUNT(*) FROM tool_registry").fetchone()[0])
+        audit_total = int(cur.execute("SELECT COUNT(*) FROM tool_audit").fetchone()[0])
+        audit_by_decision = _rows(cur, "SELECT decision, COUNT(*) AS n FROM tool_audit"
+                                       " GROUP BY decision")
+        audit_saved = int(cur.execute(
+            "SELECT COALESCE(SUM(tokens_saved),0) FROM tool_audit").fetchone()[0])
+        audit_recent = _rows(cur, "SELECT ts, actor, role, intent, server, tool, decision,"
+                                  " reason, compacted, tokens_saved FROM tool_audit"
+                                  " ORDER BY id DESC LIMIT 15")
+        token_rows = _rows(cur, "SELECT kind, COALESCE(SUM(tokens_in),0) AS tokens"
+                                " FROM ledger_entries WHERE kind LIKE 'token_%'"
+                                " GROUP BY kind")
+    categories = {name: 0 for name in CATEGORIES}
+    for row in token_rows:
+        categories[row["kind"][len("token_"):]] = int(row["tokens"])
+    total_tokens = sum(categories.values())
+    policy = PolicyEngine(config.policy).describe()
+    return {
+        "registry": {
+            "tools": total,
+            "servers": len(by_server),
+            "by_server": by_server,
+            "by_intent": by_intent,
+            "by_side_effects": by_effect,
+            "top_tools": top_tools,
+        },
+        "policy": policy,
+        "audit": {
+            "entries": audit_total,
+            "tokens_saved": audit_saved,
+            "by_decision": audit_by_decision,
+            "recent": audit_recent,
+        },
+        "tokens": {
+            "total": total_tokens,
+            "by_category": categories,
+            "share_pct": {name: (round(100.0 * value / total_tokens, 2)
+                                 if total_tokens else 0.0)
+                          for name, value in categories.items()},
+        },
+    }
+
+
 def snapshot(config: Config, hours: int = 24, days: int = 14) -> dict[str, Any]:
     """Construit l'instantané complet affiché par le dashboard."""
     hours = max(1, min(int(hours), 720))
@@ -613,6 +675,7 @@ def snapshot(config: Config, hours: int = 24, days: int = 14) -> dict[str, Any]:
         },
         "context": ctx,
         "recent": {"llm": recent_llm, "tools": recent_tools},
+        "gateway": _gateway(config, db),
         "db": db_info,
     }
 
