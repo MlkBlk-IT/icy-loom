@@ -109,9 +109,12 @@ def test_A3_registry_indexes_every_active_server() -> None:
             listed.append(name)
             return {"ok": True}
 
+    # La vraie configuration est une LISTE de ToolServerConfig : la boucle
+    # d'indexation doit suivre cette forme (un dict casserait le serveur MCP).
+    config_list = list(servers.values())
     with pytest.raises((asyncio.TimeoutError, TimeoutError)):
         asyncio.run(asyncio.wait_for(
-            refresh_catalog(FakeProxy(), servers, interval=0.01), timeout=0.5))
+            refresh_catalog(FakeProxy(), config_list, interval=0.01), timeout=0.5))
     assert "sqlite" in listed, "le serveur sqlite actif n'est pas indexe"
     assert "filesystem" in listed
     assert "everything" not in listed, "un serveur desactive ne doit pas etre indexe"

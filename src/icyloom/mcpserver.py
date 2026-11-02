@@ -72,13 +72,16 @@ def _needs_confirm(confirm: bool, action: str) -> dict[str, Any] | None:
     }
 
 
-def active_servers(servers: dict[str, ToolServerConfig]) -> list[str]:
+def active_servers(servers: Any) -> list[str]:
     """Serveurs d'outils actifs : le registre doit tous les indexer.
 
-    Un serveur désactivé est exclu (et c'est volontaire : le registre ne
-    doit montrer que ce qui répond).
+    ``tool_proxy.servers`` est une LISTE de configurations ; un dictionnaire
+    (nom -> configuration) est aussi accepté. Un serveur désactivé est exclu :
+    le registre ne doit montrer que ce qui répond.
     """
-    return [name for name, srv in servers.items() if srv.enabled]
+    if isinstance(servers, dict):
+        return [name for name, srv in servers.items() if srv.enabled]
+    return [srv.name for srv in servers if srv.enabled]
 
 
 async def refresh_catalog(tools: ToolProxy, servers: dict[str, ToolServerConfig],
