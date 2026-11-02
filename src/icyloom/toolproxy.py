@@ -32,7 +32,7 @@ from typing import Any, Iterable
 
 from mcp import ClientSession, StdioServerParameters
 from mcp.client.stdio import stdio_client
-from mcp.types import ListRootsResult
+from mcp.types import ListRootsResult, Root
 
 import yaml
 
@@ -53,6 +53,21 @@ log = logging.getLogger("icyloom.toolproxy")
 def _stamp() -> str:
     """Horodatage compact pour nommer une sauvegarde de configuration."""
     return datetime.now().strftime("%Y%m%d_%H%M%S")
+
+
+def _root_uri(path: str) -> str:
+    """Chemin Windows -> URI de racine MCP (``D:\\`` -> ``file:///D:/``)."""
+    raw = str(path or "").strip()
+    if not raw:
+        return ""
+    if raw.startswith("file://"):
+        return raw
+    text = raw.replace("\\", "/")
+    if not text.endswith("/"):
+        text += "/"
+    if re.match(r"^[A-Za-z]:/$", text):
+        return "file:///" + text
+    return "file://" + text if text.startswith("/") else "file:///" + text
 
 #: Indices de nom d'outil considérés comme « d'écriture » : leur résultat ne
 #: doit jamais être rejoué depuis le cache.
@@ -349,8 +364,33 @@ class ToolProxy:
         Le SDK appelle ce callback avec le contexte de requête et attend un
         ``ListRootsResult`` : on l'accepte sans le nommer, pour rester
         compatible d'une version à l'autre.
+
+        Le client (Claude Desktop, MCode...) ne déclare que ses propres
+        dossiers de travail. Un serveur de fichiers MCP limite alors son
+        accès à ces seuls dossiers : il refuse ``D:\\`` si le client n'a rien
+        déclaré. Les racines **accordées par la configuration**
+        (``policy.project_roots``) sont donc transmises **en plus** des
+        racines du client — sans quoi la policy du gateway autorise une
+        opération que le serveur descendant, plus strict, refuse.
         """
-        return ListRootsResult(roots=list(self._client_roots))
+        seen: set[str] = set()
+        roots: list[Any] = []
+        for root in list(self._client_roots) + list(self._granted_roots()):
+            uri = str(getattr(root, "uri", "") or "")
+            if not uri or uri in seen:
+                continue
+            seen.add(uri)
+            roots.append(root)
+        return ListRootsResult(roots=roots)
+
+    def _granted_roots(self) -> list[Any]:
+        """Racines accordées par la configuration (``policy.project_roots``)."""
+        roots: list[Any] = []
+        for raw in list(getattr(self.config.policy, "project_roots", []) or []):
+            uri = _root_uri(str(raw))
+            if uri:
+                roots.append(Root(uri=uri, name=str(raw)))
+        return roots
 
     def _epoch_of(self, server: str) -> str:
         return f"{self._boot}.{self._epoch.get(server, 0)}"
