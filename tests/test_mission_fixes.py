@@ -84,3 +84,42 @@ def test_A2_dead_server_is_not_relaunched(config) -> None:
     assert errors == 1, "un seul tool_error pour un serveur mort"
 
 
+# ---------------------------------------------------------------- B · cache outils
+def test_B_cache_allowlist_is_read_only() -> None:
+    cfg = yaml.safe_load(YAML_PATH.read_text(encoding="utf-8"))
+    servers = {s["name"]: s for s in cfg["tool_proxy"]["servers"]}
+    allow = servers["filesystem"].get("cache_tools") or {}
+    assert allow, "l'allowlist du cache d'outils est vide : le cache ne sert jamais"
+    for tool in allow:
+        risky = ("write", "create", "delete", "move", "edit", "remove", "put")
+        assert not any(hint in tool.lower() for hint in risky), \
+            f"{tool} n'est pas une lecture idempotente"
+    # TTL court : une écriture hors du relais ne change pas l'epoch.
+    assert servers["filesystem"]["ttl_seconds"] <= 900
+
+
+def test_B_cache_is_deny_by_default(config) -> None:
+    proxy = ToolProxy(config)
+    closed = ToolServerConfig(name="fs", command="npx", args=[], cache_enabled=True)
+    assert proxy._cache_allowed(closed, "read_text_file") is False
+    opened = ToolServerConfig(name="fs", command="npx", args=[], cache_enabled=True,
+                              cache_tools={"read_text_file": True})
+    assert proxy._cache_allowed(opened, "read_text_file") is True
+    assert proxy._cache_allowed(opened, "write_file") is False
+
+
+def test_B_epoch_invalidates_cached_reads() -> None:
+    before = cache_key("fs", "read_text_file", {"path": "a.txt"}, "boot.0")
+    after = cache_key("fs", "read_text_file", {"path": "a.txt"}, "boot.1")
+    assert before != after, "l'epoch doit entrer dans la clé de cache"
+
+
+def test_B_write_bumps_the_epoch(config) -> None:
+    proxy = ToolProxy(config)
+    proxy._servers["fs"] = ToolServerConfig(name="fs", command="npx", args=[],
+                                            cache_enabled=True)
+    before = proxy._epoch_of("fs")
+    proxy._bump_epoch("fs")
+    assert proxy._epoch_of("fs") != before
+
+

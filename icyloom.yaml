@@ -75,7 +75,16 @@ tool_proxy:
     - 'D:\'
     description: Fichiers locaux controles (memes racines que Claude Desktop)
     cache_enabled: true
-    ttl_seconds: 3600
+    # TTL court : l'epoch invalide le cache a chaque ecriture RELAYEE, mais
+    # une ecriture faite hors du relais (editeur, autre process) ne change pas
+    # l'epoch. 5 min = fenetre maximale de perimption.
+    ttl_seconds: 300
+    # Allowlist stricte : lectures idempotentes seulement (deny-by-default).
+    cache_tools:
+      read_text_file: true
+      read_file: true
+      get_file_info: true
+      list_directory: true
     enabled: true
   - name: chrome-devtools
     command: 'C:\Program Files\nodejs\node.exe'
