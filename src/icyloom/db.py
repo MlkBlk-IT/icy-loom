@@ -323,8 +323,10 @@ OPTIONAL_SCHEMA: tuple[str, ...] = (
 #:
 #: La vue est ``CREATE VIEW IF NOT EXISTS`` : elle n'écrit rien, elle ne peut
 #: donc jamais perdre ni altérer la donnée d'origine.
-VIEWS: tuple[str, ...] = (
-    """
+#: Vues SQL. Le nom sert à recréer la vue quand sa définition change : une
+#: vue ``CREATE VIEW IF NOT EXISTS`` ne se met jamais à jour toute seule.
+VIEWS: tuple[tuple[str, str], ...] = (
+    ("v_token_ledger", """
     CREATE VIEW IF NOT EXISTS v_token_ledger AS
     -- 1. CACHE LLM : un « hit » n'envoie rien à l'amont (tokens évités),
     --    un « miss » paie les tokens réels remontés par l'amont.
@@ -349,7 +351,21 @@ VIEWS: tuple[str, ...] = (
            0                             AS saved_latency_ms
     FROM context_sources
     UNION ALL
-    -- 3. TAX D'OUTILS : le cache d'outils évite de rejouer l'appel (latence).
+    -- 3. TAX D'OUTILS : la compression du résultat retire des tokens de
+    --    l'historique du modèle. `tokens_saved` y est exprimé en tokens RÉELS
+    --    (compteur tiktoken) sur les lignes écrites depuis la correction ;
+    --    `saved_chars IS NOT NULL` les distingue des lignes antérieures,
+    --    qui mesuraient des CARACTÈRES et sont comptées à part.
+    SELECT 'tools'                      AS domain,
+           ts                            AS ts,
+           COALESCE(tokens_in, 0)        AS tokens_paid,
+           COALESCE(tokens_saved, 0)     AS tokens_saved,
+           COALESCE(latency_ms, 0)       AS latency_ms,
+           0                             AS saved_latency_ms
+    FROM tool_audit
+    WHERE decision = 'allow' AND COALESCE(tokens_saved, 0) > 0
+      AND saved_chars IS NOT NULL
+    UNION ALL
     SELECT 'tools'                      AS domain,
            ts                            AS ts,
            0                             AS tokens_paid,
@@ -358,7 +374,7 @@ VIEWS: tuple[str, ...] = (
            COALESCE(saved_latency_ms, 0) AS saved_latency_ms
     FROM tool_events
     WHERE kind = 'tool_hit'
-    """,
+    """),
 )
 
 #: Colonnes ajoutées après coup (migration additive, jamais de DROP).
@@ -371,6 +387,7 @@ ADDITIVE_COLUMNS: tuple[tuple[str, str, str], ...] = (
     ("cache_entries", "completion_tokens", "INTEGER"),
     ("tool_events", "args_hash", "TEXT"),
     ("tool_cache", "canon_key", "TEXT"),
+    ("tool_audit", "saved_chars", "INTEGER"),
 )
 
 #: Index qui dépendent de colonnes additives (exécutés après ADDITIVE_COLUMNS).
@@ -393,6 +410,15 @@ POST_MIGRATION_INDEXES: tuple[str, ...] = (
     " ON tool_events(substr(ts, 1, 10), substr(ts, 12, 2), ts, kind, latency_ms,"
     " saved_latency_ms)",
 )
+
+
+def _same_view(stored: str, expected: str) -> bool:
+    """La vue en base est-elle déjà celle qu'on veut ?"""
+
+    def norm(sql: str) -> str:
+        return " ".join((sql or "").replace("IF NOT EXISTS", " ").split()).upper()
+
+    return norm(stored) == norm(expected)
 
 
 class Database:
@@ -455,12 +481,22 @@ class Database:
                 except sqlite3.OperationalError:
                     # FTS5 absent : la sélection garde son repli lexical.
                     break
-            for statement in VIEWS:
-                cur.execute(statement)
+            # Les colonnes additives AVANT les vues : une vue qui référence
+            # `tool_audit.saved_chars` doit trouver la colonne.
             for table, column, decl in ADDITIVE_COLUMNS:
                 existing = {r[1] for r in cur.execute(f"PRAGMA table_info({table})")}
                 if column not in existing:
                     cur.execute(f"ALTER TABLE {table} ADD COLUMN {column} {decl}")
+            for name, statement in VIEWS:
+                row = cur.execute(
+                    "SELECT sql FROM sqlite_master WHERE type='view' AND name=?",
+                    (name,)).fetchone()
+                if row is not None and _same_view(row[0], statement):
+                    continue
+                # Seule opération « destructive » du schéma : elle ne touche
+                # qu'une vue, jamais les tables.
+                cur.execute(f"DROP VIEW IF EXISTS {name}")
+                cur.execute(statement)
             # Index sur colonnes additives : créés APRES la migration, sinon une
             # base neuve plante (« no such column: canon_key »).
             for statement in POST_MIGRATION_INDEXES:

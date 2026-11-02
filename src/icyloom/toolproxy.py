@@ -619,7 +619,12 @@ class ToolProxy:
             log.warning("registre: catalogue de %s non enregistré (%s)", server, exc)
             return
         tokens = self.registry.schema_tokens(server).get(server, 0)
-        self.meter.record("tool_schemas", tokens, server=server)
+        # Le coût des schemas est mesuré UNE FOIS par serveur : le catalogue
+        # est rechargé périodiquement, il ne doit pas être recompté à chaque
+        # réindexation (243 lignes de mesure pour 188 outils).
+        if self._schema_tokens_seen.get(server) != tokens:
+            self._schema_tokens_seen[server] = tokens
+            self.meter.record("tool_schemas", tokens, server=server)
 
     def search_tools(self, query: str, server: str = "") -> dict[str, Any]:
         """Cherche un outil dans le registre (index lexical, score par intention).
@@ -862,7 +867,8 @@ class ToolProxy:
                           compacted=str(meta.get("kind", "")),
                           tokens_in=count_tokens(json.dumps(shown, ensure_ascii=False,
                                                            default=str)),
-                          tokens_saved=int(meta.get("saved_chars", 0)),
+                          tokens_saved=int(meta.get("saved_tokens", 0)),
+                          saved_chars=int(meta.get("saved_chars", 0)),
                           latency_ms=latency)
         return response
 

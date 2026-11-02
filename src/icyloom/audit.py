@@ -26,17 +26,24 @@ class AuditTrail:
                server: str = "", tool: str = "", args_hash: str = "",
                decision: str = "", reason: str = "", compacted: str = "",
                tokens_in: int = 0, tokens_out: int = 0, tokens_saved: int = 0,
-               latency_ms: int = 0, detail: str = "") -> None:
-        """Écrit une ligne d'audit (jamais bloquante pour l'appel en cours)."""
+               saved_chars: int = 0, latency_ms: int = 0, detail: str = "") -> None:
+        """Écrit une ligne d'audit (jamais bloquante pour l'appel en cours).
+
+        ``tokens_saved`` est désormais exprimé en **tokens réels** (compteur
+        tiktoken) ; ``saved_chars`` conserve la mesure en caractères. Les lignes
+        antérieures n'ont pas de ``saved_chars`` : leur ``tokens_saved`` est en
+        caractères et doit être compté à part.
+        """
         try:
             with self.db.transaction() as cur:
                 cur.execute(
                     "INSERT INTO tool_audit (ts,actor,role,intent,server,tool,args_hash,"
                     "decision,reason,compacted,tokens_in,tokens_out,tokens_saved,"
-                    "latency_ms,detail) VALUES (datetime('now'),?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
+                    "saved_chars,latency_ms,detail)"
+                    " VALUES (datetime('now'),?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
                     (actor, role, intent, server, tool, args_hash, decision, reason,
                      compacted, int(tokens_in), int(tokens_out), int(tokens_saved),
-                     int(latency_ms), detail),
+                     int(saved_chars), int(latency_ms), detail),
                 )
         except Exception:      # pragma: no cover - l'audit ne doit rien casser
             pass

@@ -18,6 +18,8 @@ import re
 from html.parser import HTMLParser
 from typing import Any
 
+from .tokenizer import count_tokens
+
 #: Clés de schéma retirées : redondantes ou coûteuses sans valeur d'exécution.
 DROPPED_SCHEMA_KEYS = ("title", "$schema", "$id", "examples", "x-codegen")
 
@@ -224,8 +226,11 @@ def compress_result(payload: Any, max_chars: int = 4000) -> tuple[str, dict[str,
             text = rendered
             meta["kind"] = "structured"
     meta["original_chars"] = len(text)
+    meta["original_tokens"] = count_tokens(text)
     if len(text) <= max_chars:
         meta["compressed_chars"] = len(text)
+        meta["compressed_tokens"] = count_tokens(text)
+        meta["saved_tokens"] = 0
         meta["sensitive"] = detect_sensitive(text)
         return text, meta
 
@@ -250,6 +255,8 @@ def compress_result(payload: Any, max_chars: int = 4000) -> tuple[str, dict[str,
     if len(text) > max_chars:
         text = text[:max_chars].rstrip() + "…"
     meta["compressed_chars"] = len(text)
+    meta["compressed_tokens"] = count_tokens(text)
+    meta["saved_tokens"] = max(0, meta["original_tokens"] - meta["compressed_tokens"])
     meta["truncated"] = True
     meta["sensitive"] = detect_sensitive(text)
     return text, meta

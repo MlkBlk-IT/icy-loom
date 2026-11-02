@@ -215,3 +215,80 @@ def test_F_version_has_a_single_source() -> None:
     assert "\nversion = \"2.0.0\"\n" not in text
 
 
+# ---------------------------------------------------------------- G · chiffres
+def test_G_saved_tokens_are_real_tokens() -> None:
+    text = "The quick brown fox jumps over the lazy dog. " * 300
+    out, meta = compress_result({"content": [text]}, 4000)
+    assert meta["truncated"] is True
+    assert meta["saved_tokens"] == meta["original_tokens"] - meta["compressed_tokens"]
+    # Un token vaut ~4 caractères : si le compteur mesurait des caractères,
+    # tokens et caractères seraient quasi égaux.
+    assert meta["original_tokens"] * 3 < meta["original_chars"]
+
+
+def test_G_unified_view_includes_tool_savings(config) -> None:
+    db = Database(config)
+    db.ensure_schema()
+    with db.transaction() as cur:
+        cur.execute(
+            "INSERT INTO tool_audit (ts,actor,role,intent,server,tool,args_hash,"
+            "decision,reason,compacted,tokens_in,tokens_out,tokens_saved,saved_chars,"
+            "latency_ms,detail) VALUES (datetime('now'),'a','operator','','fs',"
+            "'read_text_file','h','allow','policy_allow','structured',1000,0,400,1200,5,'')")
+        # Ligne LEGACY : `saved_chars` NULL => mesurée en caractères, elle ne
+        # doit pas entrer dans le domaine « tools » (qui compte des tokens).
+        cur.execute(
+            "INSERT INTO tool_audit (ts,actor,role,intent,server,tool,args_hash,"
+            "decision,reason,compacted,tokens_in,tokens_out,tokens_saved,"
+            "latency_ms,detail) VALUES (datetime('now'),'a','operator','','fs',"
+            "'read_file','h','allow','policy_allow','structured',1000,0,9999,5,'')")
+    with db.cursor(commit=False) as cur:
+        rows = cur.execute(
+            "SELECT domain, tokens_paid, tokens_saved FROM v_token_ledger").fetchall()
+    tools = [r for r in rows if r["domain"] == "tools"]
+    assert tools, "la vue unifiée ignore les gains d'outils"
+    assert tools[0]["tokens_saved"] == 400
+    assert tools[0]["tokens_paid"] == 1000
+    assert len(tools) == 1, "une ligne legacy (caractères) a fuité dans la vue"
+    # Le dashboard sépare les deux unités : tokens réels vs caractères legacy.
+    snap = snapshot(config, hours=24, days=14)
+    assert snap["gateway"]["audit"]["tokens_saved"] == 400
+    assert snap["gateway"]["audit"]["tokens_saved_legacy_chars"] == 9999
+
+
+def test_G_hit_rate_ignores_errors(config) -> None:
+    db = Database(config)
+    db.ensure_schema()
+    with db.transaction() as cur:
+        for kind in ("hit", "hit", "miss", "error"):
+            cur.execute(
+                "INSERT INTO llm_events (ts,kind,provider,model,stream,prompt_tokens,"
+                "completion_tokens,saved_prompt,saved_completion,latency_ms)"
+                " VALUES (datetime('now'),?,'p','m',0,0,0,10,0,5)", (kind,))
+    snap = snapshot(config, hours=24, days=14)
+    assert snap["kpi"]["errors"] == 1
+    # 2 hits / (2 hits + 1 miss) : l'erreur ne compte pas comme un miss.
+    assert snap["kpi"]["hit_rate_pct"] == pytest.approx(66.67, abs=0.01)
+    assert snap["kpi"]["hit_rate_pct_all"] == pytest.approx(50.0, abs=0.01)
+
+
+def test_G_audit_saved_uses_real_tokens(config) -> None:
+    db = Database(config)
+    db.ensure_schema()
+    with db.transaction() as cur:
+        # ligne nouvelle : tokens réels
+        cur.execute(
+            "INSERT INTO tool_audit (ts,actor,role,intent,server,tool,args_hash,"
+            "decision,reason,compacted,tokens_in,tokens_out,tokens_saved,saved_chars,"
+            "latency_ms,detail) VALUES (datetime('now'),'a','operator','','fs',"
+            "'read_text_file','h','allow','policy_allow','structured',1000,0,400,1200,5,'')")
+        # ligne legacy : le compteur mesurait des caractères. Une ligne
+        # antérieure à la migration n'a pas de `saved_chars` (NULL).
+        cur.execute(
+            "INSERT INTO tool_audit (ts,actor,role,intent,server,tool,args_hash,"
+            "decision,reason,compacted,tokens_in,tokens_out,tokens_saved,"
+            "latency_ms,detail) VALUES (datetime('now'),'a','operator','','fs',"
+            "'read_text_file','h','allow','policy_allow','structured',10,0,9000,5,'')")
+    snap = snapshot(config, hours=24, days=14)
+    assert snap["gateway"]["audit"]["tokens_saved"] == 400
+    assert snap["gateway"]["audit"]["tokens_saved_legacy_chars"] == 9000

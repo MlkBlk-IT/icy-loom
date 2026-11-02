@@ -224,6 +224,11 @@ def _registry(db: Database, days: int = 14) -> dict[str, Any]:
             " COALESCE(SUM(latency_ms), 0) AS latency,"
             " COALESCE(SUM(saved_latency_ms), 0) AS saved_latency"
             " FROM v_token_ledger GROUP BY domain ORDER BY saved DESC, paid DESC")
+        # Gain par domaine : le pourcentage global masque la répartition
+        # (le cache ne pèse que quelques pour cent du gain total).
+        for row in by_domain:
+            base = int(row["paid"]) + int(row["saved"])
+            row["gain_pct"] = round(int(row["saved"]) / base * 100.0, 2) if base else 0.0
         # La série journalière interroge les trois tables de base avec les
         # MÊMES expressions que la vue `v_token_ledger` : la vue matérialise
         # l'union complète (≈ 0,6 s), les tables seules profitent des index
@@ -243,6 +248,13 @@ def _registry(db: Database, days: int = 14) -> dict[str, Any]:
             " COALESCE(SUM(tokens_before - anchor_tokens), 0) AS saved"
             " FROM context_sources"
             " WHERE created_at >= strftime('%s', 'now', ?) GROUP BY day",
+            (f"-{int(days)} days",))
+        daily += _rows(cur,
+            "SELECT substr(ts, 1, 10) AS day, 'tools' AS domain,"
+            " COALESCE(SUM(tokens_in),0) AS paid,"
+            " COALESCE(SUM(tokens_saved),0) AS saved"
+            " FROM tool_audit WHERE decision='allow' AND COALESCE(tokens_saved,0) > 0"
+            " AND saved_chars IS NOT NULL AND ts >= datetime('now', ?) GROUP BY day",
             (f"-{int(days)} days",))
         daily += _rows(cur,
             "SELECT substr(ts, 1, 10) AS day, 'tools' AS domain,"
@@ -386,8 +398,16 @@ def _gateway(config: Config, db: Database) -> dict[str, Any]:
         audit_total = int(cur.execute("SELECT COUNT(*) FROM tool_audit").fetchone()[0])
         audit_by_decision = _rows(cur, "SELECT decision, COUNT(*) AS n FROM tool_audit"
                                        " GROUP BY decision")
+        # Tokens RÉELS (compteur tiktoken) : lignes écrites depuis la
+        # correction (`saved_chars` renseigné). Les lignes antérieures ont
+        # `saved_chars` NULL et mesuraient des CARACTÈRES : elles sont
+        # comptées à part, jamais mélangées.
         audit_saved = int(cur.execute(
-            "SELECT COALESCE(SUM(tokens_saved),0) FROM tool_audit").fetchone()[0])
+            "SELECT COALESCE(SUM(tokens_saved),0) FROM tool_audit"
+            " WHERE saved_chars IS NOT NULL").fetchone()[0])
+        audit_saved_legacy = int(cur.execute(
+            "SELECT COALESCE(SUM(tokens_saved),0) FROM tool_audit"
+            " WHERE saved_chars IS NULL").fetchone()[0])
         audit_recent = _rows(cur, "SELECT ts, actor, role, intent, server, tool, decision,"
                                   " reason, compacted, tokens_saved FROM tool_audit"
                                   " ORDER BY id DESC LIMIT 15")
@@ -412,6 +432,7 @@ def _gateway(config: Config, db: Database) -> dict[str, Any]:
         "audit": {
             "entries": audit_total,
             "tokens_saved": audit_saved,
+            "tokens_saved_legacy_chars": audit_saved_legacy,
             "by_decision": audit_by_decision,
             "recent": audit_recent,
         },
@@ -437,6 +458,7 @@ def snapshot(config: Config, hours: int = 24, days: int = 14) -> dict[str, Any]:
             "SELECT COUNT(*) AS calls,"
             " COALESCE(SUM(CASE WHEN kind='hit' THEN 1 ELSE 0 END), 0) AS hits,"
             " COALESCE(SUM(CASE WHEN kind='miss' THEN 1 ELSE 0 END), 0) AS misses,"
+            " COALESCE(SUM(CASE WHEN kind='error' THEN 1 ELSE 0 END), 0) AS errors,"
             " COALESCE(SUM(prompt_tokens), 0) AS prompt_tokens,"
             " COALESCE(SUM(completion_tokens), 0) AS completion_tokens,"
             " COALESCE(SUM(saved_prompt), 0) AS saved_prompt,"
@@ -565,7 +587,10 @@ def snapshot(config: Config, hours: int = 24, days: int = 14) -> dict[str, Any]:
         "calls": calls,
         "hits": hits,
         "misses": misses,
-        "hit_rate_pct": round(hits / calls * 100.0, 2) if calls else 0.0,
+        # Le taux de hit ignore les erreurs : une erreur n'est pas un miss.
+        "hit_rate_pct": round(hits / (hits + misses) * 100.0, 2) if (hits + misses) else 0.0,
+        "hit_rate_pct_all": round(hits / calls * 100.0, 2) if calls else 0.0,
+        "errors": int(totals["errors"]),
         "tokens_paid": registry["totals"]["tokens_paid"],
         "tokens_saved": registry["totals"]["tokens_saved"],
         "tokens_real": tokens_real,
