@@ -106,7 +106,7 @@ policy: role=reader env=dev roots=[] (client-declared roots only)
 
 ### Release this week
 
-V2 is on `main`. The tagged release ships **this week**: registry, lexical selection in 12 languages, the six meta-tools, roles and approvals, compression, the sandbox, the audit trail, the console view — and **186 passing tests**.
+V2 is on `main`. The tagged release ships **this week**: registry, lexical selection in 12 languages, the six meta-tools, roles and approvals, compression, the sandbox, the audit trail, the console view, the **system tray icon** — and **223 passing tests**.
 
 Full announcement: **[ANNOUNCEMENT.md](ANNOUNCEMENT.md)** · Session log: **[progress.md](progress.md)**
 
@@ -147,10 +147,11 @@ and no cloud account is needed for local mode. Route to local or cloud upstreams
 python3 -m venv venv
 source venv/bin/activate
 python -m pip install --upgrade pip
-python -m pip install https://github.com/MlkBlk-IT/icy-loom/releases/download/v1.0.0/icyloom-1.0.0-py3-none-any.whl
+python -m pip install https://github.com/MlkBlk-IT/icy-loom/releases/download/v2.0.0/icyloom-2.0.0-py3-none-any.whl
 
 icyloom init
 icyloom doctor
+icyloom tray --install-autostart
 
 # in a second terminal
 icyloom serve
@@ -163,10 +164,13 @@ icyloom check --transport all
 py -3.12 -m venv venv
 .\venv\Scripts\Activate.ps1
 python -m pip install --upgrade pip
-python -m pip install https://github.com/MlkBlk-IT/icy-loom/releases/download/v1.0.0/icyloom-1.0.0-py3-none-any.whl
+python -m pip install https://github.com/MlkBlk-IT/icy-loom/releases/download/v2.0.0/icyloom-2.0.0-py3-none-any.whl
 
 icyloom init
 icyloom doctor
+
+# the system tray icon — starts with your session
+icyloom tray --install-autostart
 
 # in a second terminal
 icyloom serve
@@ -220,6 +224,21 @@ configuration, the database and the logs go to the user data directory —
 `%LOCALAPPDATA%\icyloom` on Windows, `$XDG_DATA_HOME/icyloom` (or
 `~/.local/share/icyloom`) on Linux and macOS. Override it with
 `ICYLOOM_DATA_DIR`.
+
+## The system tray
+
+The icon is **part of the package**: on Windows `pip install icyloom` already
+brings it in, nothing extra to install. It starts the stack, opens the
+console, shows the state of the four services, writes the MCP configuration of
+your clients in one click, and can start with your session.
+
+```powershell
+icyloom tray                        # launch the icon
+icyloom tray --install-autostart    # start it with Windows
+icyloom tray --status               # stack, services, autostart
+```
+
+Full guide: **[docs/INSTALL.md](docs/INSTALL.md)** · **[docs/TRAY.md](docs/TRAY.md)**
 
 ## Status & known limitations
 
@@ -579,6 +598,8 @@ D:\ICY-LOOM\
 ├── RESEARCH.md               the research notes behind the choices
 ├── ICYLOOM_PROMPT.md         the original brief
 ├── docs\
+│   ├── INSTALL.md            installation, configuration, start, troubleshooting
+│   ├── TRAY.md               the system tray icon, end to end
 │   ├── logo.png              the mark (source: src\icyloom\static\logo.svg)
 │   └── screenshots\          the eight console views
 ├── data\
@@ -605,6 +626,8 @@ D:\ICY-LOOM\
 │   ├── tokenizer.py      local token counter (tiktoken or estimator)
 │   ├── migrate.py        additive migration (sources read-only)
 │   ├── runner.py         combined launcher
+│   ├── tray.py           system tray icon (Windows / macOS / Linux)
+│   ├── autostart.py      start-with-session (registry / XDG / LaunchAgent)
 │   └── context\          drawer, anchors, invariants, verification, sandbox...
 ├── tools\
 │   ├── seed_demo.py      demo data set (real traffic, isolated stack)
@@ -614,6 +637,8 @@ D:\ICY-LOOM\
 │   ├── fake_mcp_server.py  fake downstream MCP server (relay target)
 │   ├── run_fake_upstream.py fake OpenAI/Anthropic upstream
 │   └── proof_tools.py, report_live.py, report_tools.py, diag_norm.py, ...
+├── scripts\
+│   └── install-windows.ps1  one-shot install: venv, package, tray, clients
 └── tests\                 test suite, end-to-end proof, correctness harness, real-server test
 ```
 
@@ -624,6 +649,8 @@ Everything points at everything else:
 | Document | What it answers |
 |---|---|
 | [`README.md`](README.md) | What IcyLoom is, how to run it, what it measures |
+| [`docs/INSTALL.md`](docs/INSTALL.md) | How to install it, configure it, start it, wire the MCP clients |
+| [`docs/TRAY.md`](docs/TRAY.md) | How the system tray icon behaves, and how to make it start with your session |
 | [`PROGRESS.md`](PROGRESS.md) | What is **proven**, what is **not**, what is next |
 | [`MERGE_PLAN.md`](MERGE_PLAN.md) | How IcyCache and Loom were merged into one project |
 | [`RESEARCH.md`](RESEARCH.md) | The research behind the technical choices |

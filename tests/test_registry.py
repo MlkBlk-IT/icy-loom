@@ -147,8 +147,11 @@ def test_registry_daily_matches_the_view(config: Config) -> None:
 def test_surface_is_a_filled_day_by_hour_grid(config: Config) -> None:
     db = Database(config)
     db.ensure_schema()
-    _insert_event(db, "miss", 10, 0, 0, 0, ts="2026-10-20 13:30:00")
-    _insert_event(db, "miss", 10, 0, 0, 0, ts="2026-10-20 13:45:00")
+    # Horodatage relatif : la grille couvre les 14 derniers jours calendaires,
+    # une date figée finirait par sortir de la fenêtre.
+    day = time.strftime("%Y-%m-%d", time.gmtime(time.time() - 2 * 86400))
+    _insert_event(db, "miss", 10, 0, 0, 0, ts=f"{day} 13:30:00")
+    _insert_event(db, "miss", 10, 0, 0, 0, ts=f"{day} 13:45:00")
     data = snapshot(config, hours=24, days=14)
     surface = data["surface"]
     assert len(surface["days"]) == surface["window_days"]

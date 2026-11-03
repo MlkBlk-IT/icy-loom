@@ -24,4 +24,5 @@ sqlite_mcp_server.db
 # sauvegardes auto de config / dashboard
 *.bak
 *.bak-*
-.pytest-tmp/
+.pytest-*/
+.pytest-out.txt

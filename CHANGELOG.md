@@ -12,6 +12,15 @@ decides what to expose, what to allow, and what to compress.
 
 ### Added
 
+- **System tray icon** (`icyloom tray`): the package now ships the
+  notification-area icon. It starts the stack in the background, opens the
+  console, shows the state of the four services, writes the MCP configuration
+  of a client (Cursor, Claude Code, Codex, Windsurf) in one click, and
+  registers itself for start-with-session — `HKCU\…\Run` on Windows, XDG
+  autostart on Linux, LaunchAgent on macOS. `pystray` and `Pillow` are
+  default dependencies on Windows (the icon comes with the install); the
+  `tray`, `tray-linux` and `tray-macos` extras cover the other platforms.
+  One-shot installer on Windows: `scripts/install-windows.ps1`.
 - **Central tool registry** (`tool_registry`): one catalogue for every
   downstream MCP tool — qualified name, description, input/output schema,
   domain, intent, tags, required inputs, side effects, security level,

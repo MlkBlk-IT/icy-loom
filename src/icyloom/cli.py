@@ -9,6 +9,7 @@
     icyloom mcp --transport … serveur MCP (stdio | http | sse)
     icyloom admin             API d'administration sur 8153
     icyloom serve             gateway + MCP + admin
+    icyloom tray              icône de la zone de notification (+ autostart)
 """
 
 from __future__ import annotations
@@ -315,6 +316,61 @@ def _cmd_check(args: argparse.Namespace) -> int:
     return 0 if ok else 1
 
 
+def _cmd_tray(args: argparse.Namespace) -> int:
+    """Icône de la zone de notification : lancement, autostart, état."""
+    from . import autostart
+
+    resolved = Path(args.config).expanduser().resolve() if args.config else paths.config_path()
+
+    if args.status:
+        print("== IcyLoom : état du system tray ==")
+        print(f"configuration : {resolved}")
+        ports: dict[str, int] = {}
+        try:
+            cfg = load_config(str(resolved))
+            ports = {
+                "passerelle": cfg.ports.gateway_http,
+                "mcp http": cfg.ports.mcp_http,
+                "mcp sse": cfg.ports.mcp_sse,
+                "admin": cfg.ports.admin,
+            }
+        except Exception:
+            pass
+        from .tray import port_open
+
+        for label, port in ports.items():
+            print(f"{label:<12} : {'actif' if port_open(port) else 'inactif'} (port {port})")
+        info = autostart.status(resolved)
+        print(f"autostart    : {'actif' if info['enabled'] else 'inactif'} "
+              f"[{info['mechanism']}]")
+        if info["location"]:
+            print(f"emplacement  : {info['location']}")
+        if info["command"]:
+            print(f"commande     : {info['command']}")
+        return 0
+
+    if args.install_autostart:
+        print(f"démarrage automatique activé : {autostart.install(resolved)}")
+        return 0
+
+    if args.uninstall_autostart:
+        removed = autostart.uninstall()
+        print("démarrage automatique désactivé" if removed
+              else "aucun démarrage automatique installé")
+        return 0
+
+    from .tray import main as tray_main
+
+    argv: list[str] = []
+    if args.config:
+        argv += ["--config", str(args.config)]
+    if args.background:
+        argv.append("--background")
+    if args.no_start:
+        argv.append("--no-start")
+    return tray_main(argv)
+
+
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(prog="icyloom", description="IcyLoom — cache LLM + tiroir de contexte")
     parser.add_argument("--config", default=None, help="chemin du YAML de configuration")
@@ -381,6 +437,20 @@ def build_parser() -> argparse.ArgumentParser:
     p = sub.add_parser("check", help="auto-test : un vrai client se connecte et appelle les outils")
     p.add_argument("--transport", default="all", choices=["all", "stdio", "http", "sse"])
     p.set_defaults(func=_cmd_check)
+
+    p = sub.add_parser("tray", help="icône de la zone de notification (system tray)")
+    # SUPPRESS : ne pas écraser le --config global (icyloom --config X tray).
+    p.add_argument("--config", default=argparse.SUPPRESS, help="chemin du YAML de configuration")
+    p.add_argument("--background", action="store_true", help="sans fenêtre de terminal")
+    p.add_argument("--no-start", action="store_true",
+                   help="ne démarre pas la pile au lancement")
+    p.add_argument("--install-autostart", action="store_true",
+                   help="enregistre l'icône au démarrage de session")
+    p.add_argument("--uninstall-autostart", action="store_true",
+                   help="retire l'icône du démarrage de session")
+    p.add_argument("--status", action="store_true",
+                   help="état de la pile, des services et de l'autostart")
+    p.set_defaults(func=_cmd_tray)
     return parser
 
 

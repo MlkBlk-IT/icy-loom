@@ -36,6 +36,10 @@ dependencies = [
     "pyyaml>=6.0",
     "pyahocorasick>=2.1",
     "tiktoken>=0.7",
+    # Le system tray est disponible par défaut sur Windows : c'est la
+    # plateforme cible. Les autres plateformes l'installent via un extra.
+    "pystray>=0.19; sys_platform == 'win32'",
+    "pillow>=10.0; sys_platform == 'win32'",
 ]
 
 [project.urls]
@@ -48,6 +52,9 @@ Changelog = "https://github.com/MlkBlk-IT/icy-loom/blob/main/CHANGELOG.md"
 dev = ["pytest>=8", "pytest-asyncio>=0.23"]
 qdrant = ["qdrant-client>=1.9"]
 vector = ["numpy>=1.24", "faiss-cpu>=1.7"]
+tray = ["pystray>=0.19", "pillow>=10.0"]
+tray-linux = ["pystray>=0.19", "pillow>=10.0", "python-xlib>=0.17"]
+tray-macos = ["pystray>=0.19", "pillow>=10.0", "pyobjc-framework-Quartz>=7.0"]
 
 [project.scripts]
 icyloom = "icyloom.cli:main"
@@ -63,7 +70,7 @@ version = { attr = "icyloom.__version__" }
 where = ["src"]
 
 [tool.setuptools.package-data]
-icyloom = ["py.typed", "static/*.html", "static/*.svg", "data/*.json"]
+icyloom = ["py.typed", "static/*.html", "static/*.svg", "static/*.png", "static/*.ico", "data/*.json"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
