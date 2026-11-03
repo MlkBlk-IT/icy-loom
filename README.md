@@ -20,9 +20,21 @@
 
 ## IcyLoom V2 — the MCP Tool Gateway
 
+### What's new — 2026-11-03
+
+| Change | What it means |
+|---|---|
+| **The system tray ships with the package** | The gateway starts with your session — one click from the tray, no terminal juggling. |
+| **Agent clients are read-only and keep their own roots** | An agent cannot reach outside the project roots it declares; a write outside them is refused outright. |
+| **Downstream MCP servers get a usable environment** | An empty environment used to kill `uvx` / `npx` at spawn — the servers now start. |
+| **Every active server is indexed at startup** | SQLite and the others were missing from the registry; the FastMCP lifespan now receives the server, so a refresh actually starts. |
+| **The registry accepts the real `tool_proxy.servers` shape** | `active_servers` reads the list the config actually uses. |
+| **Dashboard rebuilt** | Window mask, cropped relief/topo, honest axes, legends, tooltips, ranked cache chart. |
+| **Figures republished from a real measurement** | **194 tools across 14 servers**, real tokens (tiktoken), gain per domain. The numbers below are the measured ones. |
+
 > **The release ships this week.** V2 turns a pile of MCP servers into **one governed gateway**: every tool catalogued, the right tool selected from a plain-language request, permissions enforced, context compressed, every decision logged.
 >
-> **188 tools · 13 servers · 19 MCP tools · zero embeddings · 127.0.0.1 only**
+> **194 tools · 14 servers · 19 MCP tools · zero embeddings · 127.0.0.1 only**
 
 V1 solved the **cost** problem: it cached LLM answers, compressed a context drawer, relayed tools. It did not solve the **control** problem — a client that could see every downstream tool could also *use* every downstream tool. V2 is the missing half.
 
@@ -37,7 +49,7 @@ V1 solved the **cost** problem: it cached LLM answers, compressed a context draw
 
 ### Six meta-tools
 
-The agent talks to the gateway, not to 188 individual tools.
+The agent talks to the gateway, not to 194 individual tools.
 
 | Meta-tool | What it does |
 |---|---|
@@ -60,7 +72,7 @@ The agent talks to the gateway, not to 188 individual tools.
 
 ### Benchmarks — measured, not claimed
 
-Measured on the development instance (Windows 11, i7 vPro, no GPU) against a live stack of 13 real MCP servers, after a 46-call load pass through the gateway:
+Measured on the development instance (Windows 11, i7 vPro, no GPU) against a live stack of 14 real MCP servers, after a 46-call load pass through the gateway:
 
 | Metric | Value |
 |---|---|
