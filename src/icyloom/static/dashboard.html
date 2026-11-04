@@ -857,6 +857,8 @@ footer { border-top: 3px dashed var(--ink); margin-top: 0; flex: 0 0 auto; backg
             margin-top: 12px;
             width: 100%;
           }
+          .cat-grid .cat-pager { grid-column: 1 / -1; display: flex; gap: 6px; align-items: center; justify-content: center; margin-top: 10px; }
+          .cat-grid .cat-pager .mini.on { background: rgba(15,181,166,.85); color: #fff; border-color: rgba(15,181,166,.85); }
           .cat-grid .cat-card {
             display: flex;
             align-items: flex-start;
@@ -3134,15 +3136,22 @@ async function renderCatalog(force) {
     const active = new Set(data.active || []);
     state.catalogActive = active.size;
     if (count) count.textContent = active.size + " active / " + catalog.length + " available";
-    const sig = catalog.map((s) => s.name + ":" + ((active.has(s.name) || s.enabled) ? 1 : 0)).join("|");
+    const sig = catalog.map((s) => s.name + ":" + ((active.has(s.name) || s.enabled) ? 1 : 0) + ":" + (s.status || "")).join("|");
+    state.catalogFull = catalog;
+    state.catalogActiveSet = active;
     if (!force && sig === state.catalogSig && host.childElementCount) return;
     state.catalogSig = sig;
-    host.innerHTML = "";
+    renderCatalogPage();
     if (!catalog.length) {
       host.appendChild(htm("div", "", "catalog is empty — add servers under tool_proxy.catalog in icyloom.yaml"));
       return;
     }
-    catalog.forEach((srv) => {
+    const PAGE = 25;
+    const pages = Math.max(1, Math.ceil(catalog.length / PAGE));
+    if (state.catPage == null || state.catPage >= pages) state.catPage = 0;
+    const slice = catalog.slice(state.catPage * PAGE, state.catPage * PAGE + PAGE);
+    host.innerHTML = "";
+    slice.forEach((srv) => {
       const on = active.has(srv.name) || !!srv.enabled;
       const card = htm("div", "cat-card" + (on ? " on" : ""));
       const box = document.createElement("input");
@@ -3191,10 +3200,31 @@ async function renderCatalog(force) {
       card.addEventListener("click", (e) => { if (e.target !== box) { box.checked = !box.checked; box.dispatchEvent(new Event("change")); } });
       host.appendChild(card);
     });
+    // Pagination : 1/2, 2/2, ... (25 par page).
+    const pager = htm("div", "cat-pager");
+    const prev = htm("button", "mini", "← préc.");
+    const next = htm("button", "mini", "suiv. →");
+    prev.disabled = state.catPage === 0;
+    next.disabled = state.catPage >= pages - 1;
+    prev.addEventListener("click", () => { if (state.catPage > 0) { state.catPage--; renderCatalogPage(true); } });
+    next.addEventListener("click", () => { if (state.catPage < pages - 1) { state.catPage++; renderCatalogPage(true); } });
+    pager.appendChild(prev);
+    for (let i = 0; i < pages; i++) {
+      const b = htm("button", "mini" + (i === state.catPage ? " on" : ""), (i + 1) + "/" + pages);
+      b.addEventListener("click", () => { state.catPage = i; renderCatalogPage(true); });
+      pager.appendChild(b);
+    }
+    pager.appendChild(next);
+    host.appendChild(pager);
   } catch (e) {
     host.innerHTML = "";
     host.appendChild(htm("div", "", "catalog unavailable: " + e.message + " (restart IcyLoom to load the tool catalog API)"));
   }
+}
+
+function renderCatalogPage(force) {
+  state.catalogSig = "";
+  renderCatalog(true);
 }
 
 function renderToolsDetail(snap) {
