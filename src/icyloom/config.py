@@ -164,6 +164,10 @@ class ToolProxyConfig(BaseModel):
     script_timeout_seconds: float = 30.0
     script_max_steps: int = 20
     script_max_instructions: int = 200000
+    #: Analyse des résultats d'outils : repère un contenu non fiable
+    #: (instructions injectées dans le contexte du modèle).
+    scan_results: bool = True
+    scan_max_chars: int = 120000
 
 
 class PolicyRule(BaseModel):
@@ -200,6 +204,12 @@ class ToolRegistryConfig(BaseModel):
     domains: dict[str, str] = Field(default_factory=dict)
     search_top_k: int = 10
     max_per_server: int = 3
+    #: Confiance accordée aux annotations MCP déclarées par un serveur
+    #: descendant : ``raise`` (défaut, une annotation ne fait qu'escalader)
+    #: ou ``authoritative`` (la déclaration du serveur fait foi).
+    annotations_trust: Literal["raise", "authoritative"] = "raise"
+    #: Conserve l'historique des changements de définition d'un outil.
+    detect_drift: bool = True
 
 
 class BreakerConfig(BaseModel):

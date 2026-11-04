@@ -20,6 +20,7 @@ Niveaux de sécurité : ``low`` (lecture), ``medium`` (écriture réversible),
 from __future__ import annotations
 
 import json
+import hashlib
 import re
 import sqlite3
 import unicodedata
@@ -360,6 +361,53 @@ def infer_security_level(side_effects: str) -> str:
     return "low"
 
 
+#: Gravité des effets de bord : sert à comparer deux classifications.
+_EFFECT_RANK = {"none": 0, "write": 1, "destructive": 2}
+
+
+def effective_side_effects(heuristic: str, annotations: dict[str, Any] | None,
+                           trust: str = "raise") -> tuple[str, str]:
+    """Effet de bord effectif et sa provenance (heuristique ou annotations).
+
+    Les annotations MCP (``readOnlyHint``, ``destructiveHint``) sont des
+    **déclarations** : la spécification les traite comme non fiables quand
+    elles viennent d'un serveur inconnu. Le mode ``raise`` (défaut) ne leur
+    accorde donc aucun privilège : une annotation peut **escalader** l'effet
+    de bord, jamais le réduire. Le mode ``authoritative`` fait confiance au
+    serveur déclaré.
+    """
+    declared: str | None = None
+    if annotations:
+        if annotations.get("destructiveHint") is True:
+            declared = "destructive"
+        elif annotations.get("readOnlyHint") is True:
+            declared = "none"
+    if declared is None:
+        return heuristic, "heuristic"
+    if trust == "authoritative":
+        return declared, "annotations"
+    if _EFFECT_RANK.get(declared, 0) > _EFFECT_RANK.get(heuristic, 0):
+        return declared, "annotations"      # escalade : la déclaration durcit
+    if declared == heuristic:
+        return declared, "annotations"      # la déclaration confirme
+    return heuristic, "heuristic"           # la déclaration veut abaisser : refusée
+
+
+def definition_hash(name: str, description: str, input_schema: Any,
+                    output_schema: Any, annotations: Any) -> str:
+    """Empreinte stable d'une définition d'outil (détection de dérive).
+
+    La spécification traite la description d'un outil comme une entrée non
+    fiable : un serveur descendant peut changer le comportement d'un outil
+    entre deux versions (le « rug pull »). L'empreinte permet de le voir.
+    """
+    blob = json.dumps({"name": name, "description": description,
+                       "input": input_schema, "output": output_schema,
+                       "annotations": annotations},
+                      ensure_ascii=False, sort_keys=True, default=str)
+    return hashlib.sha256(blob.encode("utf-8")).hexdigest()[:16]
+
+
 def required_inputs(schema: dict[str, Any]) -> list[str]:
     """Noms des arguments obligatoires d'un schéma."""
     if not isinstance(schema, dict):
@@ -420,11 +468,23 @@ class ToolRegistry:
     def register(self, server: str, tools: list[dict[str, Any]],
                  schemas: dict[str, Any], *, domain: str = "",
                  owners: dict[str, str] | None = None,
-                 environment: str = "") -> int:
-        """Enregistre les outils d'un serveur (mise à jour idempotente)."""
+                 environment: str = "", annotations: dict[str, Any] | None = None,
+                 output_schemas: dict[str, Any] | None = None,
+                 trust: str = "raise", detect_drift: bool = True) -> int:
+        """Enregistre les outils d'un serveur (mise à jour idempotente).
+
+        Les **annotations** déclarées par le serveur descendant
+        (``readOnlyHint``, ``destructiveHint``...) complètent l'heuristique :
+        elles ne peuvent qu'*escalader* l'effet de bord (``trust="raise"``),
+        sauf si le serveur est explicitement de confiance
+        (``trust="authoritative"``). Chaque définition reçoit une empreinte :
+        un changement est journalisé dans ``tool_drift``.
+        """
         if not tools:
             return 0
         owners = owners or {}
+        annotations = annotations or {}
+        output_schemas = output_schemas or {}
         domain = domain or server
         rows = []
         for tool in tools:
@@ -433,56 +493,70 @@ class ToolRegistry:
                 continue
             description = str(tool.get("description") or "")
             schema = schemas.get(name) or {}
+            declared = annotations.get(name) or {}
+            output_schema = output_schemas.get(name) or tool.get("outputSchema") or {}
             intent = infer_intent(name, description)
-            side_effects = infer_side_effects(name, description)
+            heuristic = infer_side_effects(name, description)
+            side_effects, source = effective_side_effects(heuristic, declared, trust)
             rows.append({
                 "server": server,
                 "tool": name,
                 "qualified_name": f"{server}.{name}",
                 "description": description,
                 "input_schema": json.dumps(schema, ensure_ascii=False, default=str),
-                "output_schema": json.dumps(tool.get("outputSchema") or {},
-                                            ensure_ascii=False, default=str),
+                "output_schema": json.dumps(output_schema, ensure_ascii=False, default=str),
+                "annotations": json.dumps(declared, ensure_ascii=False, default=str),
                 "domain": domain,
                 "intent": intent,
                 "tags": build_tags(name, description, domain, intent),
                 "required_inputs": " ".join(required_inputs(schema)),
                 "side_effects": side_effects,
+                "side_effect_source": source,
                 "security_level": infer_security_level(side_effects),
                 "scope": "*",
                 "owner": owners.get(server, ""),
                 "risk": infer_security_level(side_effects),
                 "environment": environment,
+                "def_hash": definition_hash(name, description, schema,
+                                           output_schema, declared),
             })
         if not rows:
             return 0
         with self.db.transaction() as cur:
             for row in rows:
                 old = cur.execute(
-                    "SELECT fid FROM tool_registry WHERE server=? AND tool=?",
+                    "SELECT fid, description, input_schema, output_schema,"
+                    " annotations, def_hash FROM tool_registry"
+                    " WHERE server=? AND tool=?",
                     (row["server"], row["tool"]),
                 ).fetchone()
                 if old is not None and old["fid"] and self.fts:
                     cur.execute("DELETE FROM tool_registry_fts WHERE rowid=?", (old["fid"],))
+                if detect_drift and old is not None and old["def_hash"]:
+                    self._record_drift(cur, row, old)
                 cur.execute(
                     "INSERT INTO tool_registry (server,tool,qualified_name,description,"
-                    "input_schema,output_schema,domain,intent,tags,required_inputs,"
-                    "side_effects,security_level,scope,owner,risk,environment,updated_at)"
-                    " VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,datetime('now'))"
+                    "input_schema,output_schema,annotations,domain,intent,tags,"
+                    "required_inputs,side_effects,side_effect_source,security_level,"
+                    "scope,owner,risk,environment,def_hash,updated_at)"
+                    " VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,datetime('now'))"
                     " ON CONFLICT(server,tool) DO UPDATE SET qualified_name=excluded.qualified_name,"
                     " description=excluded.description, input_schema=excluded.input_schema,"
-                    " output_schema=excluded.output_schema, domain=excluded.domain,"
-                    " intent=excluded.intent, tags=excluded.tags,"
+                    " output_schema=excluded.output_schema, annotations=excluded.annotations,"
+                    " domain=excluded.domain, intent=excluded.intent, tags=excluded.tags,"
                     " required_inputs=excluded.required_inputs,"
                     " side_effects=excluded.side_effects,"
+                    " side_effect_source=excluded.side_effect_source,"
                     " security_level=excluded.security_level, scope=excluded.scope,"
                     " owner=excluded.owner, risk=excluded.risk,"
-                    " environment=excluded.environment, updated_at=datetime('now')",
+                    " environment=excluded.environment, def_hash=excluded.def_hash,"
+                    " updated_at=datetime('now')",
                     (row["server"], row["tool"], row["qualified_name"], row["description"],
-                     row["input_schema"], row["output_schema"], row["domain"], row["intent"],
-                     row["tags"], row["required_inputs"], row["side_effects"],
-                     row["security_level"], row["scope"], row["owner"], row["risk"],
-                     row["environment"]),
+                     row["input_schema"], row["output_schema"], row["annotations"],
+                     row["domain"], row["intent"], row["tags"],
+                     row["required_inputs"], row["side_effects"],
+                     row["side_effect_source"], row["security_level"], row["scope"],
+                     row["owner"], row["risk"], row["environment"], row["def_hash"]),
                 )
                 if self.fts:
                     cur.execute(
@@ -498,6 +572,30 @@ class ToolRegistry:
                         (cur.lastrowid, row["server"], row["tool"]),
                     )
         return len(rows)
+
+    @staticmethod
+    def _record_drift(cur: sqlite3.Cursor, row: dict[str, Any],
+                       old: sqlite3.Row) -> int:
+        """Consigne les écarts entre l'ancienne et la nouvelle définition.
+
+        Une dérive n'est pas forcément une attaque : une mise à jour de
+        serveur change légitimement un schéma. L'écart est donc **journalisé**
+        (champ, avant, après), pas bloquant.
+        """
+        changed = 0
+        for column in ("description", "input_schema", "output_schema", "annotations"):
+            new_value = str(row.get(column) or "")
+            old_value = str(old[column] or "")
+            if new_value == old_value:
+                continue
+            cur.execute(
+                "INSERT INTO tool_drift (server, tool, field, old_value, new_value,"
+                " hash_old, hash_new) VALUES (?,?,?,?,?,?,?)",
+                (row["server"], row["tool"], column, old_value[:4000],
+                 new_value[:4000], old["def_hash"], row["def_hash"]),
+            )
+            changed += 1
+        return changed
 
     def record_call(self, server: str, tool: str, latency_ms: int) -> None:
         """Mémorise l'usage réel : nombre d'appels et latence moyenne."""
@@ -541,13 +639,30 @@ class ToolRegistry:
             by_intent = cur.execute(
                 "SELECT intent, COUNT(*) AS n FROM tool_registry GROUP BY intent"
             ).fetchall()
+            drift = cur.execute("SELECT COUNT(*) FROM tool_drift").fetchone()[0]
         return {
             "tools": int(total),
             "fts": self.fts,
             "by_server": {row["server"]: int(row["n"]) for row in by_server},
             "by_side_effects": {row["side_effects"]: int(row["n"]) for row in by_effect},
             "by_intent": {row["intent"]: int(row["n"]) for row in by_intent},
+            "drift": int(drift),
         }
+
+    def drift(self, *, server: str = "", limit: int = 50) -> dict[str, Any]:
+        """Changements de définition récents (dérive de comportement)."""
+        sql = ("SELECT ts, server, tool, field, old_value, new_value,"
+               " hash_old, hash_new FROM tool_drift")
+        params: tuple[Any, ...] = ()
+        if server:
+            sql += " WHERE server=?"
+            params = (server,)
+        sql += " ORDER BY id DESC LIMIT ?"
+        params += (max(1, int(limit)),)
+        with self.db.cursor(commit=False) as cur:
+            rows = cur.execute(sql, params).fetchall()
+        return {"ok": True, "count": len(rows),
+                "changes": [dict(row) for row in rows]}
 
     def _row(self, row: sqlite3.Row) -> dict[str, Any]:
         data = dict(row)
@@ -556,6 +671,10 @@ class ToolRegistry:
                 data[key.replace("_schema", "")] = json.loads(data.pop(key) or "{}")
             except (ValueError, TypeError):
                 data[key.replace("_schema", "")] = {}
+        try:
+            data["annotations"] = json.loads(data.get("annotations") or "{}")
+        except (ValueError, TypeError):
+            data["annotations"] = {}
         return data
 
     # -- sélection -------------------------------------------------------

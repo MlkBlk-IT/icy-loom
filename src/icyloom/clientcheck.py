@@ -25,8 +25,8 @@ from typing import Any
 #: Transports testés par l'auto-test, dans l'ordre d'intérêt.
 TRANSPORTS = ("stdio", "http", "sse")
 
-#: Nombre d'outils que le serveur MCP doit exposer (13 en V1, 19 en V2).
-EXPECTED_TOOL_COUNT = 19
+#: Nombre d'outils que le serveur MCP doit exposer (13 en V1, 21 en V2).
+EXPECTED_TOOL_COUNT = 21
 
 
 # --------------------------------------------------------------------------

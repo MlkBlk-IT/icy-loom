@@ -5,7 +5,7 @@ MCP voit donc un seul serveur, pas deux.
 
 Règles de surface :
 
-* 19 outils, descriptions courtes (chaque schéma coûte des tokens à chaque
+* 21 outils, descriptions courtes (chaque schéma coûte des tokens à chaque
   requête — c'est un budget, pas un détail) ;
 * `ToolAnnotations` sur chaque outil (lecture seule, destructif, idempotent,
   ouvert sur le monde) ;
@@ -400,7 +400,10 @@ def build_server(config: Config) -> FastMCP:
     async def tool_policy_tool() -> dict[str, Any]:
         """Décrit la politique d'exécution en vigueur."""
         return {"ok": True, "policy": tools.policy.describe(),
-                "roles": tools.policy.roles()}
+                "roles": tools.policy.roles(),
+                "annotations_trust": tools.config.tool_registry.annotations_trust,
+                "detect_drift": tools.config.tool_registry.detect_drift,
+                "scan_results": tools.config.tool_proxy.scan_results}
 
     @mcp.tool(
         name="gateway_stats",
@@ -421,6 +424,50 @@ def build_server(config: Config) -> FastMCP:
                 "audit": tools.audit.stats(),
                 "policy": tools.policy.describe(),
                 "cache": tools.stats()}
+
+    @mcp.tool(
+        name="tool_drift",
+        description="Dérives de définition : un outil a changé (schéma, comportement).",
+        annotations=ToolAnnotations(
+            readOnlyHint=True, destructiveHint=False, idempotentHint=True,
+            openWorldHint=False,
+        ),
+    )
+    async def tool_drift_tool(server: str = "", limit: int = 50) -> dict[str, Any]:
+        """Changements de définition des outils descendants.
+
+        Args:
+            server: serveur concerné (vide = tous)
+            limit: nombre maximal de changements
+        """
+        return tools.registry.drift(server=server, limit=limit)
+
+    @mcp.tool(
+        name="tool_simulate",
+        description="Décide (sans exécuter) si un appel serait autorisé.",
+        annotations=ToolAnnotations(
+            readOnlyHint=True, destructiveHint=False, idempotentHint=True,
+            openWorldHint=False,
+        ),
+    )
+    async def tool_simulate_tool(server: str, tool: str,
+                                 args: dict[str, Any] | None = None,
+                                 role: str = "",
+                                 ctx: Context = None) -> dict[str, Any]:
+        """Simule la décision de politique (aucun effet de bord).
+
+        Args:
+            server: serveur descendant
+            tool: nom de l'outil
+            args: arguments de l'appel
+            role: rôle de l'appelant
+        """
+        if not server or not tool:
+            return {"ok": False, "error": "missing_server_or_tool"}
+        if ctx is not None:
+            await _forward_roots(ctx)
+        await tools.list_tools(server)
+        return tools.simulate(server, tool, args or {}, role=role)
 
     # ------------------------------------------------------------------
     # 4. purge du cache d'outils

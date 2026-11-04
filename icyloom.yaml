@@ -49,6 +49,9 @@ breaker:
 ledger:
   enabled: true
   retention_days: 90
+tool_registry:
+  annotations_trust: raise
+  detect_drift: true
 tool_proxy:
   default_ttl_seconds: 3600
   loop_window_seconds: 300
@@ -58,9 +61,11 @@ tool_proxy:
   max_result_bytes: 1048576
   connect_timeout_seconds: 20.0
   call_timeout_seconds: 300.0
+  scan_results: true
+  scan_max_chars: 120000
   servers:
   - name: github
-    command: 'D:\AI-Stack\tools\github-mcp-server\2.0.2\github-mcp-server.exe'
+    command: D:\AI-Stack\tools\github-mcp-server\2.0.2\github-mcp-server.exe
     args:
     - stdio
     description: GitHub repos/PR/issues (binaire local AI-Stack)
@@ -71,15 +76,11 @@ tool_proxy:
     command: npx
     args:
     - '@modelcontextprotocol/server-filesystem'
-    - 'C:\'
-    - 'D:\'
+    - C:\
+    - D:\
     description: Fichiers locaux controles (memes racines que Claude Desktop)
     cache_enabled: true
-    # TTL court : l'epoch invalide le cache a chaque ecriture RELAYEE, mais
-    # une ecriture faite hors du relais (editeur, autre process) ne change pas
-    # l'epoch. 5 min = fenetre maximale de perimption.
     ttl_seconds: 300
-    # Allowlist stricte : lectures idempotentes seulement (deny-by-default).
     cache_tools:
       read_text_file: true
       read_file: true
@@ -87,12 +88,12 @@ tool_proxy:
       list_directory: true
     enabled: true
   - name: chrome-devtools
-    command: 'C:\Program Files\nodejs\node.exe'
+    command: C:\Program Files\nodejs\node.exe
     args:
-    - 'D:\AI-Stack\envs\chrome-devtools-mcp\node_modules\chrome-devtools-mcp\build\src\bin\chrome-devtools-mcp.js'
+    - D:\AI-Stack\envs\chrome-devtools-mcp\node_modules\chrome-devtools-mcp\build\src\bin\chrome-devtools-mcp.js
     - --isolated
     - --headless
-    - '--executablePath=C:\Program Files\Google\Chrome\Application\chrome.exe'
+    - --executablePath=C:\Program Files\Google\Chrome\Application\chrome.exe
     description: Chrome DevTools (binaire local AI-Stack)
     cache_enabled: true
     ttl_seconds: 3600
@@ -103,26 +104,19 @@ tool_proxy:
     - --python
     - '3.12'
     - --from
-    - 'mcp-server-sqlite==2025.4.25'
+    - mcp-server-sqlite==2025.4.25
     - --with
-    - 'mcp==1.9.4'
+    - mcp==1.9.4
     - --with
-    - 'pydantic==2.8.2'
+    - pydantic==2.8.2
     - mcp-server-sqlite
     - --db-path
-    - 'D:\Icy-Loom\var\mcp-sqlite.db'
-    description: "SQLite (Anthropic) - release epinglee + SDK mcp/pydantic epingles (la 2025.4.25 exige un SDK ancien) + base explicite"
+    - D:\Icy-Loom\var\mcp-sqlite.db
+    description: SQLite (Anthropic) - release epinglee + SDK mcp/pydantic epingles
+      (la 2025.4.25 exige un SDK ancien) + base explicite
     cache_enabled: true
     ttl_seconds: 3600
     enabled: true
-  - name: everything
-    command: uvx
-    args:
-    - mcp-server-everything
-    description: Serveur test/reference MCP - paquet ABSENT de PyPI (npm seulement)
-    cache_enabled: true
-    ttl_seconds: 3600
-    enabled: false
   - name: fetch
     command: uvx
     args:
@@ -140,16 +134,16 @@ tool_proxy:
     ttl_seconds: 3600
     enabled: true
   - name: git
-    command: 'D:\AI-Stack\envs\git-mcp\Scripts\mcp-server-git.exe'
+    command: D:\AI-Stack\envs\git-mcp\Scripts\mcp-server-git.exe
     args: []
     description: Operations Git (binaire local AI-Stack)
     cache_enabled: true
     ttl_seconds: 3600
     enabled: true
   - name: context7
-    command: 'C:\Program Files\nodejs\node.exe'
+    command: C:\Program Files\nodejs\node.exe
     args:
-    - 'C:\Users\Tech\AppData\Roaming\npm\node_modules\@upstash\context7-mcp\dist\index.js'
+    - C:\Users\Tech\AppData\Roaming\npm\node_modules\@upstash\context7-mcp\dist\index.js
     description: Docs de librairies a jour (Upstash)
     cache_enabled: true
     ttl_seconds: 3600
@@ -163,7 +157,7 @@ tool_proxy:
     ttl_seconds: 3600
     enabled: true
   - name: pwsh
-    command: 'C:\Users\Tech\Documents\PowerShell\Modules\PowerShell.MCP\1.16.0\bin\win-x64\PowerShell.MCP.Proxy.exe'
+    command: C:\Users\Tech\Documents\PowerShell\Modules\PowerShell.MCP\1.16.0\bin\win-x64\PowerShell.MCP.Proxy.exe
     args:
     - --no-profile
     description: PowerShell via le proxy MCP (bac a sable du module)
@@ -171,28 +165,30 @@ tool_proxy:
     ttl_seconds: 3600
     enabled: true
   - name: desktop-commander
-    command: 'C:\Program Files\nodejs\node.exe'
+    command: C:\Program Files\nodejs\node.exe
     args:
-    - 'C:\Users\Tech\AppData\Roaming\npm\node_modules\@wonderwhy-er\desktop-commander\dist\index.js'
+    - C:\Users\Tech\AppData\Roaming\npm\node_modules\@wonderwhy-er\desktop-commander\dist\index.js
     description: Fichiers, edition et processus (WonderWhy)
     cache_enabled: false
     ttl_seconds: 3600
     enabled: true
   - name: local-rag
-    command: 'C:\Program Files\nodejs\node.exe'
+    command: C:\Program Files\nodejs\node.exe
     args:
-    - 'C:\Users\Tech\AppData\Roaming\npm\node_modules\mcp-local-rag\dist\index.js'
+    - C:\Users\Tech\AppData\Roaming\npm\node_modules\mcp-local-rag\dist\index.js
     description: RAG local (LanceDB)
     cache_enabled: false
     ttl_seconds: 3600
     enabled: true
     env:
-      BASE_DIRS: '["D:\\Hermes","D:\\LoFT","D:\\Projet Lab-SRV1","D:\\Document Openclaw","D:\\LLM Benchmark","D:\\Redmi Note 10","D:\\99-Archive-Total","D:\\Cours Comptia","D:\\AI","D:\\LabAudit","D:\\Rapports","D:\\Fichier SKILL","D:\\MCP_TEST"]'
-      DB_PATH: 'C:\MCP\local-rag\lancedb-v2'
+      BASE_DIRS: '["D:\\Hermes","D:\\LoFT","D:\\Projet Lab-SRV1","D:\\Document Openclaw","D:\\LLM
+        Benchmark","D:\\Redmi Note 10","D:\\99-Archive-Total","D:\\Cours Comptia","D:\\AI","D:\\LabAudit","D:\\Rapports","D:\\Fichier
+        SKILL","D:\\MCP_TEST"]'
+      DB_PATH: C:\MCP\local-rag\lancedb-v2
       CHUNK_MIN_LENGTH: '300'
       EMBED_TITLE_PREFIX: 'true'
       EMBED_HEADING_PREFIX: 'true'
-      CACHE_DIR: 'C:\MCP\local-rag\models'
+      CACHE_DIR: C:\MCP\local-rag\models
   - name: basic-memory
     command: uvx
     args:
@@ -210,7 +206,14 @@ tool_proxy:
     cache_enabled: true
     ttl_seconds: 3600
     enabled: true
-  catalog:
+  - name: everything
+    command: uvx
+    args:
+    - mcp-server-everything
+    description: Serveur test/reference MCP - paquet ABSENT de PyPI (npm seulement)
+    cache_enabled: true
+    ttl_seconds: 3600
+    enabled: false
   - name: playwright
     command: npx
     args:
@@ -218,20 +221,29 @@ tool_proxy:
     description: Browser automation (Microsoft) - 82k recherches/mois
     cache_enabled: true
     ttl_seconds: 3600
-    enabled: false
-  - name: context7
-    command: npx
-    args:
-    - '@upstash/context7-mcp'
-    description: Docs de librairies a jour - 590k downloads
-    cache_enabled: true
-    ttl_seconds: 3600
-    enabled: false
+    enabled: true
   - name: sequential-thinking
     command: npx
     args:
     - '@modelcontextprotocol/server-sequential-thinking'
     description: Raisonnement structure (Anthropic)
+    cache_enabled: true
+    ttl_seconds: 3600
+    enabled: true
+  - name: brave-search
+    command: npx
+    args:
+    - '@modelcontextprotocol/server-brave-search'
+    description: Recherche Brave
+    cache_enabled: true
+    ttl_seconds: 3600
+    enabled: true
+  catalog:
+  - name: context7
+    command: npx
+    args:
+    - '@upstash/context7-mcp'
+    description: Docs de librairies a jour - 590k downloads
     cache_enabled: true
     ttl_seconds: 3600
     enabled: false
@@ -264,14 +276,6 @@ tool_proxy:
     args:
     - '@modelcontextprotocol/server-postgres'
     description: PostgreSQL
-    cache_enabled: true
-    ttl_seconds: 3600
-    enabled: false
-  - name: brave-search
-    command: npx
-    args:
-    - '@modelcontextprotocol/server-brave-search'
-    description: Recherche Brave
     cache_enabled: true
     ttl_seconds: 3600
     enabled: false
@@ -356,20 +360,10 @@ upstreams:
   timeout_seconds: 120.0
   sticky: true
   enabled: true
-
-#: Politique d'execution (V2) : roles, portee projet, approbations.
-#: `reader` et `writer` n'ont pas de regle ici : leurs capacites sont
-#: definies par defaut (lecture seule / lecture + ecriture).
 policy:
   enabled: true
-  # Les clients agents ne sont pas administrateurs de la machine : ils n'ont
-  # que les racines qu'ils declarent (protocole MCP) et le role `reader`
-  # (lecture seule). L'administrateur garde son propre acces hors du proxy.
   default_role: reader
   environment: dev
-  # Aucune racine ajoutee : IcyLoom ne complete plus les racines declarees
-  # par le client. Liste vide = pas de controle de portee par la politique
-  # (les serveurs descendants gardent leurs propres racines declarees).
   project_roots: []
   roles:
     operator:

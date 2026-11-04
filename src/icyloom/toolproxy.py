@@ -617,12 +617,37 @@ class ToolProxy:
         self._schemas[server] = {
             t.name: (getattr(t, "inputSchema", None) or {}) for t in listed.tools
         }
-        self._register(server, tools, self._schemas[server])
+        # Les annotations (readOnlyHint, destructiveHint...) et l'outputSchema
+        # déclarés par le serveur descendant sont conservés : les annotations
+        # complètent la classification d'effets de bord, l'outputSchema permet
+        # de vérifier le résultat structuré.
+        annotations = {t.name: self._annotations_of(t) for t in listed.tools}
+        output_schemas = {
+            t.name: (getattr(t, "outputSchema", None) or {}) for t in listed.tools
+        }
+        self._register(server, tools, self._schemas[server], annotations,
+                       output_schemas)
         return {"ok": True, "server": server, "count": len(tools), "tools": tools,
                 "cached": False}
 
+    @staticmethod
+    def _annotations_of(tool: Any) -> dict[str, Any]:
+        """Annotations MCP déclarées par un serveur descendant (hints non nuls)."""
+        raw = getattr(tool, "annotations", None)
+        if raw is None:
+            return {}
+        data: dict[str, Any] = {}
+        for name in ("readOnlyHint", "destructiveHint", "idempotentHint",
+                     "openWorldHint"):
+            value = getattr(raw, name, None)
+            if value is not None:
+                data[name] = bool(value)
+        return data
+
     def _register(self, server: str, tools: list[dict[str, Any]],
-                  schemas: dict[str, Any]) -> None:
+                  schemas: dict[str, Any],
+                  annotations: dict[str, Any] | None = None,
+                  output_schemas: dict[str, Any] | None = None) -> None:
         """Alimente le registre centralisé et mesure le coût des schémas."""
         try:
             self.registry.register(
@@ -630,6 +655,10 @@ class ToolProxy:
                 domain=self.config.tool_registry.domains.get(server, server),
                 owners=self.config.tool_registry.owners,
                 environment=self.config.policy.environment,
+                annotations=annotations,
+                output_schemas=output_schemas,
+                trust=self.config.tool_registry.annotations_trust,
+                detect_drift=self.config.tool_registry.detect_drift,
             )
         except Exception as exc:      # pragma: no cover - registre indisponible
             log.warning("registre: catalogue de %s non enregistré (%s)", server, exc)
@@ -824,8 +853,12 @@ class ToolProxy:
                     answer["result_ref"] = meta.get("result_ref")
                 if matched == "canonical":
                     answer["matched"] = "canonical"
+                warnings, signals = self._signals(cached["result"])
                 if verdict.get("warning"):
-                    answer["warning"] = verdict["warning"]
+                    warnings.insert(0, str(verdict["warning"]))
+                if warnings:
+                    answer["warning"] = " ; ".join(warnings)
+                answer.update(signals)
                 return answer
 
         started = time.perf_counter()
@@ -844,6 +877,11 @@ class ToolProxy:
                               latency_ms=latency)
             return {"ok": False, "error": type(exc).__name__, "message": str(exc),
                     "server": server, "tool": tool}
+
+        # Le résultat est contrôlé avant d'être servi : conformité au
+        # `outputSchema` déclaré, et recherche d'un contenu non fiable.
+        self._check_output_schema(server, tool, payload)
+        self._scan_payload(server, tool, args, payload)
 
         latency = int((time.perf_counter() - started) * 1000)
         if not cacheable:
@@ -869,8 +907,12 @@ class ToolProxy:
         if meta.get("truncated"):
             response["compressed"] = meta.get("kind")
             response["result_ref"] = meta.get("result_ref")
+        warnings, signals = self._signals(payload)
         if verdict.get("warning"):
-            response["warning"] = verdict["warning"]
+            warnings.insert(0, str(verdict["warning"]))
+        if warnings:
+            response["warning"] = " ; ".join(warnings)
+        response.update(signals)
         failed = isinstance(payload, dict) and bool(payload.get("is_error"))
         if cacheable and not failed:
             self.cache_set(key, server, tool, payload, latency, ttl=ttl,
@@ -887,6 +929,90 @@ class ToolProxy:
                           saved_chars=int(meta.get("saved_chars", 0)),
                           latency_ms=latency)
         return response
+
+    def _check_output_schema(self, server: str, tool: str,
+                              payload: dict[str, Any]) -> None:
+        """Vérifie le résultat structuré contre l'`outputSchema` déclaré.
+
+        La spécification impose au serveur un résultat conforme à son
+        `outputSchema` ; sans vérification, une rupture silencieuse passe
+        inaperçue et l'agent consomme un résultat incomplet.
+        """
+        if not isinstance(payload, dict) or "structured" not in payload:
+            return
+        row = self.registry.get(server, tool) or {}
+        schema = row.get("output_schema") or {}
+        if not schema:
+            return
+        from .schema_check import validate
+        errors = validate(payload.get("structured"), schema)
+        payload["schema_valid"] = not errors
+        if errors:
+            payload["schema_errors"] = errors[:5]
+            self._log_event("tool_schema_invalid", server, tool, {}, 0,
+                            detail="; ".join(errors[:2]))
+
+    def _scan_payload(self, server: str, tool: str, args: dict[str, Any],
+                      payload: dict[str, Any]) -> None:
+        """Repère un contenu non fiable dans le résultat (injection).
+
+        La spécification traite le contenu d'un résultat comme une entrée non
+        fiable : un serveur descendant (ou une page web féitée) peut tenter
+        d'injecter des instructions dans le contexte du modèle. Le résultat
+        est **signalé**, pas bloqué : c'est l'agent qui décide.
+        """
+        if not self.config.tool_proxy.scan_results:
+            return
+        from .untrusted import scan_payload
+        hits = scan_payload(payload,
+                            max_chars=self.config.tool_proxy.scan_max_chars)
+        if not hits:
+            return
+        payload["untrusted"] = {"count": len(hits),
+                                "rules": [hit["rule"] for hit in hits]}
+        self._log_event("tool_untrusted", server, tool, args, 0,
+                        detail=",".join(hit["rule"] for hit in hits))
+
+    @staticmethod
+    def _signals(payload: Any) -> tuple[list[str], dict[str, Any]]:
+        """Avertissements et signaux attachés à un résultat d'outil."""
+        if not isinstance(payload, dict):
+            return [], {}
+        warnings: list[str] = []
+        signals: dict[str, Any] = {}
+        if payload.get("schema_valid") is False:
+            warnings.append("résultat structuré non conforme à outputSchema")
+            signals["schema_errors"] = payload.get("schema_errors", [])
+        if payload.get("untrusted"):
+            warnings.append("contenu non fiable détecté dans le résultat")
+            signals["untrusted"] = payload["untrusted"]
+        return warnings, signals
+
+    def simulate(self, server: str, tool: str,
+                 args: dict[str, Any] | None = None, *,
+                 role: str = "") -> dict[str, Any]:
+        """Décide (sans exécuter) ce que la politique ferait de cet appel."""
+        if server not in self._servers:
+            return {"ok": False, "error": "unknown_server", "server": server,
+                    "servers": self.server_names()}
+        args = args or {}
+        row = self.registry.get(server, tool) or {}
+        side_effects = str(row.get("side_effects") or "none")
+        decision = self.policy.decide(
+            role=role, server=server, tool=tool, side_effects=side_effects,
+            security_level=str(row.get("security_level") or "low"),
+            args=args, confirmed=False, intent="simulation",
+        )
+        return {
+            "ok": True,
+            "server": server,
+            "tool": tool,
+            "decision": decision.as_dict(),
+            "side_effects": side_effects,
+            "side_effect_source": str(row.get("side_effect_source") or "heuristic"),
+            "annotations": row.get("annotations") or {},
+            "known_tool": bool(row),
+        }
 
     async def call_batch(self, calls: Iterable[dict[str, Any]],
                          stop_on_error: bool = True, *, role: str = "",

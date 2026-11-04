@@ -230,11 +230,13 @@ SCHEMA: tuple[str, ...] = (
         description     TEXT NOT NULL DEFAULT '',
         input_schema    TEXT NOT NULL DEFAULT '{}',
         output_schema   TEXT NOT NULL DEFAULT '{}',
+        annotations     TEXT NOT NULL DEFAULT '',
         domain          TEXT NOT NULL DEFAULT '',
         intent          TEXT NOT NULL DEFAULT '',
         tags            TEXT NOT NULL DEFAULT '',
         required_inputs TEXT NOT NULL DEFAULT '',
         side_effects    TEXT NOT NULL DEFAULT 'none',
+        side_effect_source TEXT NOT NULL DEFAULT 'heuristic',
         security_level  TEXT NOT NULL DEFAULT 'low',
         scope           TEXT NOT NULL DEFAULT '*',
         owner           TEXT NOT NULL DEFAULT '',
@@ -242,6 +244,7 @@ SCHEMA: tuple[str, ...] = (
         environment     TEXT NOT NULL DEFAULT '',
         calls           INTEGER NOT NULL DEFAULT 0,
         avg_latency_ms  INTEGER NOT NULL DEFAULT 0,
+        def_hash        TEXT NOT NULL DEFAULT '',
         fid             INTEGER,
         updated_at      TEXT NOT NULL DEFAULT (datetime('now')),
         PRIMARY KEY (server, tool)
@@ -296,6 +299,21 @@ SCHEMA: tuple[str, ...] = (
     )
     """,
     "CREATE INDEX IF NOT EXISTS idx_tool_results_ts ON tool_results(ts)",
+    # --- dérive de définition des outils (changement de comportement) -----
+    """
+    CREATE TABLE IF NOT EXISTS tool_drift (
+        id        INTEGER PRIMARY KEY AUTOINCREMENT,
+        ts        TEXT NOT NULL DEFAULT (datetime('now')),
+        server    TEXT NOT NULL,
+        tool      TEXT NOT NULL,
+        field     TEXT NOT NULL,
+        old_value TEXT,
+        new_value TEXT,
+        hash_old  TEXT,
+        hash_new  TEXT
+    )
+    """,
+    "CREATE INDEX IF NOT EXISTS idx_tool_drift_server ON tool_drift(server)",
 )
 
 #: Index FTS5 du registre : **optionnel**, car FTS5 peut manquer dans une
@@ -388,6 +406,9 @@ ADDITIVE_COLUMNS: tuple[tuple[str, str, str], ...] = (
     ("tool_events", "args_hash", "TEXT"),
     ("tool_cache", "canon_key", "TEXT"),
     ("tool_audit", "saved_chars", "INTEGER"),
+    ("tool_registry", "annotations", "TEXT"),
+    ("tool_registry", "side_effect_source", "TEXT"),
+    ("tool_registry", "def_hash", "TEXT"),
 )
 
 #: Index qui dépendent de colonnes additives (exécutés après ADDITIVE_COLUMNS).
