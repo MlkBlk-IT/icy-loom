@@ -286,6 +286,8 @@ class ToolProxy:
         #: Coupe-circuit par serveur : un serveur mort ne doit pas être
         #: relancé à chaque appel (c'était 37 échecs par serveur en 3 h).
         self._failures: dict[str, dict[str, Any]] = {}
+        #: Dernière erreur par serveur (bug 3 : statut visible).
+        self._last_error: dict[str, str] = {}
 
         # Le catalogue d'outils est rechargé périodiquement (toutes les
         # minutes) : sans cette mémoire, chaque rechargement réécrit la
@@ -472,12 +474,15 @@ class ToolProxy:
                 " WHERE key = ?",
                 (key,),
             )
-        return {
+        result = {
             "result": json.loads(row["result_json"]),
             "bytes": int(row["bytes"]),
             "latency_ms": int(row["latency_ms"]),
             "cached": True,
         }
+        # bug 5 : instrumenter réellement cache_read (plus de 0 en dur).
+        self.meter.record("cache_read", count_tokens(str(row["result_json"])))
+        return result
 
     def cache_get_canonical(self, server: str, tool: str, args: Any,
                             ttl: int, epoch: str = "") -> dict[str, Any] | None:
@@ -547,6 +552,8 @@ class ToolProxy:
                 (key, server, tool, payload, len(payload.encode("utf-8")), latency_ms,
                  int(ttl), ckey),
             )
+        # bug 5 : instrumenter réellement cache_write.
+        self.meter.record("cache_write", count_tokens(payload))
         return len(payload.encode("utf-8"))
 
     def clear_cache(self, server: str | None = None) -> dict[str, Any]:
@@ -602,6 +609,10 @@ class ToolProxy:
                         BACKOFF_BASE_SECONDS * (2 ** (count - 1)))
             self._failures[server] = {"count": count, "next_at": now + delay,
                                       "error": type(exc).__name__, "message": str(exc)}
+            # bug 3 : statut visible + erreur claire.
+            self._last_error[server] = (
+                f"{server}: {type(exc).__name__}: {exc} "
+                f"(vérifier commande/env du serveur dans icyloom.yaml)")
             # Le journal ne retient que la PREMIERE erreur : un serveur mort
             # ne doit pas remplir le journal a chaque appel.
             if count == 1:
@@ -789,13 +800,8 @@ class ToolProxy:
                     "servers": self.server_names()}
         args = args or {}
         await self._ensure_schema(server, tool)
-        row = self.registry.get(server, tool)
-        side_effects = str((row or {}).get("side_effects") or "none")
-        decision = self.policy.decide(
-            role=role, server=server, tool=tool, side_effects=side_effects,
-            security_level=str((row or {}).get("security_level") or "low"),
-            args=args, confirmed=confirmed, intent=intent,
-        )
+        decision, _effects, _known, _row = self._decide(
+            server, tool, args, role=role, confirmed=confirmed, intent=intent)
         if decision.effect != "allow":
             self.audit.record(actor=actor, role=decision.role, intent=intent,
                               server=server, tool=tool, args_hash=args_hash(args),
@@ -866,6 +872,10 @@ class ToolProxy:
             payload = await self._invoke(cfg, tool, args)
         except Exception as exc:
             latency = int((time.perf_counter() - started) * 1000)
+            # bug 3 : erreur claire + statut visible par serveur.
+            message = (f"{server}: {type(exc).__name__}: {exc} "
+                       f"(vérifier commande/env du serveur dans icyloom.yaml)")
+            self._last_error[server] = message
             if not cacheable:
                 # l'effet de bord a pu avoir lieu malgré l'échec
                 self._bump_epoch(server)
@@ -875,7 +885,7 @@ class ToolProxy:
                               server=server, tool=tool, args_hash=args_hash(args),
                               decision="error", reason=f"{type(exc).__name__}: {exc}",
                               latency_ms=latency)
-            return {"ok": False, "error": type(exc).__name__, "message": str(exc),
+            return {"ok": False, "error": type(exc).__name__, "message": message,
                     "server": server, "tool": tool}
 
         # Le résultat est contrôlé avant d'être servi : conformité au
@@ -988,21 +998,78 @@ class ToolProxy:
             signals["untrusted"] = payload["untrusted"]
         return warnings, signals
 
+    def _resolve_effects(self, server: str, tool: str,
+                         args: dict[str, Any] | None = None) -> tuple[str, bool, dict[str, Any]]:
+        """Effet de bord + connu du registre (bugs 1 + option A).
+
+        Outil absent du registre -> ``("unknown", False)`` (fail-closed).
+        ``pwsh.execute_command`` est classé par la **commande** (option A),
+        pas par le nom de l'outil.
+        """
+        row = self.registry.get(server, tool)
+        args = args or {}
+        if server == "pwsh" and tool == "execute_command":
+            from .policy import pwsh_command_effect
+            command = str(args.get("command") or args.get("cmd") or "")
+            return pwsh_command_effect(command), True, row or {}
+        if row is None:
+            # Outil publié par le serveur (catalogue chargé) mais absent du
+            # registre : écart de synchro, pas un outil inconnu. Sinon
+            # (jamais publié) -> unknown, fail-closed (bug 1).
+            if tool in self._schemas.get(server, {}):
+                return "none", True, {"side_effects": "none",
+                                      "side_effect_source": "catalog",
+                                      "annotations": {}}
+            return "unknown", False, {}
+        return str(row.get("side_effects") or "none"), True, row
+
+    def _decide(self, server: str, tool: str, args: dict[str, Any] | None = None, *,
+                role: str = "", confirmed: bool = False, intent: str = ""):
+        """Point de décision unique (bug 2) : simulate ET call passent ici."""
+        side_effects, known, row = self._resolve_effects(server, tool, args)
+        decision = self.policy.decide(
+            role=role, server=server, tool=tool, side_effects=side_effects,
+            security_level=str(row.get("security_level") or "low"),
+            args=args or {}, confirmed=confirmed, intent=intent,
+        )
+        decision.extra.setdefault("known_tool", known)
+        decision.extra.setdefault("side_effects", side_effects)
+        return decision, side_effects, known, row
+
+    def server_statuses(self) -> list[dict[str, Any]]:
+        """Statut réel par serveur (bug 3) : up / down / no-tools.
+
+        ``up`` = catalogue chargé avec >=1 outil ; ``down`` = dernière
+        erreur connue ; ``no-tools`` = répond mais 0 outil.
+        """
+        out = []
+        for name in sorted(self._servers):
+            tools = self._catalog.get(name)
+            count = len(tools[1]) if tools else len(self._schemas.get(name, {}))
+            error = self._last_error.get(name, "")
+            if name in self._failures:
+                status = "down"
+            elif count:
+                status = "up"
+            elif error:
+                status = "down"
+            else:
+                status = "no-tools"
+            out.append({"name": name, "status": status, "tool_count": count,
+                        "last_error": error})
+        return out
+
     def simulate(self, server: str, tool: str,
                  args: dict[str, Any] | None = None, *,
-                 role: str = "") -> dict[str, Any]:
+                 role: str = "", confirmed: bool = False) -> dict[str, Any]:
         """Décide (sans exécuter) ce que la politique ferait de cet appel."""
         if server not in self._servers:
             return {"ok": False, "error": "unknown_server", "server": server,
                     "servers": self.server_names()}
         args = args or {}
-        row = self.registry.get(server, tool) or {}
-        side_effects = str(row.get("side_effects") or "none")
-        decision = self.policy.decide(
-            role=role, server=server, tool=tool, side_effects=side_effects,
-            security_level=str(row.get("security_level") or "low"),
-            args=args, confirmed=False, intent="simulation",
-        )
+        decision, side_effects, known, row = self._decide(
+            server, tool, args, role=role, confirmed=confirmed,
+            intent="simulation")
         return {
             "ok": True,
             "server": server,
@@ -1011,7 +1078,7 @@ class ToolProxy:
             "side_effects": side_effects,
             "side_effect_source": str(row.get("side_effect_source") or "heuristic"),
             "annotations": row.get("annotations") or {},
-            "known_tool": bool(row),
+            "known_tool": known,
         }
 
     async def call_batch(self, calls: Iterable[dict[str, Any]],
@@ -1066,8 +1133,7 @@ class ToolProxy:
 
         async def _call(server: str, tool: str,
                         args: dict[str, Any]) -> dict[str, Any]:
-            row = self.registry.get(server, tool)
-            effects = str((row or {}).get("side_effects") or "none")
+            effects, _known, _row = self._resolve_effects(server, tool, args)
             if not confirmed and effects != "none":
                 return {"ok": False, "error": "read_only_script",
                         "message": "Le bac à sable n'autorise que les outils "

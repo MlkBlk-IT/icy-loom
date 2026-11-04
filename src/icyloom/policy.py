@@ -20,10 +20,32 @@ Règles de sécurité intégrées (non désactivables) :
 from __future__ import annotations
 
 import os
+import re
 from dataclasses import dataclass, field
 from typing import Any
 
 from .config import PolicyConfig
+
+#: Commandes PowerShell en lecture seule (option A, 2026-11-04) : un appel
+#: ``pwsh.execute_command`` dont la commande matche est classé ``none``,
+#: tout le reste reste ``destructive`` (classé par la commande, pas le nom).
+_PWSH_READONLY_RE = re.compile(
+    r"^\s*(Get-|Test-|Select-|Where-|Measure-|Format-|Out-String|Write-Output|"
+    r"Write-Host|echo|ConvertFrom-|ConvertTo-|Sort-|Group-|Compare-|Find-)",
+    re.IGNORECASE,
+)
+
+
+def pwsh_command_effect(command: str) -> str:
+    """Effet de bord d'une commande PowerShell (option A).
+
+    ``none`` si lecture seule, ``destructive`` sinon. Chaîne vide ou
+    inconnue = ``destructive`` (fail-closed).
+    """
+    cmd = (command or "").strip()
+    if cmd and _PWSH_READONLY_RE.match(cmd) and ";" not in cmd and "|" not in cmd.split(" ", 1)[0]:
+        return "none"
+    return "destructive"
 
 #: Effets de bord autorisés par rôle (le rôle inconnu reste au plus strict).
 #: ``destructive`` reste soumis à approbation explicite, même pour un rôle
@@ -106,7 +128,33 @@ class PolicyEngine:
         if violation is not None:
             return Decision("deny", violation, rule=rule_label, role=role)
 
-        # 3. un effet de bord destructeur exige toujours une approbation.
+        # 3. un outil inconnu du registre est traité comme destructeur
+        #    potentiel (bug 1, fail-closed) : deny par défaut, approval si
+        #    la config l'autorise et que le rôle peut écrire.
+        if side_effects == "unknown":
+            allowed_unknown = ROLE_CAPABILITIES.get(
+                role, ROLE_CAPABILITIES["reader"])
+            if (self.config.unknown_tool_policy == "deny"
+                    or "write" not in allowed_unknown):
+                return Decision("deny", "unknown_tool", rule=rule_label, role=role,
+                                extra={"known_tool": False,
+                                       "allowed": sorted(allowed_unknown)})
+            if not confirmed:
+                return Decision("approval", "unknown_tool_requires_approval",
+                                rule=rule_label, role=role,
+                                extra={"known_tool": False})
+            return Decision("allow", "unknown_tool_approved", rule=rule_label,
+                            role=role, extra={"known_tool": False})
+
+        # 4. les capacités du rôle décident AVANT l'approbation (bug 2) :
+        #    un rôle sans la capacité est refusé, même non-confirmé — sinon
+        #    simulate() et invoke() divergent (approval vs deny).
+        allowed = ROLE_CAPABILITIES.get(role, ROLE_CAPABILITIES["reader"])
+        if side_effects not in allowed:
+            return Decision("deny", "role_forbids_side_effect", rule=rule_label,
+                            role=role, extra={"allowed": sorted(allowed)})
+
+        # 5. un effet de bord destructeur exige toujours une approbation.
         if side_effects == "destructive" and not confirmed:
             return Decision("approval", "destructive_requires_approval",
                             rule=rule_label, role=role)
@@ -120,11 +168,7 @@ class PolicyEngine:
         if rule_effect == "allow":
             return Decision("allow", "policy_allow", rule=rule_label, role=role)
 
-        # 5. sinon : les capacités du rôle décident.
-        allowed = ROLE_CAPABILITIES.get(role, ROLE_CAPABILITIES["reader"])
-        if side_effects not in allowed:
-            return Decision("deny", "role_forbids_side_effect", rule=rule_label,
-                            role=role, extra={"allowed": sorted(allowed)})
+        # 6. sinon : le rôle a la capacité (vérifiée à l'étape 4).
         return Decision("allow", "role_allows", rule=rule_label, role=role)
 
     # -- portée projet ----------------------------------------------------

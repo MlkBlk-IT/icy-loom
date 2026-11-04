@@ -93,7 +93,10 @@ async def refresh_catalog(tools: ToolProxy, servers: dict[str, ToolServerConfig]
     cas de ``sqlite``, jamais listé).
     """
     while True:
-        for name in active_servers(servers):
+        # bug 6 : relire les serveurs ACTIFS à chaque cycle (la liste figée
+        # au démarrage gardait les serveurs désactivés en boucle d'erreur).
+        names = getattr(tools, "server_names", None)
+        for name in (names() if callable(names) else active_servers(servers)):
             try:
                 await tools.list_tools(name)
             except Exception as exc:  # pragma: no cover - serveur indisponible
@@ -230,7 +233,9 @@ def build_server(config: Config) -> FastMCP:
         """
         topic = (what or "").strip().lower()
         if topic == "servers":
-            return {"ok": True, "what": "servers", "servers": tools.server_names()}
+            # bug 3 : statut réel par serveur (up/down/no-tools + erreur).
+            return {"ok": True, "what": "servers",
+                    "servers": tools.server_statuses()}
         if topic == "tools":
             if not server:
                 return {"ok": True, "what": "tools", "servers": tools.server_names(),

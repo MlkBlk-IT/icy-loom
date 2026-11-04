@@ -207,8 +207,10 @@ def create_app(config: Config) -> FastAPI:
     async def tools_catalog():
         """Catalogue des serveurs MCP disponibles + etat (actif/inactif)."""
         active = {s.get("name") for s in tools.server_configs()}
+        statuses = {s["name"]: s for s in tools.server_statuses()}
         items = []
         for s in [*config.tool_proxy.servers, *config.tool_proxy.catalog]:
+            st = statuses.get(s.name, {})
             items.append({
                 "name": s.name,
                 "command": s.command,
@@ -217,6 +219,10 @@ def create_app(config: Config) -> FastAPI:
                 "cache_enabled": s.cache_enabled,
                 "ttl_seconds": s.ttl_seconds,
                 "enabled": s.name in active,
+                # statut réel (bug 3) : le badge ne ment plus.
+                "status": st.get("status", "down" if s.name in active else "dormant"),
+                "tool_count": int(st.get("tool_count", 0)),
+                "last_error": st.get("last_error", ""),
             })
         seen, unique = set(), []
         for it in items:

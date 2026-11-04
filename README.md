@@ -20,6 +20,18 @@
 
 ## IcyLoom V2 — the MCP Tool Gateway
 
+### What's new — 2026-11-04 — V2.2.0 (fail-closed, honest status)
+
+| Change | What it means |
+|---|---|
+| **Unknown tools are denied** | A tool absent from the registry used to be allowed with `side_effects="none"`. Now it is `unknown` — denied by default (`unknown_tool_policy: deny|approval`). |
+| **`tool_simulate` matches `invoke_tool`** | One single decision point for both. A reader asking for a destructive tool gets `deny`, not `approval`. |
+| **`pwsh` classified by the command** | `Get-Date`, `Get-ChildItem`, `Test-Path` pass for a reader; anything else stays destructive. |
+| **Real per-server status** | `up` / `down` / `no-tools` + tool count + last error, exposed by `proxy_info` and `/api/tools/catalog`. The console badges no longer lie. |
+| **Drift noise gone** | Schemas are normalized before hashing (`$schema` stripped). 910 cosmetic entries purged — only real changes are journalised. |
+| **Cache metrics are real** | `cache_read`/`cache_write` are actually recorded (they were hard-coded to 0). |
+| **Catalogue: 50 MCP servers** | 20 new dormant entries; enable them one by one from the console. |
+
 ### What's new — 2026-11-04 — V2.1.0 (trust signals)
 
 | Change | What it means |

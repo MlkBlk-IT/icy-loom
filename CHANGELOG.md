@@ -4,6 +4,47 @@ All notable changes to this project are documented here.
 Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) — versioning:
 [SemVer](https://semver.org/spec/v2.0.0.html).
 
+## [2.2.0] — 2026-11-04
+
+### Fixed
+
+- **Fail-closed on unknown tools**: a tool absent from the registry (and never
+  published by its server) is now treated as `unknown` — denied by default
+  (`unknown_tool_policy: deny|approval`). Previously it defaulted to
+  `side_effects="none"` and was allowed. The audit showed unknown tools
+  (`filesystem.delete_file`, `github.delete_file`) actually being called.
+- **`tool_simulate` now matches `invoke_tool`**: role capabilities are checked
+  before destructive approval, and a single `_decide()` point serves `call()`,
+  `simulate()` and `run_script`. A reader asking for a destructive tool gets
+  `deny`, not `approval`.
+- **`pwsh.execute_command` classified by the command** (option A): read-only
+  commands (`Get-Date`, `Get-ChildItem`, `Test-Path`…) are `none` and pass for
+  a reader; anything else stays `destructive`.
+- **Drift noise removed**: schemas are normalized before hashing (`$schema`
+  stripped, keys sorted). 910 cosmetic `tool_drift` entries purged; only real
+  changes are journalised now.
+- **Dead servers no longer polled**: `refresh_catalog` re-reads the active
+  servers every cycle instead of the list frozen at startup.
+- **Error messages are actionable**: a failing server now reports
+  `<server>: <ExceptionType>: <message> (vérifier commande/env dans icyloom.yaml)`.
+
+### Added
+
+- **Real per-server status**: `server_statuses()` (`up`/`down`/`no-tools` +
+  `tool_count` + `last_error`), exposed by `proxy_info(servers)` and by
+  `/api/tools/catalog`. The console cards show the truthful badge
+  (actif / en panne / sans outils / dormant).
+- **Cache metrics instrumented**: `cache_read`/`cache_write` are really recorded
+  (they were hard-coded to 0). `tokens_saved` = tokens of cache-served results
+  minus tokens of the call key; `tool_schemas` = tokens of tool schemas served.
+- **Catalogue: 50 unique MCP servers** (20 new dormant entries; backup
+  `icyloom.yaml.bak-20261104-170909`).
+
+### Tests
+
+- New `tests/test_mission_20251104.py` (red→green). Full suite:
+  **245 passed, 3 skipped, 0 failed**.
+
 ## [2.1.0] — 2026-11-04
 
 ### Added

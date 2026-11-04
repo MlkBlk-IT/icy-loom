@@ -190,6 +190,10 @@ class PolicyConfig(BaseModel):
     environment: str = "dev"
     #: Racines autorisées : une écriture hors de ces racines est refusée.
     project_roots: list[str] = Field(default_factory=list)
+    #: Politique pour un outil absent du registre (2026-11-04, bug 1) :
+    #: ``deny`` (défaut, fail-closed) ou ``approval``. Un outil inconnu est
+    #: traité comme un effet ``unknown`` (destructeur potentiel).
+    unknown_tool_policy: Literal["deny", "approval"] = "deny"
     #: Règles par rôle. La plus spécifique l'emporte.
     roles: dict[str, list[PolicyRule]] = Field(default_factory=dict)
 

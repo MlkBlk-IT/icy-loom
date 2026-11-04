@@ -351,6 +351,166 @@ tool_proxy:
     cache_enabled: true
     ttl_seconds: 3600
     enabled: false
+  - name: arxiv
+    command: uvx
+    args:
+    - 'arxiv-mcp-server'
+    description: ArXiv papers
+    cache_enabled: true
+    ttl_seconds: 3600
+    enabled: false
+  - name: elasticsearch
+    command: npx
+    args:
+    - '@modelcontextprotocol/server-elasticsearch'
+    description: Elasticsearch
+    cache_enabled: true
+    ttl_seconds: 3600
+    enabled: false
+  - name: kafka
+    command: npx
+    args:
+    - '@modelcontextprotocol/server-kafka'
+    description: Kafka
+    cache_enabled: true
+    ttl_seconds: 3600
+    enabled: false
+  - name: docker
+    command: npx
+    args:
+    - '@modelcontextprotocol/server-docker'
+    description: Docker
+    cache_enabled: true
+    ttl_seconds: 3600
+    enabled: false
+  - name: kubernetes
+    command: npx
+    args:
+    - '@modelcontextprotocol/server-kubernetes'
+    description: Kubernetes
+    cache_enabled: true
+    ttl_seconds: 3600
+    enabled: false
+  - name: linear
+    command: npx
+    args:
+    - '@modelcontextprotocol/server-linear'
+    description: Linear
+    cache_enabled: true
+    ttl_seconds: 3600
+    enabled: false
+  - name: gitlab
+    command: npx
+    args:
+    - '@modelcontextprotocol/server-gitlab'
+    description: GitLab
+    cache_enabled: true
+    ttl_seconds: 3600
+    enabled: false
+  - name: discord
+    command: npx
+    args:
+    - '@modelcontextprotocol/server-discord'
+    description: Discord
+    cache_enabled: true
+    ttl_seconds: 3600
+    enabled: false
+  - name: telegram
+    command: npx
+    args:
+    - '@modelcontextprotocol/server-telegram'
+    description: Telegram
+    cache_enabled: true
+    ttl_seconds: 3600
+    enabled: false
+  - name: obsidian
+    command: npx
+    args:
+    - '@modelcontextprotocol/server-obsidian'
+    description: Obsidian vault
+    cache_enabled: true
+    ttl_seconds: 3600
+    enabled: false
+  - name: qdrant
+    command: uvx
+    args:
+    - 'mcp-server-qdrant'
+    description: Qdrant vectoriel
+    cache_enabled: true
+    ttl_seconds: 3600
+    enabled: false
+  - name: neo4j
+    command: npx
+    args:
+    - '@modelcontextprotocol/server-neo4j'
+    description: Neo4j graphe
+    cache_enabled: true
+    ttl_seconds: 3600
+    enabled: false
+  - name: weather
+    command: npx
+    args:
+    - '@modelcontextprotocol/server-weather'
+    description: Météo Open-Meteo
+    cache_enabled: true
+    ttl_seconds: 3600
+    enabled: false
+  - name: terraform
+    command: npx
+    args:
+    - '@modelcontextprotocol/server-terraform'
+    description: Terraform
+    cache_enabled: true
+    ttl_seconds: 3600
+    enabled: false
+  - name: snowflake
+    command: npx
+    args:
+    - '@modelcontextprotocol/server-snowflake'
+    description: Snowflake
+    cache_enabled: true
+    ttl_seconds: 3600
+    enabled: false
+  - name: bigquery
+    command: uvx
+    args:
+    - 'mcp-server-bigquery'
+    description: BigQuery
+    cache_enabled: true
+    ttl_seconds: 3600
+    enabled: false
+  - name: slack2
+    command: npx
+    args:
+    - '@modelcontextprotocol/server-slack'
+    description: Slack (doublon)
+    cache_enabled: true
+    ttl_seconds: 3600
+    enabled: false
+  - name: grafana
+    command: npx
+    args:
+    - '@modelcontextprotocol/server-grafana'
+    description: Grafana
+    cache_enabled: true
+    ttl_seconds: 3600
+    enabled: false
+  - name: ansible
+    command: npx
+    args:
+    - '@modelcontextprotocol/server-ansible'
+    description: Ansible
+    cache_enabled: true
+    ttl_seconds: 3600
+    enabled: false
+  - name: vault
+    command: npx
+    args:
+    - '@modelcontextprotocol/server-vault'
+    description: HashiCorp Vault
+    cache_enabled: true
+    ttl_seconds: 3600
+    enabled: false
 upstreams:
 - name: hermes
   base_url: http://127.0.0.1:8080/v1

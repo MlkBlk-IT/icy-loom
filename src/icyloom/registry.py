@@ -393,6 +393,20 @@ def effective_side_effects(heuristic: str, annotations: dict[str, Any] | None,
     return heuristic, "heuristic"           # la déclaration veut abaisser : refusée
 
 
+def normalize_schema(value: Any) -> Any:
+    """Normalise un schéma avant hash (bug 4, 2026-11-04).
+
+    Retire ``$schema`` récursivement (le dialecte JSON Schema ne change
+    pas le comportement d'un outil) ; les clés de dict sont triées par
+    ``json.dumps(sort_keys=True)`` au moment du hash.
+    """
+    if isinstance(value, dict):
+        return {k: normalize_schema(v) for k, v in value.items() if k != "$schema"}
+    if isinstance(value, list):
+        return [normalize_schema(v) for v in value]
+    return value
+
+
 def definition_hash(name: str, description: str, input_schema: Any,
                     output_schema: Any, annotations: Any) -> str:
     """Empreinte stable d'une définition d'outil (détection de dérive).
@@ -402,7 +416,8 @@ def definition_hash(name: str, description: str, input_schema: Any,
     entre deux versions (le « rug pull »). L'empreinte permet de le voir.
     """
     blob = json.dumps({"name": name, "description": description,
-                       "input": input_schema, "output": output_schema,
+                       "input": normalize_schema(input_schema),
+                       "output": normalize_schema(output_schema),
                        "annotations": annotations},
                       ensure_ascii=False, sort_keys=True, default=str)
     return hashlib.sha256(blob.encode("utf-8")).hexdigest()[:16]
@@ -588,6 +603,15 @@ class ToolRegistry:
             old_value = str(old[column] or "")
             if new_value == old_value:
                 continue
+            # bug 4 : comparer les schémas normalisés (sans $schema) pour
+            # ne pas journaliser les seuls changements de dialecte/ordre.
+            if column in ("input_schema", "output_schema"):
+                try:
+                    if (normalize_schema(json.loads(new_value))
+                            == normalize_schema(json.loads(old_value))):
+                        continue
+                except (ValueError, TypeError):
+                    pass
             cur.execute(
                 "INSERT INTO tool_drift (server, tool, field, old_value, new_value,"
                 " hash_old, hash_new) VALUES (?,?,?,?,?,?,?)",

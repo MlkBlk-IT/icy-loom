@@ -3152,10 +3152,15 @@ async function renderCatalog(force) {
       const top = htm("div", "cat-top");
       const name = htm("b", "cat-name", srv.name);
       name.title = srv.name;
-      const badge = htm("span", "cat-badge", on ? "active" : "dormant");
+      const status = srv.status || (on ? "up" : "dormant");
+      const badgeText = on ? (status === "up" ? "active"
+        : status === "down" ? "en panne" : "sans outils") : "dormant";
+      const badge = htm("span", "cat-badge" + (on && status === "down" ? " down" : ""), badgeText);
       top.appendChild(name); top.appendChild(badge);
       const desc = htm("div", "cat-desc", srv.description || (srv.command ? srv.command + " " + ((srv.args || []).join(" ")) : ""));
       body.appendChild(top); body.appendChild(desc);
+      if (srv.tool_count) body.appendChild(htm("div", "cat-desc", srv.tool_count + " outils"));
+      if (srv.last_error) body.appendChild(htm("div", "cat-desc cat-err", srv.last_error));
       card.appendChild(box); card.appendChild(body);
       const toggle = async (want) => {
         box.disabled = true;
