@@ -32,7 +32,7 @@
 | **Dashboard rebuilt** | Window mask, cropped relief/topo, honest axes, legends, tooltips, ranked cache chart. |
 | **Figures republished from a real measurement** | **194 tools across 14 servers**, real tokens (tiktoken), gain per domain. The numbers below are the measured ones. |
 
-> **V2 is on `main` and not yet tagged.** V2 turns a pile of MCP servers into **one governed gateway**: every tool catalogued, the right tool selected from a plain-language request, permissions enforced, context compressed, every decision logged.
+> **V2.0.0 is released** ([release notes](https://github.com/MlkBlk-IT/icy-loom/releases/tag/v2.0.0)). V2 turns a pile of MCP servers into **one governed gateway**: every tool catalogued, the right tool selected from a plain-language request, permissions enforced, context compressed, every decision logged.
 >
 > **194 tools · 14 servers · 19 MCP tools · zero embeddings · 127.0.0.1 only**
 
