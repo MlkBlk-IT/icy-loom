@@ -207,9 +207,9 @@ tool_proxy:
     ttl_seconds: 3600
     enabled: true
   - name: everything
-    command: uvx
+    command: npx
     args:
-    - mcp-server-everything
+    - '@modelcontextprotocol/server-everything'
     description: Serveur test/reference MCP - paquet ABSENT de PyPI (npm seulement)
     cache_enabled: true
     ttl_seconds: 3600
@@ -362,23 +362,15 @@ tool_proxy:
   - name: elasticsearch
     command: npx
     args:
-    - '@modelcontextprotocol/server-elasticsearch'
+    - '@elastic/mcp-server-elasticsearch'
     description: Elasticsearch
-    cache_enabled: true
-    ttl_seconds: 3600
-    enabled: false
-  - name: kafka
-    command: npx
-    args:
-    - '@modelcontextprotocol/server-kafka'
-    description: Kafka
     cache_enabled: true
     ttl_seconds: 3600
     enabled: false
   - name: docker
     command: npx
     args:
-    - '@modelcontextprotocol/server-docker'
+    - 'mcp-server-docker'
     description: Docker
     cache_enabled: true
     ttl_seconds: 3600
@@ -386,7 +378,7 @@ tool_proxy:
   - name: kubernetes
     command: npx
     args:
-    - '@modelcontextprotocol/server-kubernetes'
+    - 'mcp-server-kubernetes'
     description: Kubernetes
     cache_enabled: true
     ttl_seconds: 3600
@@ -394,7 +386,7 @@ tool_proxy:
   - name: linear
     command: npx
     args:
-    - '@modelcontextprotocol/server-linear'
+    - 'mcp-server-linear'
     description: Linear
     cache_enabled: true
     ttl_seconds: 3600
@@ -410,23 +402,15 @@ tool_proxy:
   - name: discord
     command: npx
     args:
-    - '@modelcontextprotocol/server-discord'
+    - 'mcp-server-discord'
     description: Discord
     cache_enabled: true
     ttl_seconds: 3600
     enabled: false
-  - name: telegram
-    command: npx
-    args:
-    - '@modelcontextprotocol/server-telegram'
-    description: Telegram
-    cache_enabled: true
-    ttl_seconds: 3600
-    enabled: false
   - name: obsidian
-    command: npx
+    command: uvx
     args:
-    - '@modelcontextprotocol/server-obsidian'
+    - 'mcp-server-obsidian'
     description: Obsidian vault
     cache_enabled: true
     ttl_seconds: 3600
@@ -440,33 +424,25 @@ tool_proxy:
     ttl_seconds: 3600
     enabled: false
   - name: neo4j
-    command: npx
+    command: uvx
     args:
-    - '@modelcontextprotocol/server-neo4j'
+    - 'mcp-server-neo4j'
     description: Neo4j graphe
     cache_enabled: true
     ttl_seconds: 3600
     enabled: false
   - name: weather
-    command: npx
+    command: uvx
     args:
-    - '@modelcontextprotocol/server-weather'
+    - 'mcp-server-weather'
     description: Météo Open-Meteo
     cache_enabled: true
     ttl_seconds: 3600
     enabled: false
-  - name: terraform
-    command: npx
-    args:
-    - '@modelcontextprotocol/server-terraform'
-    description: Terraform
-    cache_enabled: true
-    ttl_seconds: 3600
-    enabled: false
   - name: snowflake
-    command: npx
+    command: uvx
     args:
-    - '@modelcontextprotocol/server-snowflake'
+    - 'mcp-server-snowflake'
     description: Snowflake
     cache_enabled: true
     ttl_seconds: 3600
@@ -479,35 +455,459 @@ tool_proxy:
     cache_enabled: true
     ttl_seconds: 3600
     enabled: false
-  - name: slack2
-    command: npx
-    args:
-    - '@modelcontextprotocol/server-slack'
-    description: Slack (doublon)
-    cache_enabled: true
-    ttl_seconds: 3600
-    enabled: false
   - name: grafana
     command: npx
     args:
-    - '@modelcontextprotocol/server-grafana'
+    - '@dockndevai/mcp-grafana'
     description: Grafana
     cache_enabled: true
     ttl_seconds: 3600
     enabled: false
-  - name: ansible
-    command: npx
+  - name: apiguru-mcp
+    command: uvx
     args:
-    - '@modelcontextprotocol/server-ansible'
-    description: Ansible
+    - 'apiguru-mcp'
+    description: Serveur MCP apiguru-mcp (paquet verifie sur le registre)
     cache_enabled: true
     ttl_seconds: 3600
     enabled: false
-  - name: vault
+  - name: aso-score-mcp
     command: npx
     args:
-    - '@modelcontextprotocol/server-vault'
-    description: HashiCorp Vault
+    - '@forgemeshlabs/aso-score-mcp'
+    description: Serveur MCP aso-score-mcp (paquet verifie sur le registre)
+    cache_enabled: true
+    ttl_seconds: 3600
+    enabled: false
+  - name: aws
+    command: npx
+    args:
+    - 'mcp-server-aws'
+    description: Serveur MCP aws (paquet verifie sur le registre)
+    cache_enabled: true
+    ttl_seconds: 3600
+    enabled: false
+  - name: azure
+    command: npx
+    args:
+    - 'mcp-server-azure'
+    description: Serveur MCP azure (paquet verifie sur le registre)
+    cache_enabled: true
+    ttl_seconds: 3600
+    enabled: false
+  - name: bitbucket
+    command: uvx
+    args:
+    - 'mcp-server-bitbucket'
+    description: Serveur MCP bitbucket (paquet verifie sur le registre)
+    cache_enabled: true
+    ttl_seconds: 3600
+    enabled: false
+  - name: blink-camera-mcp
+    command: uvx
+    args:
+    - 'blink-camera-mcp'
+    description: Serveur MCP blink-camera-mcp (paquet verifie sur le registre)
+    cache_enabled: true
+    ttl_seconds: 3600
+    enabled: false
+  - name: cafe-mcp
+    command: npx
+    args:
+    - '@dangamsoft/cafe-mcp'
+    description: Serveur MCP cafe-mcp (paquet verifie sur le registre)
+    cache_enabled: true
+    ttl_seconds: 3600
+    enabled: false
+  - name: calculator
+    command: uvx
+    args:
+    - 'mcp-server-calculator'
+    description: Serveur MCP calculator (paquet verifie sur le registre)
+    cache_enabled: true
+    ttl_seconds: 3600
+    enabled: false
+  - name: cloud-finops-mcp
+    command: uvx
+    args:
+    - 'cloud-finops-mcp'
+    description: Serveur MCP cloud-finops-mcp (paquet verifie sur le registre)
+    cache_enabled: true
+    ttl_seconds: 3600
+    enabled: false
+  - name: cloudflare
+    command: npx
+    args:
+    - '@cloudflare/mcp-server-cloudflare'
+    description: Serveur MCP cloudflare (paquet verifie sur le registre)
+    cache_enabled: true
+    ttl_seconds: 3600
+    enabled: false
+  - name: cyber-chef-mcp
+    command: npx
+    args:
+    - '@noorfatima123456/cyber-chef-mcp'
+    description: Serveur MCP cyber-chef-mcp (paquet verifie sur le registre)
+    cache_enabled: true
+    ttl_seconds: 3600
+    enabled: false
+  - name: ecs
+    command: uvx
+    args:
+    - 'mcp-server-ecs'
+    description: Serveur MCP ecs (paquet verifie sur le registre)
+    cache_enabled: true
+    ttl_seconds: 3600
+    enabled: false
+  - name: email
+    command: uvx
+    args:
+    - 'mcp-server-email'
+    description: Serveur MCP email (paquet verifie sur le registre)
+    cache_enabled: true
+    ttl_seconds: 3600
+    enabled: false
+  - name: fenbs-mcp
+    command: npx
+    args:
+    - 'fenbs-mcp'
+    description: Serveur MCP fenbs-mcp (paquet verifie sur le registre)
+    cache_enabled: true
+    ttl_seconds: 3600
+    enabled: false
+  - name: figma-developer-mcp
+    command: npx
+    args:
+    - 'figma-developer-mcp'
+    description: Serveur MCP figma-developer-mcp (paquet verifie sur le registre)
+    cache_enabled: true
+    ttl_seconds: 3600
+    enabled: false
+  - name: firecrawl
+    command: npx
+    args:
+    - 'mcp-server-firecrawl'
+    description: Serveur MCP firecrawl (paquet verifie sur le registre)
+    cache_enabled: true
+    ttl_seconds: 3600
+    enabled: false
+  - name: google-maps
+    command: npx
+    args:
+    - '@modelcontextprotocol/server-google-maps'
+    description: Serveur MCP google-maps (paquet verifie sur le registre)
+    cache_enabled: true
+    ttl_seconds: 3600
+    enabled: false
+  - name: hacker-news
+    command: uvx
+    args:
+    - 'mcp-server-hacker-news'
+    description: Serveur MCP hacker-news (paquet verifie sur le registre)
+    cache_enabled: true
+    ttl_seconds: 3600
+    enabled: false
+  - name: healthchecks-mcp
+    command: npx
+    args:
+    - 'healthchecks-mcp'
+    description: Serveur MCP healthchecks-mcp (paquet verifie sur le registre)
+    cache_enabled: true
+    ttl_seconds: 3600
+    enabled: false
+  - name: ictfax-mcp
+    command: npx
+    args:
+    - 'ictfax-mcp'
+    description: Serveur MCP ictfax-mcp (paquet verifie sur le registre)
+    cache_enabled: true
+    ttl_seconds: 3600
+    enabled: false
+  - name: jira
+    command: uvx
+    args:
+    - 'mcp-server-jira'
+    description: Serveur MCP jira (paquet verifie sur le registre)
+    cache_enabled: true
+    ttl_seconds: 3600
+    enabled: false
+  - name: keycloak
+    command: npx
+    args:
+    - '@dockndevai/mcp-keycloak'
+    description: Serveur MCP keycloak (paquet verifie sur le registre)
+    cache_enabled: true
+    ttl_seconds: 3600
+    enabled: false
+  - name: kybase-mcp
+    command: npx
+    args:
+    - 'kybase-mcp'
+    description: Serveur MCP kybase-mcp (paquet verifie sur le registre)
+    cache_enabled: true
+    ttl_seconds: 3600
+    enabled: false
+  - name: linkedin
+    command: uvx
+    args:
+    - 'mcp-server-linkedin'
+    description: Serveur MCP linkedin (paquet verifie sur le registre)
+    cache_enabled: true
+    ttl_seconds: 3600
+    enabled: false
+  - name: loci-rag
+    command: uvx
+    args:
+    - 'loci-rag'
+    description: Serveur MCP loci-rag (paquet verifie sur le registre)
+    cache_enabled: true
+    ttl_seconds: 3600
+    enabled: false
+  - name: medium
+    command: uvx
+    args:
+    - 'mcp-server-medium'
+    description: Serveur MCP medium (paquet verifie sur le registre)
+    cache_enabled: true
+    ttl_seconds: 3600
+    enabled: false
+  - name: monday
+    command: uvx
+    args:
+    - 'mcp-server-monday'
+    description: Serveur MCP monday (paquet verifie sur le registre)
+    cache_enabled: true
+    ttl_seconds: 3600
+    enabled: false
+  - name: mssql
+    command: uvx
+    args:
+    - 'mcp-server-mssql'
+    description: Serveur MCP mssql (paquet verifie sur le registre)
+    cache_enabled: true
+    ttl_seconds: 3600
+    enabled: false
+  - name: mysql
+    command: uvx
+    args:
+    - 'mcp-server-mysql'
+    description: Serveur MCP mysql (paquet verifie sur le registre)
+    cache_enabled: true
+    ttl_seconds: 3600
+    enabled: false
+  - name: mythsensus-mcp
+    command: npx
+    args:
+    - 'mythsensus-mcp'
+    description: Serveur MCP mythsensus-mcp (paquet verifie sur le registre)
+    cache_enabled: true
+    ttl_seconds: 3600
+    enabled: false
+  - name: neon
+    command: npx
+    args:
+    - '@neondatabase/mcp-server-neon'
+    description: Serveur MCP neon (paquet verifie sur le registre)
+    cache_enabled: true
+    ttl_seconds: 3600
+    enabled: false
+  - name: opengist-mcp
+    command: npx
+    args:
+    - 'opengist-mcp'
+    description: Serveur MCP opengist-mcp (paquet verifie sur le registre)
+    cache_enabled: true
+    ttl_seconds: 3600
+    enabled: false
+  - name: opensearch
+    command: uvx
+    args:
+    - 'mcp-server-opensearch'
+    description: Serveur MCP opensearch (paquet verifie sur le registre)
+    cache_enabled: true
+    ttl_seconds: 3600
+    enabled: false
+  - name: rabbitmq
+    command: uvx
+    args:
+    - 'mcp-server-rabbitmq'
+    description: Serveur MCP rabbitmq (paquet verifie sur le registre)
+    cache_enabled: true
+    ttl_seconds: 3600
+    enabled: false
+  - name: reddit
+    command: uvx
+    args:
+    - 'mcp-server-reddit'
+    description: Serveur MCP reddit (paquet verifie sur le registre)
+    cache_enabled: true
+    ttl_seconds: 3600
+    enabled: false
+  - name: s3
+    command: uvx
+    args:
+    - 'mcp-server-s3'
+    description: Serveur MCP s3 (paquet verifie sur le registre)
+    cache_enabled: true
+    ttl_seconds: 3600
+    enabled: false
+  - name: smithery
+    command: npx
+    args:
+    - 'smithery'
+    description: Serveur MCP smithery (paquet verifie sur le registre)
+    cache_enabled: true
+    ttl_seconds: 3600
+    enabled: false
+  - name: spotify
+    command: uvx
+    args:
+    - 'mcp-server-spotify'
+    description: Serveur MCP spotify (paquet verifie sur le registre)
+    cache_enabled: true
+    ttl_seconds: 3600
+    enabled: false
+  - name: ssh
+    command: uvx
+    args:
+    - 'mcp-server-ssh'
+    description: Serveur MCP ssh (paquet verifie sur le registre)
+    cache_enabled: true
+    ttl_seconds: 3600
+    enabled: false
+  - name: tailwindshades-mcp
+    command: npx
+    args:
+    - 'tailwindshades-mcp'
+    description: Serveur MCP tailwindshades-mcp (paquet verifie sur le registre)
+    cache_enabled: true
+    ttl_seconds: 3600
+    enabled: false
+  - name: tapetide-mcp
+    command: npx
+    args:
+    - 'tapetide-mcp'
+    description: Serveur MCP tapetide-mcp (paquet verifie sur le registre)
+    cache_enabled: true
+    ttl_seconds: 3600
+    enabled: false
+  - name: trello
+    command: uvx
+    args:
+    - 'mcp-server-trello'
+    description: Serveur MCP trello (paquet verifie sur le registre)
+    cache_enabled: true
+    ttl_seconds: 3600
+    enabled: false
+  - name: vercel
+    command: npx
+    args:
+    - 'mcp-server-vercel'
+    description: Serveur MCP vercel (paquet verifie sur le registre)
+    cache_enabled: true
+    ttl_seconds: 3600
+    enabled: false
+  - name: veyra-mcp
+    command: npx
+    args:
+    - 'veyra-mcp'
+    description: Serveur MCP veyra-mcp (paquet verifie sur le registre)
+    cache_enabled: true
+    ttl_seconds: 3600
+    enabled: false
+  - name: vulcanus
+    command: npx
+    args:
+    - '@sunsato/vulcanus'
+    description: Serveur MCP vulcanus (paquet verifie sur le registre)
+    cache_enabled: true
+    ttl_seconds: 3600
+    enabled: false
+  - name: wikipedia
+    command: npx
+    args:
+    - 'mcp-server-wikipedia'
+    description: Serveur MCP wikipedia (paquet verifie sur le registre)
+    cache_enabled: true
+    ttl_seconds: 3600
+    enabled: false
+  - name: youtube
+    command: uvx
+    args:
+    - 'mcp-server-youtube'
+    description: Serveur MCP youtube (paquet verifie sur le registre)
+    cache_enabled: true
+    ttl_seconds: 3600
+    enabled: false
+  - name: hubspot
+    command: npx
+    args:
+    - '@hubspot/mcp-server'
+    description: Serveur MCP hubspot (paquet @hubspot/mcp-server verifie sur le registre)
+    cache_enabled: true
+    ttl_seconds: 3600
+    enabled: false
+  - name: openvancamp
+    command: npx
+    args:
+    - '@openvancamp/mcp-server'
+    description: Serveur MCP openvancamp (paquet @openvancamp/mcp-server verifie sur le registre)
+    cache_enabled: true
+    ttl_seconds: 3600
+    enabled: false
+  - name: railway
+    command: npx
+    args:
+    - '@railway/mcp-server'
+    description: Serveur MCP railway (paquet @railway/mcp-server verifie sur le registre)
+    cache_enabled: true
+    ttl_seconds: 3600
+    enabled: false
+  - name: sendraven
+    command: npx
+    args:
+    - '@sendraven/mcp'
+    description: Serveur MCP sendraven (paquet @sendraven/mcp verifie sur le registre)
+    cache_enabled: true
+    ttl_seconds: 3600
+    enabled: false
+  - name: super-log
+    command: npx
+    args:
+    - '@super-log/mcp'
+    description: Serveur MCP super-log (paquet @super-log/mcp verifie sur le registre)
+    cache_enabled: true
+    ttl_seconds: 3600
+    enabled: false
+  - name: swebsy
+    command: npx
+    args:
+    - '@swebsy/mcp'
+    description: Serveur MCP swebsy (paquet @swebsy/mcp verifie sur le registre)
+    cache_enabled: true
+    ttl_seconds: 3600
+    enabled: false
+  - name: upstash
+    command: npx
+    args:
+    - '@upstash/mcp-server'
+    description: Serveur MCP upstash (paquet @upstash/mcp-server verifie sur le registre)
+    cache_enabled: true
+    ttl_seconds: 3600
+    enabled: false
+  - name: upstash-redis
+    command: npx
+    args:
+    - '@upstash/redis'
+    description: Serveur MCP upstash-redis (paquet @upstash/redis verifie sur le registre)
+    cache_enabled: true
+    ttl_seconds: 3600
+    enabled: false
+  - name: pandastock
+    command: uvx
+    args:
+    - 'pandastock-mcp'
+    description: Serveur MCP pandastock (paquet pandastock-mcp verifie sur le registre)
     cache_enabled: true
     ttl_seconds: 3600
     enabled: false

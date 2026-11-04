@@ -232,6 +232,45 @@ def create_app(config: Config) -> FastAPI:
             unique.append(it)
         return {"catalog": unique, "active": sorted(active), "count": len(unique)}
 
+    @app.post("/api/tools/test")
+    async def tools_test(request: Request):
+        """Teste REELLEMENT un serveur du catalogue : spawn + initialize + list_tools
+        (même dormant), timeout 20 s. Retourne le nombre d'outils ou l'erreur."""
+        if request.headers.get("X-IcyLoom-Confirm", "").lower() not in ("1", "true", "yes"):
+            raise HTTPException(status_code=400, detail={
+                "error": "confirmation_required",
+                "message": "Envoyer X-IcyLoom-Confirm: 1 pour confirmer.",
+            })
+        payload = await request.json() if await request.body() else {}
+        name = str(payload.get("name") or "").strip() if isinstance(payload, dict) else ""
+        if not name:
+            raise HTTPException(status_code=400, detail={"error": "name_requis"})
+        known = {s.name: s for s in [*config.tool_proxy.servers, *config.tool_proxy.catalog]}
+        target = known.get(name)
+        if target is None:
+            raise HTTPException(status_code=404, detail={"error": "serveur_inconnu", "name": name})
+        if not target.command:
+            return {"ok": False, "name": name, "error": "commande_absente"}
+        import asyncio as _asyncio
+        from mcp import ClientSession as _Session
+        from mcp.client.stdio import StdioServerParameters as _Params, stdio_client as _stdio
+
+        async def _probe():
+            params = _Params(command=str(target.command),
+                             args=[str(a) for a in target.args],
+                             env=None)
+            async with _stdio(params) as (read, write):
+                async with _Session(read, write) as session:
+                    await session.initialize()
+                    listing = await session.list_tools()
+                    return [t.name for t in listing.tools]
+
+        try:
+            names = await _asyncio.wait_for(_probe(), timeout=20)
+            return {"ok": True, "name": name, "tool_count": len(names), "tools": names[:50]}
+        except Exception as exc:  # noqa: BLE001 - l'erreur est la réponse
+            return {"ok": False, "name": name, "error": f"{type(exc).__name__}: {exc}"}
+
     @app.post("/api/tools/enable")
     async def tools_enable(request: Request):
         """Active ou desactive un serveur du catalogue (ecriture YAML + hot-reload)."""

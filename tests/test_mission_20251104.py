@@ -118,12 +118,12 @@ def test_server_status_shape(tmp_path):
         assert {"name", "status", "tool_count", "last_error"} <= set(s)
 
 
-# -- Catalogue : 50 serveurs uniques -------------------------------------------
-def test_catalog_has_50_unique_servers():
+# -- Catalogue : 100 serveurs uniques ------------------------------------------
+def test_catalog_has_100_unique_servers():
     import yaml
     raw = yaml.safe_load(open("icyloom.yaml", encoding="utf-8"))
     names = {s["name"] for s in raw["tool_proxy"]["servers"]} | {s["name"] for s in raw["tool_proxy"]["catalog"]}
-    assert len(names) >= 50, f"catalogue: {len(names)} uniques"
+    assert len(names) == 100, f"catalogue: {len(names)} uniques"
 
 
 def test_proxy_decide_unknown_tool_fail_closed(tmp_path):

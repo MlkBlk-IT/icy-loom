@@ -3170,6 +3170,27 @@ async function renderCatalog(force) {
       body.appendChild(top); body.appendChild(desc);
       if (srv.tool_count) body.appendChild(htm("div", "cat-desc", srv.tool_count + " outils"));
       if (srv.last_error) body.appendChild(htm("div", "cat-desc cat-err", srv.last_error));
+      const testOut = htm("div", "cat-desc test-out", "");
+      const testBtn = htm("button", "mini", "▶ Tester");
+      testBtn.addEventListener("click", async (e) => {
+        e.stopPropagation();
+        testOut.textContent = "test en cours…";
+        testBtn.disabled = true;
+        try {
+          const resp = await fetch("/api/tools/test", {
+            method: "POST",
+            headers: { "Content-Type": "application/json", "X-IcyLoom-Confirm": "1" },
+            body: JSON.stringify({ name: srv.name }),
+          });
+          const r = await resp.json();
+          testOut.textContent = r.ok ? ("✓ " + r.tool_count + " outils : " + (r.tools || []).slice(0, 8).join(", ") + ((r.tools || []).length > 8 ? "…" : ""))
+                                     : ("✗ " + (r.error || "echec"));
+        } catch (err) {
+          testOut.textContent = "✗ " + err.message;
+        }
+        testBtn.disabled = false;
+      });
+      body.appendChild(testBtn); body.appendChild(testOut);
       card.appendChild(box); card.appendChild(body);
       const toggle = async (want) => {
         box.disabled = true;
