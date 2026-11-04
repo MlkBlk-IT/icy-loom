@@ -334,3 +334,105 @@ libre — donc « lit le fichier » et « read the file » aboutissent, mais une
 libre peut encore manquer. Les embeddings restent volontairement exclus (installation sans
 dépendance externe) ; ils pourront revenir en option plus tard.
 
+## 10. Session 2026-11-04 — signaux de confiance (V2.1.0)
+
+### Constat
+
+La spécification MCP (`2026-07-28`) traite la **description d'un outil** et le **contenu de son
+résultat** comme des entrées non fiables, et normalise ce qu'un serveur déclare de lui-même
+(`annotations`). IcyLoom classait les effets de bord par heuristique sur le nom
+(`infer_side_effects`), ignorait les `outputSchema` déclarés, et servait les résultats tels
+quels. C'est le point faible d'un relais qui se veut « gouverné ».
+
+Cinq améliorations ont été ajoutées — sans dépendance externe, sans GPU, sans réseau :
+
+| # | Amélioration | Où |
+|---|---|---|
+| 1 | Annotations MCP lues (`readOnlyHint`, `destructiveHint`, `idempotentHint`, `openWorldHint`) : elles complètent la classification d'effets de bord | `registry.effective_side_effects`, `toolproxy._annotations_of` |
+| 2 | Empreinte de définition (SHA) + table `tool_drift` : un changement de description, de schéma ou d'annotations est journalisé (champ, avant, après) | `registry.definition_hash`, `registry.drift` |
+| 3 | `structuredContent` vérifié contre l'`outputSchema` déclaré : plus de rupture silencieuse du serveur amont | `icyloom/schema_check.py` |
+| 4 | Résultats analysés : instruction override, role hijack, fuite de credentials, faux tool call, markup caché | `icyloom/untrusted.py` |
+| 5 | Deux meta-tools : `tool_drift` (dérive) et `tool_simulate` (décision de policy **sans exécution**) — 21 outils au total | `mcpserver.py` |
+
+### Règle de confiance retenue
+
+Le mode par défaut des annotations est `raise` : une déclaration de serveur peut **escalader**
+l'effet de bord — un outil au nom anodin qui se déclare destructeur est traité comme destructeur —
+mais **jamais l'abaisser**. Le mode `authoritative`
+(`tool_registry.annotations_trust`) fait confiance au serveur : à réserver à un serveur maîtrisé.
+
+Les trois signaux ne bloquent jamais un appel. Ils **signalent** (`schema_valid`,
+`schema_errors`, `untrusted`) et laissent la décision à l'agent : un relais qui bloque un
+résultat légitime sur une heuristique de mot-clé ferait perdre plus de temps qu'il n'en économise.
+
+### Suite de tests
+
+`pytest` : **232 tests, 0 échec**.
+
+Deux compteurs d'outils codés en dur (19) ont été mis à jour (21) dans `clientcheck.py` et
+`tests/test_mcp_transports.py` — l'auto-test client vérifie le nombre d'outils exposés.
+
+Le serveur `everything` (`mcp-server-everything`, **absent de PyPI**) a été remis en
+`enabled: false` dans `icyloom.yaml` : réactivé, il était effectivement lancé par `uvx` à chaque
+rechargement du catalogue et faisait échouer les trois tests « mission A1/A3 ».
+
+### Console
+
+Le panneau **Trust signals** de la vue Gateway V2 affiche ce que le gateway sait des serveurs
+qu'il relaie : les annotations déclarées, la dérive de définition (`tool_drift`), et les
+résultats signalés (contenu non fiable, résultat structuré non conforme). Les compteurs sont
+alimentés par les événements de relais (`tool_untrusted`, `tool_schema_invalid`).
+
+### Version
+
+`2.0.0` → **`2.1.0`**. La version mineure est justifiée par la surface publique : deux
+meta-tools (`tool_drift`, `tool_simulate`) et un nouveau panneau de console.
+
+## 11. Session 2026-11-04 — identité visuelle de la console (logo)
+
+### Ce qui a été demandé
+
+Le logo était **introuvable** dans la console : il n'existait que comme favicon
+(`/assets/logo.svg`) et comme glyphe de 38 px dans la barre latérale. Le hero de
+la vue Overview ne montrait que le motto.
+
+### Ce qui a été fait
+
+| Emplacement | Avant | Après |
+|---|---|---|
+| Hero de l'Overview | *(rien)* | `<img class="hero-mark">` **132 px**, à gauche du motto, incliné à −2,5° avec une ombre portée suivant la forme (filtre `drop-shadow`, pas de `box-shadow` carré) |
+| Barre latérale (`.brand-mark`) | 38 px | 46 px |
+| Favicon / onglet | `logo.svg` | inchangé |
+
+```html
+<div class="hero-brand">
+  <img class="hero-mark" src="/assets/logo.svg" width="132" height="132" alt="IcyLoom">
+  <div>
+    <span class="sticker gold">✦ IcyLoom · unified console</span>
+    <h1 id="hero-title">ONE <span class="hl">LEDGER</span>,<br>EVERY CALL.</h1>
+  </div>
+</div>
+```
+
+`hero-brand` est un `flex` avec `flex-wrap`, donc le logo passe au-dessus du
+titre sur écran étroit (media query 760 px → 84 px).
+
+### Identité du logo — ce qui a été écarté
+
+Trois variantes ont été produites et **refusées** : glassmorphism / cartoon,
+extrusion 3D pleine, et relief « topo » fil de fer. Retenu : **le logo original
+intact, avec une palette plus bleue** — warp `#2F6BE8`, weft `#7A34C9`, pastille
+bleue. Le SVG est la source unique ; `logo.png` (512×512 RGBA), `logo.ico`
+(16→256) et `docs/logo.png` en sont dérivés.
+
+Le `CHANGELOG` décrivait encore l'extrusion 3D (variante refusée) : la note a
+été réécrite pour décrire la palette bleue réellement livrée.
+
+### Vérification
+
+- Rendu contrôlé en Chrome headless (1440 px) : logo présent dans le hero, à
+  la bonne taille, sans déformation.
+- La console **qui tourne** (`:8153/dashboard`) sert déjà le nouveau balisage
+  (`SERVED hero-mark = True`) — un simple rafraîchissement de l'onglet suffit.
+- Suite complète : **232 tests, 0 échec** (`PYTEST_EXIT=0`).
+

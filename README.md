@@ -8,8 +8,8 @@
 
 [![Python](https://img.shields.io/badge/python-3.11%20%7C%203.12%20%7C%203.13-34a853?style=flat-square&labelColor=0b1f4d&logo=python&logoColor=white)](https://www.python.org/)
 [![License](https://img.shields.io/badge/license-MIT-ea4335?style=flat-square&labelColor=0b1f4d&logo=open-source-init&logoColor=white)](LICENSE)
-[![MCP](https://img.shields.io/badge/MCP-19%20tools-4285f4?style=flat-square&labelColor=0b1f4d)](src/icyloom/mcpserver.py)
-[![Tests](https://img.shields.io/badge/tests-223%20collected-4285f4?style=flat-square&labelColor=0b1f4d&logo=pytest&logoColor=white)](tests/)
+[![MCP](https://img.shields.io/badge/MCP-21%20tools-4285f4?style=flat-square&labelColor=0b1f4d)](src/icyloom/mcpserver.py)
+[![Tests](https://img.shields.io/badge/tests-232%20collected-4285f4?style=flat-square&labelColor=0b1f4d&logo=pytest&logoColor=white)](tests/)
 [![Bind](https://img.shields.io/badge/bind-127.0.0.1%20only-34a853?style=flat-square&labelColor=0b1f4d&logo=lock&logoColor=white)](icyloom.yaml)
 [![PyPI](https://img.shields.io/pypi/v/icyloom?style=flat-square&logo=pypi&logoColor=white)](https://pypi.org/project/icyloom/)
 [![GitHub stars](https://img.shields.io/github/stars/MlkBlk-IT/icy-loom?style=flat-square)](https://github.com/MlkBlk-IT/icy-loom/stargazers)
@@ -19,6 +19,18 @@
 
 
 ## IcyLoom V2 — the MCP Tool Gateway
+
+### What's new — 2026-11-04 — V2.1.0 (trust signals)
+
+| Change | What it means |
+|---|---|
+| **The gateway reads what the servers declare** | The MCP annotations (`readOnlyHint`, `destructiveHint`, `idempotentHint`, `openWorldHint`) complete the side-effect classification. They can only **escalate** it — never lower it — unless the server is explicitly trusted. |
+| **A changed tool definition is journalised** | Every definition is hashed (description, schemas, annotations). A change lands in `tool_drift` with the field, the old value and the new value. A server that changes behaviour between two versions must be visible, not silent. |
+| **Structured results are checked** | The `structuredContent` of a result is verified against the `outputSchema` the server declares. A mismatch is reported (`schema_valid: false`) instead of being served silently. |
+| **Results are scanned for injections** | Instruction override, role hijack, credential leak, forged tool call, hidden markup: a flagged result is served with an `untrusted` block and a warning. The call itself is never blocked. |
+| **Two new meta-tools** | `tool_drift(server?)` — what changed; `tool_simulate(server, tool, args)` — the decision the policy would take, **without executing anything**. **21 tools** in total. |
+| **The console shows the trust signals** | A new *Trust signals* panel in the Gateway V2 view: what the downstream servers declare, the definition drift, and the results that were flagged. |
+| **A new mark, visible in the console** | The ink-and-paper identity is kept, the palette turns bluer (blue warp threads, violet weft). The mark now shows at **132 px** in the console hero instead of hiding in the favicon. |
 
 ### What's new — 2026-11-03
 
@@ -34,7 +46,7 @@
 
 > **V2.0.0 is released** ([release notes](https://github.com/MlkBlk-IT/icy-loom/releases/tag/v2.0.0)). V2 turns a pile of MCP servers into **one governed gateway**: every tool catalogued, the right tool selected from a plain-language request, permissions enforced, context compressed, every decision logged.
 >
-> **194 tools · 14 servers · 19 MCP tools · zero embeddings · 127.0.0.1 only**
+> **194 tools · 14 servers · 21 MCP tools · zero embeddings · 127.0.0.1 only**
 
 V1 solved the **cost** problem: it cached LLM answers, compressed a context drawer, relayed tools. It did not solve the **control** problem — a client that could see every downstream tool could also *use* every downstream tool. V2 is the missing half.
 
@@ -47,7 +59,7 @@ V1 solved the **cost** problem: it cached LLM answers, compressed a context draw
 | Trail | token ledger | token ledger **+ decision audit** |
 | Install | pip + config | pip + config — **still no embeddings, no GPU, no external service** |
 
-### Six meta-tools
+### Eight meta-tools
 
 The agent talks to the gateway, not to 194 individual tools.
 
@@ -59,16 +71,19 @@ The agent talks to the gateway, not to 194 individual tools.
 | `run_tool_script(script)` | Chains several calls inside a **sandboxed** Python script. |
 | `tool_policy()` | The policy in force: roles, scopes, approval rules. |
 | `gateway_stats(days)` | Tokens per category, registry, audit — the observability view. |
+| `tool_drift(server?)` | Definition drift: a downstream tool changed — schema, description, behaviour. |
+| `tool_simulate(server, tool, args)` | The decision the policy would take, **without executing anything**. |
 
-**19 tools in total** (13 from V1 + these 6). A destructive action without `confirm=true` is refused **with no side effect**.
+**21 tools in total** (13 from V1 + these 8). A destructive action without `confirm=true` is refused **with no side effect**.
 
-### The five pillars
+### The six pillars
 
 1. **The registry is the source of truth** — every tool described once (schema, domain, intent, side effects, security level, scope, owner, risk), in the same SQLite file as everything else.
 2. **Selection that understands the request** — FTS5 narrows the candidates, Python scores them, and the request is translated into the canonical concepts first, so a French sentence reaches the English-named tool that answers it.
 3. **Policy, roles and approvals** — `reader` / `writer` / `operator` / `admin`, rules `allow` / `deny` / `approval`, most specific rule wins. A destructive effect always needs an approval; a write outside the project roots is refused outright.
 4. **Compression that keeps the prompt small** — schemas and results are compressed, property order is preserved (reordering would invalidate the provider's prompt cache), secrets are detected on the way through, and the raw result stays retrievable by `result_ref`.
 5. **Observability and audit** — every decision is written to `tool_audit`: actor, role, intent, tool, decision, reason, compression applied, tokens saved.
+6. **Trust signals — the server's declarations are read, not assumed** — the MCP annotations (`readOnlyHint`, `destructiveHint`…) complete the side-effect classification (they can only *escalate* it, never lower it), a changed tool definition is journalised in `tool_drift`, a structured result is checked against its declared `outputSchema`, and a result that tries to inject instructions into the model is flagged instead of being served silently.
 
 ### Benchmarks — measured, not claimed
 
@@ -118,7 +133,7 @@ policy: role=reader env=dev roots=[] (client-declared roots only)
 
 ### Release status
 
-V2 is on `main` and is not tagged yet. It includes: registry, lexical selection in 12 languages, the six meta-tools, roles and approvals, compression, the sandbox, the audit trail, the console view, the **system tray icon** — and a suite of **223 tests**.
+**V2.1.0** is on `main` ([changelog](CHANGELOG.md)). It adds: registry, lexical selection in 12 languages, the six meta-tools, roles and approvals, compression, the sandbox, the audit trail, the console view, the **system tray icon** — and the **trust signals** (MCP annotations, definition drift, structured-output verification, untrusted-content detection) with two extra meta-tools, `tool_drift` and `tool_simulate`, plus a new **Trust signals** panel in the console.
 
 Full announcement: **[ANNOUNCEMENT.md](ANNOUNCEMENT.md)** · Session log: **[progress.md](progress.md)**
 
@@ -429,7 +444,8 @@ except `/api/dashboard`. The tokens shown are the **real** tokens reported by th
 Reference screenshots (1440 × 960) live in [`docs/screenshots/`](docs/screenshots):
 `overview`, `activity`, `economy`, `cache`, `context`, `tools`, `audit`, `guide`.
 The logo is [`src/icyloom/static/logo.svg`](src/icyloom/static/logo.svg) — the same file is
-served by the console at `http://127.0.0.1:8153/assets/logo.svg`.
+served by the console at `http://127.0.0.1:8153/assets/logo.svg`. The mark is the flame of the old logo, now extruded in 3D: ink hatching on top,
+hatched side faces, a bevelled light edge and a cast shadow on the paper.
 
 Demo data set (fake data, isolated stacks, ports 8150-8154):
 
@@ -456,7 +472,7 @@ Two blocks play the role of an **agent** doing real work:
 
 To prove that a hit returns the **right** answer, the campaign uses `tools/echo_upstream.py`: the upstream returns the fingerprint of the request it received (`echo:<sha256>`). An answer served from the cache therefore carries the fingerprint of its own request, never another one's.
 
-## The 19 tools
+## The 21 tools
 
 ### V2 — the meta-tools (gateway)
 
@@ -468,6 +484,8 @@ To prove that a hit returns the **right** answer, the campaign uses `tools/echo_
 | `run_tool_script(script)` | chains calls in a sandboxed script | yes, needs `confirm=true` for a destructive effect |
 | `tool_policy()` | the policy in force: roles, scopes, approval rules | none |
 | `gateway_stats(days)` | tokens per category, registry, audit | none |
+| `tool_drift(server?)` | definition drift: a downstream tool changed (schema, description, behaviour) | none |
+| `tool_simulate(server, tool, args)` | the decision the policy would take — **no side effect** | none |
 
 ### V1 — the base tools
 

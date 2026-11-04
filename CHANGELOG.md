@@ -4,6 +4,50 @@ All notable changes to this project are documented here.
 Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) — versioning:
 [SemVer](https://semver.org/spec/v2.0.0.html).
 
+## [2.1.0] — 2026-11-04
+
+### Added
+
+- **Trust signals on the relay**: the gateway now reads what the downstream
+  servers *declare* about themselves instead of guessing everything alone.
+  - **MCP annotations** (`readOnlyHint`, `destructiveHint`, `idempotentHint`,
+    `openWorldHint`) are captured at registration and complete the side-effect
+    classification. The default mode `raise` never grants a privilege: an
+    annotation can only **escalate** the effect (a tool with an innocuous
+    name that declares itself destructive is treated as destructive). The mode
+    `authoritative` trusts the server's declaration
+    (`tool_registry.annotations_trust`).
+  - **Definition drift** (`tool_drift`): every tool definition is hashed
+    (description, input/output schema, annotations). A change is journalised
+    with the field, the old value and the new value. The spec treats a tool
+    description as untrusted input — a server that changes behaviour between
+    two versions must be visible, not silent. New meta-tool `tool_drift`.
+  - **Structured output verification**: the `structuredContent` of a result is
+    checked against the `outputSchema` the server declares. A mismatch is
+    reported (`schema_valid: false` + `schema_errors`) instead of being served
+    silently.
+  - **Untrusted content detection**: tool results are scanned for the usual
+    injection families (instruction override, role hijack, credential leak,
+    forged tool call, hidden markup...). A flagged result is served with an
+    `untrusted` block and a warning; the call itself is not blocked.
+  - **Policy dry-run**: new meta-tool `tool_simulate` returns the decision
+    the policy would take (allow / approval / deny, with the reason) without
+    executing anything.
+- **The console shows the trust signals** — the Gateway V2 view gains a
+  *Trust signals* panel: what the downstream servers declare (MCP
+  annotations), the definition drift (`tool_drift`), and the results that were
+  flagged (untrusted content, structured result off-schema).
+- **New mark, one motto** — the mark keeps its original ink-and-paper identity
+  (hand-drawn flame rising through the warp threads of a loom) and gains a
+  cooler, bluer palette: the warp threads are now blue (`#2F6BE8`), the weft
+  threads violet (`#7A34C9`). Regenerated as `logo.svg`, `logo.png` and
+  `logo.ico` from a single SVG source. The console hero keeps a single motto —
+  *One ledger, every call.* — and the long paragraph is gone.
+- **The mark is now visible in the console** — the Overview hero displays the
+  logo at 132 px next to the motto (the sidebar mark grows from 38 px to
+  46 px). The mark used to exist only as the favicon and a small sidebar
+  glyph.
+
 ## [2.0.0] — 2026-11-02
 
 IcyLoom becomes a **policy-aware MCP tool gateway**. The client no longer sees
