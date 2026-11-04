@@ -111,7 +111,7 @@ body {
 }
 .side .brand { padding: 2px 4px 0; }
 .side .brand-sub { white-space: nowrap; }
-.brand-mark { display: block; width: 38px; height: 38px; border-radius: 9px; box-shadow: 2px 2px 0 rgba(70,35,26,.75); }
+.brand-mark { display: block; width: 46px; height: 46px; border-radius: 9px; box-shadow: 2px 2px 0 rgba(70,35,26,.75); }
 .sep { display: flex; align-items: center; gap: 8px; padding: 0 4px; }
 .sep i { flex: 1; height: 2px; background: repeating-linear-gradient(90deg, var(--ink) 0 6px, transparent 6px 11px); opacity: .45; }
 .sep span { font-family: var(--font-sans); font-size: 9px; font-weight: 800; letter-spacing: .16em; text-transform: uppercase; color: rgba(70,35,26,.55); }
@@ -269,6 +269,14 @@ main { margin: 0 auto; max-width: 1400px; padding: 0 20px 70px; }
 /* ── hero ──────────────────────────────────────────────────── */
 .hero { display: grid; grid-template-columns: 1fr; gap: 20px; padding: 34px 0 26px; }
 @media (min-width: 1000px) { .hero { grid-template-columns: 1.35fr 1fr; align-items: center; } }
+.hero-lead { min-width: 0; }
+.hero-brand { display: flex; align-items: center; gap: 18px; flex-wrap: wrap; }
+.hero-mark {
+  width: 132px; height: 132px; flex: 0 0 auto;
+  transform: rotate(-2.5deg);
+  filter: drop-shadow(3px 4px 0 rgba(70, 35, 26, .16));
+}
+@media (max-width: 760px) { .hero-mark { width: 84px; height: 84px; } }
 .hero h1 {
   margin: 12px 0 0; font-family: var(--font-sans);
   font-size: clamp(38px, 6.4vw, 68px); font-weight: 800; line-height: .95; letter-spacing: -.03em;
@@ -486,7 +494,7 @@ footer { border-top: 3px dashed var(--ink); margin-top: 0; flex: 0 0 auto; backg
 <div class="app">
   <aside class="side">
     <a class="brand" href="#top" id="side-brand">
-      <img class="brand-mark" src="/assets/logo.svg" width="38" height="38" alt="IcyLoom">
+      <img class="brand-mark" src="/assets/logo.svg" width="46" height="46" alt="IcyLoom">
       <span>
         <span class="brand-name">ICYLOOM</span>
         <span class="brand-sub">unified console</span>
@@ -544,10 +552,14 @@ footer { border-top: 3px dashed var(--ink); margin-top: 0; flex: 0 0 auto; backg
       <!-- ══ VIEW · OVERVIEW ═══════════════════════════════ -->
       <section class="view view-active" id="view-overview">
         <section class="hero" aria-labelledby="hero-title">
-          <div>
-            <span class="sticker gold">✦ IcyCache console × Loom dash, fused</span>
-            <h1 id="hero-title">ONE <span class="hl">LEDGER</span><br>FOR EVERY CALL</h1>
-            <p>Cache hits, context compression and the tool tax — measured on one unified registry, then drawn by hand. Every tile is a real call read from SQLite: nothing here is estimated.</p>
+          <div class="hero-lead">
+            <div class="hero-brand">
+              <img class="hero-mark" src="/assets/logo.svg" width="132" height="132" alt="IcyLoom">
+              <div>
+                <span class="sticker gold">✦ IcyLoom · unified console</span>
+                <h1 id="hero-title">ONE <span class="hl">LEDGER</span>,<br>EVERY CALL.</h1>
+              </div>
+            </div>
             <div class="badges">
               <span class="sticker bypass">❄ IcyLoom — freeze the cost of repetition</span>
               <span class="sticker miss">◭ true 3D — drag it</span>
@@ -960,6 +972,21 @@ footer { border-top: 3px dashed var(--ink); margin-top: 0; flex: 0 0 auto; backg
           <div class="card c12">
             <div class="phead"><h3>Audit decisions</h3><span class="hint">who · what · which decision · why</span></div>
             <div class="tbl-wrap"><table class="sk" id="tbl-gw-audit"></table></div>
+          </div>
+        </div>
+
+        <div class="grid" style="margin-top:16px">
+          <div class="card c6">
+            <div class="phead"><h3>Trust signals</h3><span class="hint" id="gw-trust-when">—</span></div>
+            <div class="row-line"><span>Tools with declared annotations</span><b id="gw-annotated">—</b></div>
+            <div class="row-line"><span>Definition drift (changed tools)</span><b id="gw-drift">—</b></div>
+            <div class="row-line"><span>Results flagged untrusted</span><b id="gw-untrusted">—</b></div>
+            <div class="row-line"><span>Structured results off-schema</span><b id="gw-schema">—</b></div>
+            <div class="tbl-wrap"><table class="sk" id="tbl-gw-drift"></table></div>
+          </div>
+          <div class="card c6">
+            <div class="phead"><h3>Flagged results</h3><span class="hint">injection · schema</span></div>
+            <div class="tbl-wrap"><table class="sk" id="tbl-gw-flags"></table></div>
           </div>
         </div>
       </section>
@@ -2839,6 +2866,42 @@ function renderGateway(snap) {
       tr.appendChild(td);
       tr.appendChild(htm("td", "", GW_REASON_LABEL[row.reason] || row.reason || "—"));
       tr.appendChild(htm("td", "num", num(row.tokens_saved)));
+    });
+
+  /* trust signals : declarations, drift, resultats non fiables */
+  const trust = gw.trust || {};
+  const annotated = Number(trust.annotated) || 0;
+  const drift = Number(trust.drift) || 0;
+  const untrusted = Number(trust.untrusted) || 0;
+  const offSchema = Number(trust.schema_invalid) || 0;
+  $("#gw-annotated").textContent = num(annotated);
+  $("#gw-drift").textContent = num(drift);
+  $("#gw-untrusted").textContent = num(untrusted);
+  $("#gw-schema").textContent = num(offSchema);
+  const flagged = drift + untrusted + offSchema;
+  $("#gw-trust-when").textContent = flagged
+    ? "⚠ " + num(flagged) + " signal(s)" : "✓ nothing flagged";
+
+  table("tbl-gw-drift", ["Time", "Server", "Tool", "Field"],
+    trust.drift_recent || [],
+    (row, line) => {
+      line.appendChild(htm("td", "mono", String(row.ts || "").slice(5, 19)));
+      line.appendChild(htm("td", "", row.server || "—"));
+      line.appendChild(htm("td", "mono", row.tool || "—"));
+      line.appendChild(htm("td", "", row.field || "—"));
+    });
+
+  table("tbl-gw-flags", ["Time", "Signal", "Server", "Tool", "Detail"],
+    trust.flags_recent || [],
+    (row, line) => {
+      line.appendChild(htm("td", "mono", String(row.ts || "").slice(5, 19)));
+      const td = htm("td", "");
+      td.innerHTML = tag(row.kind === "tool_untrusted" ? "untrusted" : "off-schema",
+        row.kind === "tool_untrusted" ? "miss" : "gold");
+      line.appendChild(td);
+      line.appendChild(htm("td", "", row.server || "—"));
+      line.appendChild(htm("td", "mono", row.tool || "—"));
+      line.appendChild(htm("td", "", String(row.detail || "").slice(0, 70)));
     });
 
   drawGwServers(); drawGwEffects(); drawGwTokens();

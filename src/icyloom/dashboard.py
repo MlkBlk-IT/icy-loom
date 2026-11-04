@@ -375,6 +375,42 @@ def _surface(db: Database, days: int = 14) -> dict[str, Any]:
 # ---------------------------------------------------------------------------
 # agrégat principal
 # ---------------------------------------------------------------------------
+def _trust(db: Database) -> dict[str, Any]:
+    """Signaux de confiance : ce que le gateway sait des serveurs qu'il relaie.
+
+    Trois lectures : ce que les serveurs **déclarent** (annotations), ce qu'ils
+    **changent** (dérive de définition), et les résultats qui ne sont pas
+    fiables (injection, résultat structuré non conforme).
+    """
+    with db.cursor(commit=False) as cur:
+        annotated = int(cur.execute(
+            "SELECT COUNT(*) FROM tool_registry"
+            " WHERE annotations IS NOT NULL AND annotations <> ''"
+            " AND annotations <> '{}'").fetchone()[0])
+        by_source = _rows(cur, "SELECT side_effect_source, COUNT(*) AS n"
+                              " FROM tool_registry GROUP BY side_effect_source")
+        drift_total = int(cur.execute("SELECT COUNT(*) FROM tool_drift").fetchone()[0])
+        drift_recent = _rows(cur, "SELECT ts, server, tool, field, old_value, new_value"
+                                " FROM tool_drift ORDER BY id DESC LIMIT 10")
+        untrusted_total = int(cur.execute(
+            "SELECT COUNT(*) FROM tool_events WHERE kind='tool_untrusted'").fetchone()[0])
+        schema_total = int(cur.execute(
+            "SELECT COUNT(*) FROM tool_events"
+            " WHERE kind='tool_schema_invalid'").fetchone()[0])
+        flags = _rows(cur, "SELECT ts, kind, server, tool, detail FROM tool_events"
+                           " WHERE kind IN ('tool_untrusted','tool_schema_invalid')"
+                           " ORDER BY id DESC LIMIT 12")
+    return {
+        "annotated": annotated,
+        "by_source": by_source,
+        "drift": drift_total,
+        "drift_recent": drift_recent,
+        "untrusted": untrusted_total,
+        "schema_invalid": schema_total,
+        "flags_recent": flags,
+    }
+
+
 def _gateway(config: Config, db: Database) -> dict[str, Any]:
     """Bloc V2 : registre d'outils, permissions, audit, tokens par catégorie.
 
@@ -429,6 +465,7 @@ def _gateway(config: Config, db: Database) -> dict[str, Any]:
             "top_tools": top_tools,
         },
         "policy": policy,
+        "trust": _trust(db),
         "audit": {
             "entries": audit_total,
             "tokens_saved": audit_saved,
