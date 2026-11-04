@@ -9,7 +9,7 @@
 [![Python](https://img.shields.io/badge/python-3.11%20%7C%203.12%20%7C%203.13-34a853?style=flat-square&labelColor=0b1f4d&logo=python&logoColor=white)](https://www.python.org/)
 [![License](https://img.shields.io/badge/license-MIT-ea4335?style=flat-square&labelColor=0b1f4d&logo=open-source-init&logoColor=white)](LICENSE)
 [![MCP](https://img.shields.io/badge/MCP-19%20tools-4285f4?style=flat-square&labelColor=0b1f4d)](src/icyloom/mcpserver.py)
-[![Tests](https://img.shields.io/badge/tests-186%20passing-4285f4?style=flat-square&labelColor=0b1f4d&logo=pytest&logoColor=white)](tests/)
+[![Tests](https://img.shields.io/badge/tests-223%20collected-4285f4?style=flat-square&labelColor=0b1f4d&logo=pytest&logoColor=white)](tests/)
 [![Bind](https://img.shields.io/badge/bind-127.0.0.1%20only-34a853?style=flat-square&labelColor=0b1f4d&logo=lock&logoColor=white)](icyloom.yaml)
 [![PyPI](https://img.shields.io/pypi/v/icyloom?style=flat-square&logo=pypi&logoColor=white)](https://pypi.org/project/icyloom/)
 [![GitHub stars](https://img.shields.io/github/stars/MlkBlk-IT/icy-loom?style=flat-square)](https://github.com/MlkBlk-IT/icy-loom/stargazers)
@@ -32,7 +32,7 @@
 | **Dashboard rebuilt** | Window mask, cropped relief/topo, honest axes, legends, tooltips, ranked cache chart. |
 | **Figures republished from a real measurement** | **194 tools across 14 servers**, real tokens (tiktoken), gain per domain. The numbers below are the measured ones. |
 
-> **The release ships this week.** V2 turns a pile of MCP servers into **one governed gateway**: every tool catalogued, the right tool selected from a plain-language request, permissions enforced, context compressed, every decision logged.
+> **V2 is on `main` and not yet tagged.** V2 turns a pile of MCP servers into **one governed gateway**: every tool catalogued, the right tool selected from a plain-language request, permissions enforced, context compressed, every decision logged.
 >
 > **194 tools · 14 servers · 19 MCP tools · zero embeddings · 127.0.0.1 only**
 
@@ -92,7 +92,7 @@ The console was then put under load in the same run — **40 real calls** throug
 | Real generations (upstream miss) | **10** — p50 6.2 s, p95 10.4 s |
 | Hit rate on the console window | **78.5 %** — 102 hits / 28 misses (13 errors excluded) |
 | Tokens avoided | **373 190** — cache 20 250 + compression 234 286 + tools 118 654 |
-| Gain on the window | **93.7 %** — 373 190 avoided / 398 367 paid |
+| Gain on the window | **48.4 %** — 373 190 avoided / (398 367 paid + 373 190 avoided) |
 | Local cache after the run | **8 entries**, 4 reuses each |
 | Ledger rows | **623** |
 
@@ -116,9 +116,9 @@ policy: role=reader env=dev roots=[] (client-declared roots only)
 
 <sub>Gateway V2 view of the console: five KPIs with success badges, three charts, the registry, the policy in force and the decision audit — all live.</sub>
 
-### Release this week
+### Release status
 
-V2 is on `main`. The tagged release ships **this week**: registry, lexical selection in 12 languages, the six meta-tools, roles and approvals, compression, the sandbox, the audit trail, the console view, the **system tray icon** — and **223 passing tests**.
+V2 is on `main` and is not tagged yet. It includes: registry, lexical selection in 12 languages, the six meta-tools, roles and approvals, compression, the sandbox, the audit trail, the console view, the **system tray icon** — and a suite of **223 tests**.
 
 Full announcement: **[ANNOUNCEMENT.md](ANNOUNCEMENT.md)** · Session log: **[progress.md](progress.md)**
 
@@ -159,7 +159,7 @@ and no cloud account is needed for local mode. Route to local or cloud upstreams
 python3 -m venv venv
 source venv/bin/activate
 python -m pip install --upgrade pip
-python -m pip install https://github.com/MlkBlk-IT/icy-loom/releases/download/v2.0.0/icyloom-2.0.0-py3-none-any.whl
+python -m pip install "icyloom @ git+https://github.com/MlkBlk-IT/icy-loom.git"
 
 icyloom init
 icyloom doctor
@@ -176,7 +176,7 @@ icyloom check --transport all
 py -3.12 -m venv venv
 .\venv\Scripts\Activate.ps1
 python -m pip install --upgrade pip
-python -m pip install https://github.com/MlkBlk-IT/icy-loom/releases/download/v2.0.0/icyloom-2.0.0-py3-none-any.whl
+python -m pip install "icyloom @ git+https://github.com/MlkBlk-IT/icy-loom.git"
 
 icyloom init
 icyloom doctor
@@ -189,7 +189,7 @@ icyloom serve
 icyloom check --transport all
 ```
 
-Without the wheel (git required):
+Pinned to the last tagged release (V1 only, without the V2 gateway; git required):
 
 ```bash
 python -m pip install "icyloom @ git+https://github.com/MlkBlk-IT/icy-loom.git@v1.0.0"
@@ -260,7 +260,7 @@ This section is the honest summary. Raw measurements live in
 | Area | Status |
 |---|---|
 | Installation from a wheel on a clean machine | **Verified.** `init`, `doctor` (exit 0), `serve`, `check` 21/21, from a venv outside the repository |
-| Test suite | **137** tests pass (131 + 6 new proofs and regressions) |
+| Test suite | **223** tests collected by pytest (`pytest tests --collect-only -q`) |
 | Cache round trip (miss then hit) | **Verified by an automated test**: the first request calls the upstream, the identical second request does not, the served response is identical, and the ledger records both |
 | Tool relay | **Verified by an automated test** against a real MCP stdio server: the tool is reached, it answers, and the second identical call is served from the cache |
 | Tool-result cache correctness (stale hits, replayed writes, cached errors, loop detection) | **Verified.** Synthetic harness: 0 stale hits out of 140 (before the fix: 425 out of 436). Real `fetch` server: 8 of 8 checks pass |
@@ -586,7 +586,7 @@ Measured on the historical cache (read-only): **70 %** of normalised texts coinc
 ## Tests
 
 ```powershell
-.\.venv\Scripts\python.exe -m pytest tests\ -q                                          # 182 tests, exit 0
+.\.venv\Scripts\python.exe -m pytest tests\ -q                                          # 223 tests collected
 .\.venv\Scripts\python.exe tests\proof_e2e.py                              # end-to-end proof
 .\.venv\Scripts\python.exe tests\test_cache_correctness.py                 # stale-hit measurement (prints a report)
 .\.venv\Scripts\python.exe tests\real_mcp_fetch.py                         # real MCP server; needs uvx and Internet
