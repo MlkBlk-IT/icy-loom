@@ -23,7 +23,7 @@
         fill="none" stroke="#46231A" stroke-width="4" stroke-linejoin="round" stroke-linecap="round" opacity="0.35"/>
 
   <!-- warp threads : the loom, behind the flame -->
-  <g fill="none" stroke="#0FB5A6" stroke-width="5" stroke-linecap="round">
+  <g fill="none" stroke="#2F6BE8" stroke-width="5" stroke-linecap="round">
     <path d="M150 88 C168 132 136 176 154 220 C170 258 138 302 156 344 C168 374 148 398 152 424"/>
     <path d="M200 86 C216 132 186 174 202 220 C216 258 186 300 202 342 C214 372 196 398 200 426"/>
     <path d="M312 86 C296 132 326 174 310 220 C296 258 326 300 310 342 C298 372 316 398 312 426"/>
@@ -50,7 +50,7 @@
         fill="#FFC93E" stroke="#46231A" stroke-width="6" stroke-linejoin="round" stroke-linecap="round"/>
 
   <!-- weft threads : in front, the loom weaves -->
-  <g fill="none" stroke="#9B1B4F" stroke-width="6" stroke-linecap="round">
+  <g fill="none" stroke="#7A34C9" stroke-width="6" stroke-linecap="round">
     <path d="M124 196 C186 184 236 204 296 194 C330 188 352 198 388 190"/>
     <path d="M124 332 C184 346 232 326 292 336 C330 342 352 330 388 338"/>
   </g>
@@ -64,5 +64,5 @@
 
   <!-- ink splatter sticker -->
   <circle cx="420" cy="404" r="9" fill="#FF5A36" stroke="#46231A" stroke-width="5"/>
-  <circle cx="104" cy="150" r="6" fill="#22B784" stroke="#46231A" stroke-width="4"/>
+  <circle cx="104" cy="150" r="6" fill="#2F6BE8" stroke="#46231A" stroke-width="4"/>
 </svg>
