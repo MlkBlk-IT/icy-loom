@@ -32,24 +32,28 @@ class TokenMeter:
         self.db = db
         self.ledger = ledger
 
-    def record(self, category: str, tokens: int, **meta: Any) -> None:
-        """Enregistre ``tokens`` dans une catégorie."""
+    def record(self, category: str, tokens: int, *, saved: int = 0,
+               **meta: Any) -> None:
+        """Enregistre ``tokens`` dans une catégorie (et l'économie associée)."""
         if category not in CATEGORIES:
             raise ValueError(f"catégorie inconnue : {category}")
         tokens = int(tokens)
+        saved = int(saved)
         if tokens <= 0:
             return
         if self.ledger is not None:
             self.ledger.record(LedgerEntry(kind=f"token_{category}",
-                                           tokens_in=tokens, meta=meta))
+                                           tokens_in=tokens, tokens_saved=saved,
+                                           meta=meta))
             return
         import json
 
         with self.db.transaction() as cur:
             cur.execute(
-                "INSERT INTO ledger_entries (ts,kind,tokens_in,meta)"
-                " VALUES (datetime('now'),?,?,?)",
-                (f"token_{category}", tokens, json.dumps(meta, ensure_ascii=False)),
+                "INSERT INTO ledger_entries (ts,kind,tokens_in,tokens_saved,meta)"
+                " VALUES (datetime('now'),?,?,?,?)",
+                (f"token_{category}", tokens, saved,
+                 json.dumps(meta, ensure_ascii=False)),
             )
 
     def summary(self, days: int = 30) -> dict[str, Any]:

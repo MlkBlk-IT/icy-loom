@@ -771,10 +771,22 @@ def create_app(config: Config) -> FastAPI:
         usage_payload: dict[str, Any] = {}
 
         async def _iterator() -> AsyncIterator[bytes]:
-            async for raw in response.aiter_bytes():
-                chunks.append(raw)
-                yield raw
-            await response.aclose()
+            try:
+                async for raw in response.aiter_bytes():
+                    chunks.append(raw)
+                    yield raw
+            except (httpx.ReadTimeout, httpx.ReadError, httpx.RemoteProtocolError) as exc:
+                # Flux coupé en plein vol : des octets sont deja partis chez le
+                # client, donc pas de bascule possible. On journalise, on
+                # alimente le breaker et on ne met JAMAIS un flux tronque en cache.
+                gateway.breakers.for_name(candidate.name).record_failure()
+                log.warning("flux amont %s coupe (%s)", candidate.name, type(exc).__name__)
+                _log_llm_event("error", key, candidate.name, body.get("model"), True,
+                               0, 0, 0, 0, int((time.perf_counter() - started) * 1000),
+                               candidate.name, _client_of(request))
+                return
+            finally:
+                await response.aclose()
             assembled = b"".join(chunks).decode("utf-8", errors="replace")
             text, usage = _extract_sse_text_and_usage(assembled)
             usage_payload.update(usage)

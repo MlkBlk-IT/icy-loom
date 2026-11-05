@@ -148,7 +148,7 @@ class Ledger:
                 " COALESCE(SUM(tokens_saved + tool_tokens_saved), 0) AS saved,"
                 " COUNT(*) AS entries"
                 " FROM ledger_entries WHERE ts >= datetime('now', ?)"
-                " GROUP BY day(ts) ORDER BY day",
+                " GROUP BY date(ts) ORDER BY date(ts)",
                 (f"-{days} days",),
             ).fetchall()
         series = []

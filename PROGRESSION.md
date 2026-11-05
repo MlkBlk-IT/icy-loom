@@ -85,3 +85,59 @@ Baseline known: pytest green, ~100 s, 0 failures.
   untested at runtime — validate each one when enabling it.
 - `llm_calls` stays 0 by construction (no LLM call in the proxy) — field kept
   for compatibility.
+
+---
+
+## §2 — 2026-11-05 — 3 fixes runtime + tests rouge→vert + ledger compaction
+
+**Asked.** (a) Lancer la suite complète et corriger toute régression.
+(b) Ajouter les tests rouge→vert des 3 fixes de la session précédente
+(ledger.daily, flux coupé, migrate mapping). (c) Ledger : les lignes
+`token_tool_results` portaient `tokens_saved=0` alors que `tool_audit` mesure
+118 654 tok réels de compaction.
+
+**Found (read-only first).**
+
+1. **Suite pytest.** `245 passed, 3 skipped, 0 failed` (exit 0). Aucune
+   régression par les 3 fixes précédents.
+2. **`tokens.py:TokenMeter.record()`** ne passait jamais `tokens_saved` au
+   ledger — `LedgerEntry(tokens_in=tokens, meta=meta)` sans `tokens_saved`.
+   La compaction était mesurée dans `tool_audit.tokens_saved` mais invisible
+   côté ledger.
+3. **`toolproxy.py:_present()`** appelait `meter.record("tool_results", ...)`
+   sans `saved=`, donc `tokens_saved=0` sur chaque ligne `token_tool_results`.
+4. **`/api/live`** calcule `total_economy` depuis 4 domaines disjoints
+   (`llm_events` / `context_sources` / `tool_audit` / `ledger.tool_tokens_saved`).
+   Le `tokens_saved` ajouté sur `token_tool_results` n'entre dans aucun de ces
+   4 domaines → `total_economy` inchangé. Seul `tok_saved` (affichage
+   secondaire) devient plus précis. Pas de double comptage.
+
+**Changed.**
+
+- `tests/test_fixes_20251105.py` (nouveau, 3 tests) :
+  - `test_ledger_daily_groups_by_date` : 2 jours → `daily(7)` groupe par
+    `date(ts)`, pas de doublons, ordre croissant, totaux corrects.
+  - `test_stream_breaker_on_disconnect` : serveur TCP brut qui envoie un chunk
+    SSE puis ferme (chunked tronqué) → HTTP 200, ≥1 event `error` stream=1,
+    0 `cache_entries`, breaker.failures ≥ 1.
+  - `test_migrate_dict_mapping` : base source avec `prompt_hash`/`normalized_prompt`/
+    `original_prompt` → après `run_migration`, `cache_entries` peuplée dans
+    `key`/`normalized`/`original`, 5/5 lignes, relance idempotente.
+- `tokens.py` : `record(category, tokens, *, saved=0, **meta)` →
+  `LedgerEntry(tokens_saved=int(saved))` + fallback SQL `tokens_saved`.
+- `toolproxy.py` : `meter.record("tool_results", ..., saved=int(meta.get("saved_tokens", 0)), ...)`.
+- `CHANGELOG.md` : sous-section `### Fixed (session 2 — 2026-11-05)`.
+- `PROGRESSION.md` : ce §.
+
+**Verified (real output).**
+
+- `pytest tests/test_fixes_20251105.py -q` : 3 passed (après correction).
+- Suite complète relancée après les patches source : (voir ci-dessous).
+
+**Left open.**
+
+- Le test flux coupé utilise `RemoteProtocolError` (chunked tronqué), pas un
+  vrai `ReadTimeout` — limite connue documentée.
+- `pydantic_core` cassé dans le venv → `ContextStore` toujours inutilisable.
+- `migrate` ne couvre pas les chunks Loom (`context_chunks`).
+- Aucun commit (attente du go utilisateur).

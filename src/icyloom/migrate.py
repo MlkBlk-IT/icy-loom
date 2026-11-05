@@ -20,14 +20,20 @@ from .db import Database
 
 log = logging.getLogger("icyloom.migrate")
 
-#: Correspondance (table source → table cible, colonnes).
-#: Seules les tables dont le schéma est compatible sont migrées.
-MAPPING: tuple[tuple[str, str, tuple[str, ...]], ...] = (
-    ("cache", "cache_entries",
-     ("prompt_hash", "normalized_prompt", "original_prompt", "response", "is_stream",
-      "provider", "model")),
-    ("tool_cache", "tool_cache",
-     ("key", "server", "tool", "result_json", "bytes", "latency_ms", "ttl")),
+#: Correspondance (table source → table cible, {colonne source: colonne cible}).
+#: Les noms diffèrent entre l'ancien schéma et le schéma unifié (prompt_hash→key,
+#: normalized_prompt→normalized, original_prompt→original) : réutiliser le nom
+#: source côté cible faisait échouer chaque INSERT.
+MAPPING: tuple[tuple[str, str, dict[str, str]], ...] = (
+    ("cache", "cache_entries", {
+        "prompt_hash": "key", "normalized_prompt": "normalized",
+        "original_prompt": "original", "response": "response",
+        "is_stream": "is_stream", "provider": "provider", "model": "model",
+        "created_at": "created_at", "last_accessed": "last_accessed",
+        "access_count": "access_count"}),
+    ("tool_cache", "tool_cache", {c: c for c in (
+        "key", "server", "tool", "result_json", "bytes", "latency_ms", "ttl",
+        "created_at", "last_accessed", "hits")}),
 )
 
 
@@ -68,7 +74,7 @@ def run_migration(config: Config, source: Path | None = None,
             continue
         count = _count(source, src_table)
         plan.append({"source_table": src_table, "target_table": dst_table,
-                     "columns": list(columns), "rows": count})
+                     "columns": dict(columns), "rows": count})
     if not plan:
         log.warning("aucune table migrable dans %s (trouvées : %s)", source, tables)
         return False
@@ -81,7 +87,10 @@ def run_migration(config: Config, source: Path | None = None,
         return True
 
     for entry in plan:
-        _copy(db, source, entry["source_table"], entry["target_table"], entry["columns"])
+        copied = _copy(db, source, entry["source_table"], entry["target_table"],
+                       entry["columns"])
+        log.info("copié %s -> %s : %s/%s lignes", entry["source_table"],
+                 entry["target_table"], copied, entry["rows"])
     log.info("migration terminée")
     return True
 
@@ -97,35 +106,33 @@ def _count(path: Path, table: str) -> int:
 
 
 def _copy(db: Database, source: Path, src_table: str, dst_table: str,
-          columns: tuple[str, ...]) -> int:
-    """Copie les lignes compatibles (les colonnes absentes sont ignorées)."""
+          columns: dict[str, str]) -> int:
+    """Copie les lignes (colonne source → colonne cible). Renvoie le nombre
+    de lignes réellement insérées (un doublon ignoré ne compte pas)."""
     conn = sqlite3.connect(f"file:{source}?mode=ro", uri=True)
     conn.row_factory = sqlite3.Row
     try:
         available = {r[1] for r in conn.execute(f"PRAGMA table_info({src_table})")}
-        usable = [c for c in columns if c in available]
-        if not usable:
+        pairs = [(s, d) for s, d in columns.items() if s in available]
+        if not pairs:
             return 0
         rows = conn.execute(
-            f"SELECT {', '.join(usable)} FROM {src_table}").fetchall()
+            f"SELECT {', '.join(s for s, _ in pairs)} FROM {src_table}").fetchall()
     finally:
         conn.close()
 
     copied = 0
     with db.transaction() as cur:
         target_columns = {r[1] for r in cur.execute(f"PRAGMA table_info({dst_table})")}
-        for column in usable:
-            if column not in target_columns:
-                continue
-        placeholders = ", ".join("?" * len(usable))
+        pairs = [(s, d) for s, d in pairs if d in target_columns]
+        if not pairs:
+            return 0
+        sql = (f"INSERT OR IGNORE INTO {dst_table} ({', '.join(d for _, d in pairs)})"
+               f" VALUES ({', '.join('?' * len(pairs))})")
         for row in rows:
             try:
-                cur.execute(
-                    f"INSERT OR IGNORE INTO {dst_table} ({', '.join(usable)})"
-                    f" VALUES ({placeholders})",
-                    tuple(row[c] for c in usable),
-                )
-                copied += 1
+                cur.execute(sql, tuple(row[s] for s, _ in pairs))
+                copied += int(cur.rowcount or 0)
             except sqlite3.Error as exc:
                 log.warning("ligne ignorée (%s) : %s", src_table, exc)
     return copied

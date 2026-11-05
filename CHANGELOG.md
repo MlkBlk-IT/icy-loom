@@ -4,6 +4,24 @@ All notable changes to this project are documented here.
 Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) — versioning:
 [SemVer](https://semver.org/spec/v2.0.0.html).
 
+## [2.2.1] — 2026-11-05
+
+### Fixed
+
+- **`ledger.daily()` grouped by `date(ts)`** instead of the non-existent SQLite
+  function `day(ts)`, which silently returned an empty series.
+- **Stream disconnect handled**: `httpx.ReadTimeout` / `ReadError` /
+  `RemoteProtocolError` mid-stream now log an error event, trip the circuit
+  breaker, and never cache a truncated response.
+- **`migrate.py` column mapping**: source columns (`prompt_hash`,
+  `normalized_prompt`, `original_prompt`) are mapped to target columns
+  (`key`, `normalized`, `original`). `_copy()` returns the real inserted row
+  count; the migration is idempotent (`INSERT OR IGNORE`).
+- **Tool-result compaction savings in the ledger**: `token_tool_results`
+  rows now carry `tokens_saved` (from `compress_result.saved_tokens`), so the
+  ledger reflects the real compaction economy. `/api/live` is unaffected — its
+  tool domain reads `tool_audit.tokens_saved` directly, not the ledger.
+
 ## [2.2.0] — 2026-11-04
 
 ### Fixed

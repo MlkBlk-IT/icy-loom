@@ -771,8 +771,9 @@ class ToolProxy:
         saved = max(0, int(meta.get("original_chars", 0)) - int(meta.get("compressed_chars", 0)))
         meta["result_ref"] = ref
         meta["saved_chars"] = saved
-        self.meter.record("tool_results", count_tokens(text), server=server, tool=tool,
-                          saved_chars=saved)
+        self.meter.record("tool_results", count_tokens(text),
+                          saved=int(meta.get("saved_tokens", 0)),
+                          server=server, tool=tool, saved_chars=saved)
         return shown, meta
 
     def _store_result(self, server: str, tool: str, args: dict[str, Any],
