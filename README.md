@@ -196,13 +196,26 @@ See `plugin.yaml` for the manifest and `__init__.py` for the entrypoint.
 Five minutes, on a clean machine. No GPU is required, no provider lock-in is imposed,
 and no cloud account is needed for local mode. Route to local or cloud upstreams when configured.
 
+**Option 1: PyPI (Python)**
+```bash
+pip install icyloom
+# or with pipx (recommended for CLI tools):
+pipx install icyloom
+```
+
+**Option 2: NPM (Node.js wrapper)**
+```bash
+npm install -g icyloom
+# Requires Python 3.11+ — the wrapper delegates to Python
+```
+
 ### Linux / macOS
 
 ```bash
 python3 -m venv venv
 source venv/bin/activate
 python -m pip install --upgrade pip
-python -m pip install "icyloom @ git+https://github.com/MlkBlk-IT/icy-loom.git"
+pip install icyloom
 
 icyloom init
 icyloom doctor
@@ -219,7 +232,7 @@ icyloom check --transport all
 py -3.12 -m venv venv
 .\venv\Scripts\Activate.ps1
 python -m pip install --upgrade pip
-python -m pip install "icyloom @ git+https://github.com/MlkBlk-IT/icy-loom.git"
+pip install icyloom
 
 icyloom init
 icyloom doctor

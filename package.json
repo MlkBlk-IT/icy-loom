@@ -1,0 +1,49 @@
+{
+  "name": "icyloom",
+  "version": "2.2.1",
+  "description": "IcyLoom — Unified local gateway: LLM cache + lossless compressed context drawer in a single MCP server. 21 tools, SQLite+FTS5, zero-loss retrieval.",
+  "keywords": [
+    "mcp",
+    "mcp-server",
+    "llm",
+    "cache",
+    "proxy",
+    "context",
+    "local-first",
+    "sqlite",
+    "fts5"
+  ],
+  "homepage": "https://github.com/MlkBlk-IT/icy-loom#readme",
+  "bugs": {
+    "url": "https://github.com/MlkBlk-IT/icy-loom/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/MlkBlk-IT/icy-loom.git"
+  },
+  "license": "MIT",
+  "author": "Malik Belkacemi (MlkBlk-IT)",
+  "type": "module",
+  "bin": {
+    "icyloom": "./bin/icyloom.js"
+  },
+  "engines": {
+    "node": ">=18.0.0",
+    "python": ">=3.11"
+  },
+  "scripts": {
+    "postinstall": "node ./scripts/postinstall.js",
+    "icyloom": "icyloom",
+    "serve": "icyloom serve",
+    "check": "icyloom check",
+    "doctor": "icyloom doctor"
+  },
+  "devDependencies": {},
+  "files": [
+    "bin/",
+    "scripts/",
+    "README.md",
+    "LICENSE",
+    "plugin.yaml"
+  ]
+}
