@@ -27,6 +27,9 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) — versioning:
   servers every cycle instead of the list frozen at startup.
 - **Error messages are actionable**: a failing server now reports
   `<server>: <ExceptionType>: <message> (vérifier commande/env dans icyloom.yaml)`.
+- **One writer for the headline**: the snapshot poll overwrote the live value
+  every 2 s, so the headline alternated between two different figures. The
+  live poll is now its only writer.
 
 ### Added
 
@@ -37,8 +40,20 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) — versioning:
 - **Cache metrics instrumented**: `cache_read`/`cache_write` are really recorded
   (they were hard-coded to 0). `tokens_saved` = tokens of cache-served results
   minus tokens of the call key; `tool_schemas` = tokens of tool schemas served.
-- **Catalogue: 50 unique MCP servers** (20 new dormant entries; backup
-  `icyloom.yaml.bak-20261104-170909`).
+- **Catalogue: 102 server entries** — 18 active in `tool_proxy.servers`, 84
+  dormant in `tool_proxy.catalog`. The console lists them with a real
+  per-server Tester and a pager (25 per page); the dormant ones stay disabled
+  until they are enabled.
+- **A live economy metric in the console** — `GET /api/live` re-queries SQLite
+  every second. The toolbar shows `💰 N tok économisés · X %`, a ticker that
+  eases toward the true value and a live session clock. The frozen `143` left
+  the headline; the ledger row count stays as a secondary reference.
+- **The economy is summed over disjoint domains** — cache LLM (`llm_events`
+  hits), compression (`context_sources` before − anchor), tools (`tool_audit`,
+  tokenised rows only) and tool-cache hits (`ledger.tool_tokens_saved`). The
+  previous formula added `SUM(ledger.tokens_saved)` **and** the context delta,
+  which counted the same compression twice: the toolbar and the registry card
+  disagreed. They now agree, and `/api/live` returns the breakdown per domain.
 
 ### Tests
 

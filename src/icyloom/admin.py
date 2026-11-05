@@ -161,6 +161,87 @@ def create_app(config: Config) -> FastAPI:
             "note": "tokens réels (usage amont). Aucune estimation.",
         }
 
+    @app.get("/api/live")
+    async def live():
+        """Compteurs **vivants**, requêtés à chaque appel (pas de cache).
+
+        Le dashboard poll cette route chaque seconde : les chiffres montent
+        dès qu'un agent travaille (chaque appel alimente le ledger et le
+        contexte), au lieu d'attendre le recalcul du snapshot de fond.
+        """
+        with db.cursor(commit=False) as cur:
+            led = cur.execute(
+                "SELECT COUNT(*) AS entries,"
+                " COALESCE(SUM(tokens_saved + tool_tokens_saved), 0) AS saved,"
+                " COALESCE(SUM(tokens_in + tokens_out), 0) AS paid,"
+                " COALESCE(SUM(saved_latency_ms), 0) AS saved_latency,"
+                " COALESCE(SUM(latency_ms), 0) AS latency"
+                " FROM ledger_entries"
+            ).fetchone()
+            cache = cur.execute(
+                "SELECT COALESCE(SUM(COALESCE(saved_prompt, 0) + COALESCE(saved_completion, 0)), 0) AS saved,"
+                " COALESCE(SUM(CASE WHEN kind = 'miss' THEN COALESCE(prompt_tokens, 0)"
+                " + COALESCE(completion_tokens, 0) ELSE 0 END), 0) AS paid"
+                " FROM llm_events"
+            ).fetchone()
+            ctx = cur.execute(
+                "SELECT COALESCE(SUM(tokens_before), 0) AS before,"
+                " COALESCE(SUM(anchor_tokens), 0) AS anchor,"
+                " COUNT(*) AS sources FROM context_sources"
+            ).fetchone()
+            tools = cur.execute(
+                "SELECT COALESCE(SUM(tokens_saved), 0) AS saved,"
+                " COALESCE(SUM(COALESCE(tokens_in, 0) + COALESCE(tokens_out, 0)), 0) AS paid"
+                " FROM tool_audit"
+                " WHERE decision = 'allow' AND COALESCE(tokens_saved, 0) > 0"
+                " AND saved_chars IS NOT NULL"
+            ).fetchone()
+            tool_cache = cur.execute(
+                "SELECT COALESCE(SUM(tool_tokens_saved), 0) AS saved FROM ledger_entries"
+            ).fetchone()
+            chunks = int(cur.execute(
+                "SELECT COUNT(*) FROM context_chunks").fetchone()[0])
+        before = int(ctx["before"] or 0)
+        anchor = int(ctx["anchor"] or 0)
+        ctx_saved = max(0, before - anchor)
+        entries = int(led["entries"] or 0)
+        saved = int(led["saved"] or 0)
+        cache_saved = int(cache["saved"] or 0)
+        cache_paid = int(cache["paid"] or 0)
+        tools_saved = int(tools["saved"] or 0)
+        tools_paid = int(tools["paid"] or 0)
+        tool_cache_saved = int(tool_cache["saved"] or 0)
+        # Domaines DISJOINTS : la compression n'est comptée qu'une fois (via
+        # context_sources), le cache LLM qu'une fois (via llm_events). Le ledger
+        # contient aussi des lignes context_compress : les additionner ici
+        # compterait deux fois la même compression.
+        total_econ = cache_saved + ctx_saved + tools_saved + tool_cache_saved
+        total_paid = cache_paid + anchor + tools_paid
+        baseline = total_econ + total_paid
+        import time as _t
+        return {
+            "entries": entries,
+            "tok_saved": saved,
+            "tok_paid": int(led["paid"] or 0),
+            "context_tok_saved": ctx_saved,
+            "context_saved_ratio": round(ctx_saved / before, 4) if before else 0.0,
+            "chunks": chunks,
+            "sources": int(ctx["sources"] or 0),
+            "total_economy": total_econ,
+            "economy_ratio": round(total_econ / baseline, 4) if baseline else 0.0,
+            "baseline": baseline,
+            "paid_total": total_paid,
+            "domains": {
+                "cache": cache_saved,
+                "compression": ctx_saved,
+                "tools": tools_saved,
+                "tool_cache": tool_cache_saved,
+            },
+            "saved_latency_ms": int(led["saved_latency"] or 0),
+            "latency_ms": int(led["latency"] or 0),
+            "ts": _t.time(),
+        }
+
     @app.get("/api/cache/stats")
     async def cache_stats():
         return cache.stats()

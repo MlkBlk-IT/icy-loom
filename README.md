@@ -9,7 +9,7 @@
 [![Python](https://img.shields.io/badge/python-3.11%20%7C%203.12%20%7C%203.13-34a853?style=flat-square&labelColor=0b1f4d&logo=python&logoColor=white)](https://www.python.org/)
 [![License](https://img.shields.io/badge/license-MIT-ea4335?style=flat-square&labelColor=0b1f4d&logo=open-source-init&logoColor=white)](LICENSE)
 [![MCP](https://img.shields.io/badge/MCP-21%20tools-4285f4?style=flat-square&labelColor=0b1f4d)](src/icyloom/mcpserver.py)
-[![Tests](https://img.shields.io/badge/tests-232%20collected-4285f4?style=flat-square&labelColor=0b1f4d&logo=pytest&logoColor=white)](tests/)
+[![Tests](https://img.shields.io/badge/tests-248%20collected-4285f4?style=flat-square&labelColor=0b1f4d&logo=pytest&logoColor=white)](tests/)
 [![Bind](https://img.shields.io/badge/bind-127.0.0.1%20only-34a853?style=flat-square&labelColor=0b1f4d&logo=lock&logoColor=white)](icyloom.yaml)
 [![PyPI](https://img.shields.io/pypi/v/icyloom?style=flat-square&logo=pypi&logoColor=white)](https://pypi.org/project/icyloom/)
 [![GitHub stars](https://img.shields.io/github/stars/MlkBlk-IT/icy-loom?style=flat-square)](https://github.com/MlkBlk-IT/icy-loom/stargazers)
@@ -30,7 +30,9 @@
 | **Real per-server status** | `up` / `down` / `no-tools` + tool count + last error, exposed by `proxy_info` and `/api/tools/catalog`. The console badges no longer lie. |
 | **Drift noise gone** | Schemas are normalized before hashing (`$schema` stripped). 910 cosmetic entries purged — only real changes are journalised. |
 | **Cache metrics are real** | `cache_read`/`cache_write` are actually recorded (they were hard-coded to 0). |
-| **Catalogue: 50 MCP servers** | 20 new dormant entries; enable them one by one from the console. |
+| **A live economy metric** | The toolbar shows a number that moves — `💰 N tok économisés · X %` — re-queried from SQLite every second, with a ticker that eases to the true value and a live session clock. The frozen `143` left the headline; the ledger row count stays as a secondary reference. |
+| **The economy is counted once** | Disjoint domains only — cache LLM, compression, tools, tool-cache. The previous formula counted the same compression twice, so the toolbar and the registry card disagreed. They now agree, and `/api/live` returns the breakdown per domain. |
+| **Catalogue: 102 server entries** | 18 active, 84 dormant in the catalogue, listed with a real per-server Tester and a pager (25 per page); the dormant ones stay disabled until enabled. |
 
 ### What's new — 2026-11-04 — V2.1.0 (trust signals)
 
@@ -145,7 +147,7 @@ policy: role=reader env=dev roots=[] (client-declared roots only)
 
 ### Release status
 
-**V2.1.0** is on `main` ([changelog](CHANGELOG.md)). It adds: registry, lexical selection in 12 languages, the six meta-tools, roles and approvals, compression, the sandbox, the audit trail, the console view, the **system tray icon** — and the **trust signals** (MCP annotations, definition drift, structured-output verification, untrusted-content detection) with two extra meta-tools, `tool_drift` and `tool_simulate`, plus a new **Trust signals** panel in the console.
+**V2.2.0** is on `main` ([changelog](CHANGELOG.md)). It adds: registry, lexical selection in 12 languages, the six meta-tools, roles and approvals, compression, the sandbox, the audit trail, the console view, the **system tray icon**, the **trust signals** (MCP annotations, definition drift, structured-output verification, untrusted-content detection) with two extra meta-tools, `tool_drift` and `tool_simulate`, a new **Trust signals** panel in the console, a **fail-closed relay** (an unknown tool is denied by default), **real per-server status**, a catalogue of **102 server entries** (18 active, 84 dormant) with a pager and a real per-server Tester — and a **live economy metric** in the toolbar: `GET /api/live` re-queries SQLite every second and sums **disjoint domains**, so the headline and the registry card always agree.
 
 Full announcement: **[ANNOUNCEMENT.md](ANNOUNCEMENT.md)** · Session log: **[progress.md](progress.md)**
 

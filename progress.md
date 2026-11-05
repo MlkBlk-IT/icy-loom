@@ -436,3 +436,74 @@ Le `CHANGELOG` décrivait encore l'extrusion 3D (variante refusée) : la note a
   (`SERVED hero-mark = True`) — un simple rafraîchissement de l'onglet suffit.
 - Suite complète : **232 tests, 0 échec** (`PYTEST_EXIT=0`).
 
+---
+
+# progress.md — Session 2026-11-04 · Métrique d'économie LIVE (console V2.2.0)
+
+Contexte : la barre d'outils de la vue Overview portait un compteur figé (`143`).
+Objectif de Malik : une métrique d'économie **live**, qui bouge, vraie et vérifiable.
+
+## 1. Ce qui bloquait
+
+| Problème | Constat |
+|---|---|
+| Route absente | `GET /api/live` → **404** : le serveur en service servait du code antérieur (jamais redémarré) |
+| Console morte | Un artefact de corruption (`</parameter>`) dans le `<script>` inline de `dashboard.html` cassait tout le JS : « connecting... », graphes vides, registry en tirets |
+| Doublon de processus | Deux `serve` actifs (venv `pythonw` → enfant `Python312`) ; seul l'enfant tenait le port 8153 |
+
+## 2. La métrique honnête
+
+Formulation littérale : `live = SUM(ledger.tokens_saved) + (context.tokens_before − context.anchor_tokens)`.
+`ledger_entries` contient déjà 154 lignes `context_compress` (236 089 tok) qui sont les
+**mêmes** événements que les 154 lignes de `context_sources` (234 286 tok) : la compression
+était comptée **deux fois**. Résultat : 491 296 sur la barre d'outils contre 373 190 sur la
+carte Registry — deux chiffres pour la même chose, à l'écran, en même temps.
+
+Formulation retenue — **domaines disjoints** :
+
+| Domaine | Source | Tokens |
+|---|---|---|
+| Cache LLM | `llm_events` (`kind='hit'` → `saved_prompt+saved_completion`) | 20 250 |
+| Compression | `context_sources` (`tokens_before − anchor_tokens`) | 234 286 |
+| Outils | `tool_audit` (`decision='allow'`, `tokens_saved>0`, `saved_chars IS NOT NULL`) | 118 654 |
+| Tool-cache | `ledger_entries.tool_tokens_saved` | 671 |
+| **Total** | | **373 861** |
+
+Ratio = 373 861 / (373 861 + 27 721 réellement payés) = **93,1 %** — même base que la carte
+Registry (« Baseline 400 911 »). La ligne de legacy `tool_audit` en caractères reste
+exclue : elle mesure des caractères, pas des tokens.
+
+## 3. Patchs
+
+- `src/icyloom/admin.py` — `/api/live` recalcule par domaines disjoints et expose
+  `economy_ratio`, `baseline`, `paid_total` et `domains` (le détail par domaine).
+- `src/icyloom/static/dashboard.html` — le poll snapshot n'écrit **plus** la headline
+  (le nombre alternait toutes les 2 s entre deux valeurs : `poll` écrasait `pollLive`) ;
+  la headline lit `economy_ratio` ; le tooltip détaille les 4 domaines.
+- `icyloom.yaml` — `qdrant` est épinglé (`mcp-server-qdrant==0.8.1`, version résolue
+  présente dans le cache uv local) : `test_A1_uvx_servers_are_pinned` était **rouge
+  depuis le commit a666ced** — `main` était déjà rouge.
+
+## 4. Preuves
+
+- `GET /api/live` → 200 : `total_economy=373861`, `economy_ratio=0.931`, `baseline=401582`,
+  `paid_total=27721`, `domains={cache:20250, compression:234286, tools:118654, tool_cache:671}`.
+- SQL rejoué à la main : les 4 domaines redonnent exactement 373 861.
+- Console (navigateur) : headline `💰 373,861 tok économisés · 93.1%`, ticker
+  `✚ 373,861` (convergence easing vérifiée), horloge `⏱ mm:ss` qui tick, registry
+  peuplée, **0 erreur console**.
+- `node --check` sur le JS inline → exit 0 ; `py_compile admin.py` → exit 0.
+- Suite complète : **245 passed, 3 skipped, 0 failed** (248 collectés, exit 0).
+  Le seul échec (`test_A1_uvx_servers_are_pinned`, `qdrant` non épinglé) était
+  **antérieur** à cette session : il venait du commit `a666ced`, donc `main` était
+  déjà rouge. Corrigé par l'épinglage `mcp-server-qdrant==0.8.1` (version résolue
+  retrouvée dans le cache uv local, sans appel réseau).
+
+## 5. Ce qui reste
+
+- **Release v2.2.0** (tag + publication) prévue vendredi : rien n'est taggé à ce jour, et
+  le profil GitHub pointait vers un release `v2.2.0` inexistante — le lien du profil pointe
+  donc le CHANGELOG jusqu'à la publication.
+- Écart connu : les lignes `ledger_entries.kind='token_tool_results'` portent `tokens_saved=0`
+  alors que `tool_audit` mesure 118 654 tok réels → le ledger ne porte pas l'économie
+  de compaction des résultats d'outils.
