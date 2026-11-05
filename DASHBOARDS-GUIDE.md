@@ -1,6 +1,20 @@
-# Guide & Quickstart — Dashboards IcyLoom (8153) & Osiris (8770)
+# Guide & Quickstart — Dashboards IcyLoom (8150–8153) & Osiris (8770)
 
 Dernière mise à jour : 2026-11-01
+
+---
+
+## Hermes Agent Plugin (Catalog Ready)
+
+IcyLoom is also packaged as a **Hermes Agent plugin** — installable by name once listed in the plugin catalog:
+
+```bash
+# After catalog merge (pending PR)
+hermes plugins install icyloom
+```
+
+The plugin declares 21 MCP tools and runs the full gateway stack (ports 8150-8153).
+See `plugin.yaml` for the manifest and `__init__.py` for the entrypoint.
 
 ---
 

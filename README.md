@@ -177,7 +177,21 @@ IcyLoom is a **standalone** project: no imports, links or paths to any other pro
 
 ---
 
-## Quick start
+### Hermes Agent Plugin (Catalog Ready)
+
+IcyLoom is packaged as a **Hermes Agent plugin** — installable by name once listed in the plugin catalog:
+
+```bash
+# After catalog merge (pending PR)
+hermes plugins install icyloom
+```
+
+The plugin declares 21 MCP tools and runs the full gateway stack (ports 8150-8153).
+See `plugin.yaml` for the manifest and `__init__.py` for the entrypoint.
+
+---
+
+### Quick start (Standalone)
 
 Five minutes, on a clean machine. No GPU is required, no provider lock-in is imposed,
 and no cloud account is needed for local mode. Route to local or cloud upstreams when configured.

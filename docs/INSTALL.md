@@ -8,6 +8,20 @@ Guide du system tray seul : **[TRAY.md](TRAY.md)**.
 
 ---
 
+## Hermes Agent Plugin (Catalog Ready)
+
+IcyLoom is also packaged as a **Hermes Agent plugin** — installable by name once listed in the plugin catalog:
+
+```bash
+# After catalog merge (pending PR)
+hermes plugins install icyloom
+```
+
+The plugin declares 21 MCP tools and runs the full gateway stack (ports 8150-8153).
+See `plugin.yaml` for the manifest and `__init__.py` for the entrypoint.
+
+---
+
 ## 1. Prérequis
 
 | | |

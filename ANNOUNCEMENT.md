@@ -7,6 +7,20 @@
 
 ---
 
+## Hermes Agent Plugin (Catalog Ready)
+
+IcyLoom is also packaged as a **Hermes Agent plugin** — installable by name once listed in the plugin catalog:
+
+```bash
+# After catalog merge (pending PR)
+hermes plugins install icyloom
+```
+
+The plugin declares 21 MCP tools and runs the full gateway stack (ports 8150-8153).
+See `plugin.yaml` for the manifest and `__init__.py` for the entrypoint.
+
+---
+
 ## Why V2 exists
 
 V1 solved the **cost** problem: it cached LLM answers, compressed a context drawer, and relayed tools. It did not solve the **control** problem. A client that could see every downstream tool could also *use* every downstream tool. Nothing stopped an agent from calling a destructive tool, nothing stopped it from writing outside the project, and nothing recorded why a call was allowed.
