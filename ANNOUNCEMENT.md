@@ -7,6 +7,24 @@
 
 ---
 
+## 📦 v2.2.2 — IcyLoom is on PyPI and npm
+
+**2026-11-06** · [Release](https://github.com/MlkBlk-IT/icy-loom/releases/tag/v2.2.2) · [PyPI](https://pypi.org/project/icyloom/) · [npm](https://www.npmjs.com/package/icyloom)
+
+```bash
+pip install icyloom        # PyPI — the Python package
+pipx install icyloom       # PyPI — isolated CLI
+npm install -g icyloom     # npm — Node.js wrapper, delegates to Python
+```
+
+- The wheel and the sdist are published on **every release** through trusted publishing (OIDC) — no API token is stored in the repository.
+- The npm package is published **with provenance**: npm displays the exact Actions run that built the tarball.
+- `.github/workflows/publish.yml` builds, runs `twine check`, then publishes — and can be replayed on demand from the Actions tab.
+
+**248 tests passed, 3 skipped, 0 failed.** Python 3.11 → 3.13, no GPU, no embeddings, `127.0.0.1` only.
+
+---
+
 ## Hermes Agent Plugin (Catalog Ready)
 
 IcyLoom is also packaged as a **Hermes Agent plugin** — installable by name once listed in the plugin catalog:
