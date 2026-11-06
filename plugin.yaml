@@ -1,5 +1,5 @@
 name: icyloom
-version: "2.2.1"
+version: "2.2.2"
 description: "IcyLoom — Unified local gateway: LLM cache + lossless compressed context drawer in a single MCP server. 21 tools, SQLite+FTS5, zero-loss retrieval (retrievable=1.0), 248 tests passing."
 author: "Malik Belkacemi (MlkBlk-IT)"
 license: MIT

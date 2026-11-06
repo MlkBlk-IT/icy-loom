@@ -281,7 +281,7 @@ def test_E_session_id_header_without_peer() -> None:
 
 # ---------------------------------------------------------------- F · version
 def test_F_version_has_a_single_source() -> None:
-    assert __version__ == "2.2.1"
+    assert __version__ == "2.2.2"
     text = (ROOT / "pyproject.toml").read_text(encoding="utf-8")
     assert 'dynamic = ["version"]' in text
     assert 'version = { attr = "icyloom.__version__" }' in text

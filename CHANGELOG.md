@@ -4,6 +4,20 @@ All notable changes to this project are documented here.
 Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) — versioning:
 [SemVer](https://semver.org/spec/v2.0.0.html).
 
+## [2.2.2] — 2026-11-06
+
+### Added
+
+- **PyPI distribution**: every release now publishes the wheel and the sdist to
+  PyPI — `pip install icyloom`, or `pipx install icyloom` for a clean CLI.
+- **NPM distribution**: the `icyloom` npm package wraps the CLI and delegates to
+  the Python package — `npm install -g icyloom`.
+- **Publish workflow** (`.github/workflows/publish.yml`): builds, runs
+  `twine check`, then publishes on every GitHub release — PyPI through trusted
+  publishing (OIDC, no token stored in the repo), npm with provenance.
+- **Hermes Agent plugin manifest**: `plugin.yaml` + `register(ctx)` entrypoint
+  declaring the 21 MCP tools.
+
 ## [2.2.1] — 2026-11-05
 
 ### Fixed
