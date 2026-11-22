@@ -558,6 +558,12 @@ def snapshot(config: Config, hours: int = 24, days: int = 14) -> dict[str, Any]:
         cache_by_provider = _rows(cur,
             "SELECT provider, COUNT(*) AS n FROM cache_entries GROUP BY provider"
             " ORDER BY n DESC LIMIT 12")
+        sem_total = int(cur.execute("SELECT COUNT(*) FROM semantic_cache").fetchone()[0])
+        sem_reuse = int(cur.execute(
+            "SELECT COALESCE(SUM(access_count - 1), 0) FROM semantic_cache").fetchone()[0] or 0)
+        sem_by_provider = _rows(cur,
+            "SELECT provider, COUNT(*) AS n FROM semantic_cache GROUP BY provider"
+            " ORDER BY n DESC LIMIT 12")
         tool_by_server = _rows(cur,
             "SELECT server, COUNT(*) AS entries, COALESCE(SUM(hits),0) AS hits,"
             " COALESCE(SUM(bytes),0) AS bytes FROM tool_cache GROUP BY server ORDER BY entries DESC")
@@ -643,6 +649,11 @@ def snapshot(config: Config, hours: int = 24, days: int = 14) -> dict[str, Any]:
         "cache_reuse": cache_reuse,
         "cache_hit_rate_pct": round(cache_reuse / (cache_reuse + cache_total) * 100.0, 2)
         if (cache_reuse + cache_total) else 0.0,
+        "semantic_enabled": config.cache.semantic_enabled,
+        "semantic_entries": sem_total,
+        "semantic_reuse": sem_reuse,
+        "semantic_hit_rate_pct": round(sem_reuse / (sem_reuse + sem_total) * 100.0, 2)
+        if (sem_reuse + sem_total) else 0.0,
         "sessions": ctx["sessions"],
         "chunks": ctx["chunks"],
         "context_tokens_saved": ctx_saved,
@@ -676,6 +687,7 @@ def snapshot(config: Config, hours: int = 24, days: int = 14) -> dict[str, Any]:
         "ledger_by_kind": ledger_by_kind,
         "ledger_by_upstream": ledger_by_upstream,
         "cache_by_provider": cache_by_provider,
+        "semantic_by_provider": sem_by_provider,
         "tool_by_server": tool_by_server,
         "tool_events_by_kind": tool_events_by_kind,
         "tool_events_by_tool": tool_events_by_tool,
@@ -702,6 +714,9 @@ def snapshot(config: Config, hours: int = 24, days: int = 14) -> dict[str, Any]:
                 "ttl_seconds": config.cache.ttl_seconds,
                 "max_entries": config.cache.max_entries,
                 "semantic_enabled": config.cache.semantic_enabled,
+                "semantic_threshold": config.cache.semantic_threshold,
+                "semantic_url": config.cache.semantic_url,
+                "semantic_collection": config.cache.semantic_collection,
             },
             "compression": {
                 "enabled": config.compression.enabled,

@@ -248,7 +248,7 @@ icyloom check --transport all
 Pinned to a specific release (git required):
 
 ```bash
-python -m pip install "icyloom @ git+https://github.com/MlkBlk-IT/icy-loom.git@v2.2.2"
+python -m pip install "icyloom @ git+https://github.com/MlkBlk-IT/icy-loom.git@v2.3.0"
 ```
 
 Expected output of `icyloom check`: `21/21 vérifications réussies`.

@@ -1,13 +1,13 @@
-"""IcyLoom dans la zone de notification du système (system tray).
+"""IcyLoom in the system tray (system tray).
 
-L'icône est le point d'entrée « sans terminal » de la pile : elle démarre le
-serveur, ouvre la console, affiche l'état (passerelle, MCP, admin) et écrit la
-configuration des clients MCP. Elle fonctionne aussi bien depuis un checkout de
-développement que depuis une installation par wheel : tous les chemins passent
-par :mod:`icyloom.paths`.
+The icon is the "no-terminal" entry point for the stack: it starts the
+server, opens the console, shows status (gateway, MCP, admin) and writes
+the MCP client configuration. It works equally well from a dev checkout or
+from a wheel install: all paths go through
+via :mod:`icyloom.paths`.
 
-``pystray`` et ``Pillow`` sont importés **au moment de l'usage** : le paquet
-reste importable sans interface graphique (serveur, CI, conteneur).
+``pystray`` and ``Pillow`` are imported **at the time of use**: the package
+remains importable without a GUI (server, CI, container).
 """
 
 from __future__ import annotations
@@ -40,7 +40,7 @@ CLIENT_TARGETS = (
 # réseau
 # ---------------------------------------------------------------------------
 def port_open(port: int, host: str = "127.0.0.1", timeout: float = 0.4) -> bool:
-    """Vrai si quelque chose écoute sur le port."""
+    """True if something is listening on the port."""
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
         sock.settimeout(timeout)
         return sock.connect_ex((host, port)) == 0
@@ -108,14 +108,14 @@ def _listening_pid_posix(port: int) -> int:
 
 
 def listening_pid(port: int) -> int:
-    """PID du processus qui écoute sur le port (0 si personne)."""
+    """PID of the process listening on the port (0 if none)."""
     if sys.platform.startswith("win"):
         return _listening_pid_windows(port)
     return _listening_pid_posix(port)
 
 
 def kill_tree(pid: int) -> bool:
-    """Arrête un processus et ses enfants."""
+    """Stops a process and its children."""
     if pid <= 0:
         return False
     if sys.platform.startswith("win"):
@@ -157,7 +157,7 @@ def kill_tree(pid: int) -> bool:
 # icône
 # ---------------------------------------------------------------------------
 def _bundled_asset(name: str) -> Path | None:
-    """Fichier d'image livré dans le paquet (``static/``)."""
+    """Image file shipped in the package (``static/``)."""
     try:
         from importlib.resources import files
 
@@ -171,7 +171,7 @@ def _bundled_asset(name: str) -> Path | None:
 
 
 def tray_image(size: int = 64):
-    """Logo IcyLoom (PNG embarqué dans le paquet), sinon un repli dessiné."""
+    """IcyLoom logo (PNG bundled in the package), otherwise a drawn fallback."""
     from PIL import Image, ImageDraw
 
     png = _bundled_asset("logo.png")
@@ -211,7 +211,7 @@ def tray_image(size: int = 64):
 # instance unique
 # ---------------------------------------------------------------------------
 def pid_alive(pid: int) -> bool:
-    """Vrai si le processus existe encore."""
+    """True if the process still exists."""
     if pid <= 0:
         return False
     if sys.platform.startswith("win"):
@@ -230,7 +230,7 @@ def pid_alive(pid: int) -> bool:
 
 
 def acquire_lock() -> tuple[Path, bool]:
-    """Une seule icône à la fois : renvoie ``(fichier, obtenu)``."""
+    """A single icon at a time: returns ``(fichier, obtenu)``."""
     path = paths.runtime_dir() / LOCK_NAME
     try:
         current = int(path.read_text(encoding="utf-8").strip() or "0")
@@ -246,7 +246,7 @@ def acquire_lock() -> tuple[Path, bool]:
 # la pile
 # ---------------------------------------------------------------------------
 class Stack:
-    """Démarre et arrête la pile IcyLoom (passerelle + MCP + admin)."""
+    """Starts and stops the IcyLoom stack (gateway + MCP + admin)."""
 
     def __init__(self, config: Path, admin_port: int = DEFAULT_ADMIN_PORT) -> None:
         self.config = config
@@ -317,14 +317,14 @@ class Stack:
 # configuration
 # ---------------------------------------------------------------------------
 def resolve_config(explicit: str | None = None) -> Path:
-    """Chemin du YAML : option, variable d'environnement, sinon défaut."""
+    """Config path : option, variable d'environnement, sinon défaut."""
     if explicit:
         return Path(explicit).expanduser().resolve()
     return paths.config_path()
 
 
 def ensure_config(config: Path) -> Path:
-    """Crée une configuration par défaut si le fichier est absent."""
+    """Crée une configuration via défaut si le fichier est absent."""
     if config.exists():
         return config
     from .config import write_default_config
@@ -339,12 +339,12 @@ def ensure_config(config: Path) -> Path:
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         prog="icyloom tray",
-        description="Icône IcyLoom dans la zone de notification",
+        description="IcyLoom icon in the system tray",
     )
-    parser.add_argument("--config", default=None, help="chemin du YAML de configuration")
-    parser.add_argument("--background", action="store_true", help="sans fenêtre de terminal")
+    parser.add_argument("--config", default=None, help="path to the configuration YAML")
+    parser.add_argument("--background", action="store_true", help="without terminal window")
     parser.add_argument(
-        "--no-start", action="store_true", help="ne démarre pas la pile au lancement"
+        "--no-start", action="store_true", help="don't start the stack on launch"
     )
     return parser
 
@@ -356,7 +356,7 @@ def main(argv: list[str] | None = None) -> int:
         import pystray
     except ImportError:
         print(
-            "Le system tray requiert pystray et Pillow.\n"
+            "The system tray requires pystray and Pillow.\n"
             '  Windows : pip install "icyloom[tray]"\n'
             '  Linux   : pip install "icyloom[tray-linux]"\n'
             '  macOS   : pip install "icyloom[tray-macos]"',
@@ -368,7 +368,7 @@ def main(argv: list[str] | None = None) -> int:
     try:
         ensure_config(config)
     except OSError as exc:
-        print(f"configuration inutilisable : {config} ({exc})", file=sys.stderr)
+        print(f"unusable configuration : {config} ({exc})", file=sys.stderr)
         return 2
 
     admin_port = DEFAULT_ADMIN_PORT
@@ -390,7 +390,7 @@ def main(argv: list[str] | None = None) -> int:
 
     lock_path, acquired = acquire_lock()
     if not acquired:
-        print("IcyLoom est déjà présent dans la zone de notification.", file=sys.stderr)
+        print("IcyLoom is already present in the system tray.", file=sys.stderr)
         return 0
 
     stack = Stack(config, admin_port)
@@ -416,27 +416,27 @@ def main(argv: list[str] | None = None) -> int:
 
     def open_console(_icon=None, _item=None) -> None:
         webbrowser.open(console_url)
-        notify("Console ouverte")
+        notify("Console opened")
 
     def open_docs(_icon=None, _item=None) -> None:
         webbrowser.open(docs_url)
 
     def start_stack(_icon=None, _item=None) -> None:
         if stack.running:
-            notify("La pile tourne déjà")
+            notify("The stack is already running")
         elif stack.start():
-            notify("Pile démarrée — console prête")
+            notify("Stack started — console ready")
         else:
-            notify("Échec du démarrage — voir logs/tray-stack.log")
+            notify("Failed to start — see logs/tray-stack.log")
         refresh()
 
     def stop_stack(_icon=None, _item=None) -> None:
         if not stack.running:
-            notify("La pile est déjà arrêtée")
+            notify("The stack is already stopped")
         elif stack.stop():
-            notify("Pile arrêtée")
+            notify("Stack stopped")
         else:
-            notify("Arrêt partiel — vérifiez le processus")
+            notify("Partial stop — check the process")
         refresh()
 
     def restart_stack(_icon=None, _item=None) -> None:
@@ -446,13 +446,13 @@ def main(argv: list[str] | None = None) -> int:
 
     def status_text(_icon=None, _item=None) -> str:
         if stack.running:
-            return f"Pile : en marche (pid {stack.pid})"
-        return "Pile : arrêtée"
+            return f"Stack: running (pid {stack.pid})"
+        return "Stack: stopped"
 
     def services_text(_icon=None, _item=None) -> str:
         marks = []
         for label, port in (
-            ("passerelle", gateway_port),
+            ("gateway", gateway_port),
             ("mcp http", mcp_http),
             ("mcp sse", mcp_sse),
             ("admin", admin_port),
@@ -467,9 +467,9 @@ def main(argv: list[str] | None = None) -> int:
 
                 path = install_client_config(target, str(config), "stdio")
             except Exception as exc:
-                notify(f"Échec {label} : {exc}")
+                notify(f"Failed {label} : {exc}")
                 return
-            notify(f"{label} configuré — {path}")
+            notify(f"{label} configured — {path}")
 
         return handler
 
@@ -479,14 +479,14 @@ def main(argv: list[str] | None = None) -> int:
     def toggle_autostart(_icon=None, _item=None) -> None:
         if autostart_enabled():
             autostart.uninstall()
-            notify("Démarrage automatique désactivé")
+            notify("Auto-start disabled")
         else:
             try:
                 autostart.install(config)
             except Exception as exc:
-                notify(f"Échec autostart : {exc}")
+                notify(f"Failed autostart : {exc}")
                 return
-            notify("Démarrage automatique activé")
+            notify("Auto-start enabled")
         refresh()
 
     def quit_app(icon=None, _item=None) -> None:
@@ -506,37 +506,37 @@ def main(argv: list[str] | None = None) -> int:
         ],
         pystray.Menu.SEPARATOR,
         pystray.MenuItem(
-            "Afficher le bloc JSON à coller", lambda i, it: webbrowser.open(console_url)
+            "Show the JSON block to paste", lambda i, it: webbrowser.open(console_url)
         ),
     )
 
     autostart_menu = pystray.Menu(
         pystray.MenuItem(
-            "Actif à l'ouverture de session",
+            "Enabled at sign-in",
             toggle_autostart,
             checked=lambda _item: autostart_enabled(),
         ),
         pystray.MenuItem(
-            "Ouvrir le dossier de l'icône",
+            "Open the icon folder",
             lambda i, it: webbrowser.open(str(paths.runtime_dir())),
         ),
     )
 
     menu = pystray.Menu(
-        pystray.MenuItem("Ouvrir la console", open_console, default=True),
-        pystray.MenuItem("Documentation API", open_docs),
+        pystray.MenuItem("Open the console", open_console, default=True),
+        pystray.MenuItem("API Documentation", open_docs),
         pystray.Menu.SEPARATOR,
-        pystray.MenuItem("Démarrer la pile", start_stack),
-        pystray.MenuItem("Arrêter la pile", stop_stack),
-        pystray.MenuItem("Redémarrer la pile", restart_stack),
+        pystray.MenuItem("Start the stack", start_stack),
+        pystray.MenuItem("Stop the stack", stop_stack),
+        pystray.MenuItem("Restart the stack", restart_stack),
         pystray.Menu.SEPARATOR,
-        pystray.MenuItem("Clients MCP", clients_menu),
-        pystray.MenuItem("Démarrage automatique", autostart_menu),
+        pystray.MenuItem("MCP Clients", clients_menu),
+        pystray.MenuItem("Auto-start", autostart_menu),
         pystray.Menu.SEPARATOR,
         pystray.MenuItem(status_text, None, enabled=False),
         pystray.MenuItem(services_text, None, enabled=False),
         pystray.Menu.SEPARATOR,
-        pystray.MenuItem("Quitter IcyLoom", quit_app),
+        pystray.MenuItem("Quit IcyLoom", quit_app),
     )
 
     try:
@@ -552,7 +552,7 @@ def main(argv: list[str] | None = None) -> int:
     state["icon"] = icon
 
     def watcher() -> None:
-        """Suit l'état de la pile et rafraîchit le menu au changement."""
+        """Tracks stack state and refreshes the menu on change."""
         previous: bool | None = None
         while True:
             time.sleep(2.0)

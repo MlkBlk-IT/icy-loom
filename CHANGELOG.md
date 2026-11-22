@@ -4,6 +4,35 @@ All notable changes to this project are documented here.
 Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) — versioning:
 [SemVer](https://semver.org/spec/v2.0.0.html).
 
+## [2.3.0] — 2026-11-22
+
+### Added
+
+- **Semantic cache (L2)** — TideCache-inspired multi-level cache: L0 exact hash,
+  L1 lexical normalisation, **L2 semantic** (same meaning, different words).
+  Embeddings come from any OpenAI-compatible endpoint (LM Studio,
+  `text-embedding-qwen3-embedding-4b`), stored in the new `semantic_cache`
+  SQLite table, cosine search in pure stdlib (no new dependency, CPU-only).
+  Off by default — enable with `cache.semantic_enabled: true`
+  (`semantic_threshold`, `semantic_url`). See `docs/SEMANTIC-CACHE.md`.
+- **Dashboard**: semantic cache metrics (entries, reuses, hit rate, by provider)
+  and a reworked console UI; `/api/status` now reports the `semantic` block.
+
+### Fixed
+
+- **`token_tool_schemas` measured the raw schema**; the agent only receives the
+  compressed contract, so the cost was overestimated ~2-3x. Now measured on the
+  compressed schema.
+- **`token_cache_read` stayed at 0**: the canonical fallback path, which serves
+  the real hits, was never metered.
+- **Duplicate `tool_error` flood**: identical errors (same server/tool/cause) are
+  deduplicated over a 1-hour window.
+- **Dead servers no longer re-probed** by the catalogue refresh while in backoff
+  (saved 7-20 s of latency every 5 minutes).
+
+### Changed
+
+- System tray UI strings and docstrings translated to English.
 ## [2.2.2] — 2026-11-06
 
 ### Added

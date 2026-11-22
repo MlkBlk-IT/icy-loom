@@ -26,3 +26,17 @@ sqlite_mcp_server.db
 *.bak-*
 .pytest-*/
 .pytest-out.txt
+
+# brouillons / sondes locales / captures
+backups/
+*.tgz
+/_*.png
+/_p_dash*.py
+/_probe*
+/_canon_probe.py
+/cat.json
+/cattest.py
+/dbcount*.py
+/ports*.py
+/probe*.py
+/_*/

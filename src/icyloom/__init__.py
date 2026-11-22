@@ -6,7 +6,7 @@ Tout est piloté par un unique fichier de configuration YAML.
 
 __all__ = ["__version__", "PROJECT_NAME", "register"]
 
-__version__ = "2.2.2"
+__version__ = "2.3.0"
 PROJECT_NAME = "icyloom"
 
 

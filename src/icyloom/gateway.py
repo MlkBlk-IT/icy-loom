@@ -178,6 +178,19 @@ class Gateway:
         )
         self.registry = UpstreamRegistry.from_config(config.upstreams)
         self.ledger = Ledger(self.db, enabled=config.ledger.enabled)
+        self.semantic = None
+        self.embedder = None
+        try:
+            if getattr(config, "cache", None) is not None and getattr(config.cache, "semantic_enabled", False):
+                from .semantic import EmbeddingClient, EmbeddingConfig, SemanticIndex
+                surl = getattr(config.cache, "semantic_url", "") or "http://127.0.0.1:1234/v1"
+                if not surl.rstrip("/").endswith("/embeddings"):
+                    surl = surl.rstrip("/") + "/embeddings"
+                self.embedder = EmbeddingClient(EmbeddingConfig(url=surl))
+                self.semantic = SemanticIndex(self.db, threshold=float(getattr(config.cache, "semantic_threshold", 0.95)))
+        except Exception:
+            self.semantic = None
+            self.embedder = None
 
     # -- fermeture --------------------------------------------------------
     async def aclose(self) -> None:
@@ -386,6 +399,15 @@ def create_app(config: Config) -> FastAPI:
                     " access_count=cache_entries.access_count + 1",
                     cache_row,
                 )
+            if cache_row is not None and gateway.semantic is not None and gateway.embedder is not None:
+                try:
+                    ckey, cnorm = cache_row[0], cache_row[1]
+                    if cnorm and not cache_row[4]:
+                        _v = gateway.embedder.embed(str(cnorm)[:4000])
+                        if _v is not None:
+                            gateway.semantic.insert(ckey, str(cnorm)[:200], _v, cache_row[5], cache_row[6], False, str(cache_row[3]))
+                except Exception:
+                    pass
             if llm_event is not None:
                 cur.execute(
                     "INSERT INTO llm_events"
@@ -630,6 +652,18 @@ def create_app(config: Config) -> FastAPI:
                 scope["model"] = model_in_path
             key = gateway.canonicalizer.digest(body, scope=scope)
             entry = gateway.cache.get(key, bump=False)
+            # --- L2 semantique : meme sens, autres mots ------------------
+            if entry is None and gateway.semantic is not None and not wants_stream:
+                try:
+                    v = gateway.embedder.embed(str(body.get("raw_text", body)[:4000]))
+                    if v is not None:
+                        hit = gateway.semantic.lookup(v)
+                        if hit is not None:
+                            skey, score, srow = hit
+                            gateway.semantic.touch(skey)
+                            entry = gateway.cache.get(skey, bump=True)
+                except Exception:
+                    entry = None
             if entry is not None and not wants_stream and not entry.is_stream:
                 return _cache_hit_response(entry, request, key)
             if (entry is not None and wants_stream and entry.is_stream
@@ -873,9 +907,21 @@ def create_app(config: Config) -> FastAPI:
 
     @app.get("/api/status")
     async def status():
+        if gateway.semantic is not None:
+            _st = gateway.semantic.stats()
+            _sv = {
+                "enabled": True,
+                "entries": _st.get("entries", 0),
+                "reuses": _st.get("reuses", 0),
+                "threshold": gateway.semantic.threshold,
+                "dim": gateway.embedder.dim if gateway.embedder else 0,
+            }
+        else:
+            _sv = {"enabled": False, "entries": 0, "reuses": 0}
         return {
             "service": "icyloom",
             "cache": gateway.cache.stats(),
+            "semantic": _sv,
             "upstreams": gateway.registry.names(),
             "breakers": [b.__dict__ for b in gateway.breakers.all_status()],
             "ledger": gateway.ledger.summary(),

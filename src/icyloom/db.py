@@ -314,7 +314,27 @@ SCHEMA: tuple[str, ...] = (
     )
     """,
     "CREATE INDEX IF NOT EXISTS idx_tool_drift_server ON tool_drift(server)",
+    # --- cache semantique (TideCache-adapte, niveau L2) ---------------------
+    """
+    CREATE TABLE IF NOT EXISTS semantic_cache (
+        key            TEXT PRIMARY KEY,
+        canon_key      TEXT NOT NULL DEFAULT '',
+        provider       TEXT,
+        model          TEXT,
+        is_stream      INTEGER NOT NULL DEFAULT 0,
+        response       TEXT NOT NULL,
+        embedding      BLOB,
+        dim            INTEGER NOT NULL DEFAULT 0,
+        prompt_tokens  INTEGER NOT NULL DEFAULT 0,
+        completion_tokens INTEGER NOT NULL DEFAULT 0,
+        created_at     TEXT NOT NULL DEFAULT (datetime('now')),
+        last_accessed  TEXT NOT NULL DEFAULT (datetime('now')),
+        access_count   INTEGER NOT NULL DEFAULT 0
+    )
+    """,
+    "CREATE INDEX IF NOT EXISTS idx_semantic_cache_canon ON semantic_cache(canon_key)",
 )
+
 
 #: Index FTS5 du registre : **optionnel**, car FTS5 peut manquer dans une
 #: compilation SQLite. Sans lui, la sélection reste lexique (repli Python).

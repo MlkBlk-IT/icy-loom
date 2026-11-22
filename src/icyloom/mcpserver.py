@@ -97,6 +97,11 @@ async def refresh_catalog(tools: ToolProxy, servers: dict[str, ToolServerConfig]
         # au démarrage gardait les serveurs désactivés en boucle d'erreur).
         names = getattr(tools, "server_names", None)
         for name in (names() if callable(names) else active_servers(servers)):
+            # un serveur en backoff n'est pas re-sondé : évite de payer
+            # 7-20 s de latence toutes les 5 min pour un serveur mort.
+            backoff = getattr(tools, "backoff_active", None)
+            if callable(backoff) and backoff(name):
+                continue
             try:
                 await tools.list_tools(name)
             except Exception as exc:  # pragma: no cover - serveur indisponible

@@ -841,10 +841,19 @@ class ToolRegistry:
         }
 
     def schema_tokens(self, server: str = "") -> dict[str, int]:
-        """Tokens que coûteraient les schémas exposés, serveur par serveur."""
+        """Tokens que coûtent les schémas **exposés**, serveur par serveur.
+
+        Le registre garde le schéma brut ; l'agent ne reçoit que le contrat
+        compressé (voir ``contract``). Mesurer le brut surestimait le coût
+        réel d'un facteur ~2-3 (12,6 M de tokens sur 30 j au lieu du schéma
+        réellement injecté).
+        """
+        from .toolcompress import compress_schema
+
         out: dict[str, int] = {}
         for row in self.list_all(server=server):
-            tokens = count_tokens(json.dumps(row.get("input") or {}, ensure_ascii=False))
+            shown = compress_schema(row.get("input") or {})
+            tokens = count_tokens(json.dumps(shown, ensure_ascii=False))
             out[row["server"]] = out.get(row["server"], 0) + tokens
         return out
 

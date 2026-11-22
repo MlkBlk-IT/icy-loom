@@ -53,6 +53,9 @@ log = logging.getLogger("icyloom.toolproxy")
 #: à chaque appel. 30 s, 60 s, 120 s… plafonné à 10 min.
 BACKOFF_BASE_SECONDS = 30
 BACKOFF_MAX_SECONDS = 600
+# Fenêtre de déduplication des tool_error : un serveur mort ne doit
+# pas remplir le journal (états 547 tool_error / 30 j, dont 546 list_tools).
+ERROR_DEDUP_SECONDS = 3600
 
 
 def _stamp() -> str:
@@ -510,6 +513,12 @@ class ToolProxy:
                 " WHERE key = ?",
                 (row["key"],),
             )
+        # le repli canonique est le chemin qui sert réellement les hits :
+        # il doit être compté comme une lecture de cache (bug : jamais
+        # enregistré -> cache_read restait à 0 dans le ledger).
+        # NB: enregistrer HORS transaction -> une 2e connexion SQLite
+        # imbriquée provoque "database is locked".
+        self.meter.record("cache_read", count_tokens(str(row["result_json"])))
         return {
             "result": json.loads(row["result_json"]),
             "bytes": int(row["bytes"]),
@@ -571,6 +580,17 @@ class ToolProxy:
                    latency_ms: int, saved_latency_ms: int = 0, detail: str = "",
                    client: str = "") -> None:
         with self.db.transaction() as cur:
+            # bug : la première erreur est conservée, les suivantes (même
+            # serveur/outil/cause) dans la fenêtre sont ignorées.
+            if kind == "tool_error" and detail:
+                dup = cur.execute(
+                    "SELECT 1 FROM tool_events WHERE kind='tool_error'"
+                    " AND server=? AND tool=? AND detail=?"
+                    " AND ts >= datetime('now', ?) LIMIT 1",
+                    (server, tool, detail, f"-{ERROR_DEDUP_SECONDS} seconds"),
+                ).fetchone()
+                if dup:
+                    return
             cur.execute(
                 "INSERT INTO tool_events"
                 " (kind, server, tool, args_hash, bytes, latency_ms, saved_latency_ms, detail,"
@@ -581,6 +601,11 @@ class ToolProxy:
             )
 
     # -- appels -----------------------------------------------------------
+    def backoff_active(self, server: str) -> bool:
+        """Vrai si le serveur est en backoff : le catalogue ne doit pas le re-sonder."""
+        fail = self._failures.get(server)
+        return bool(fail and time.time() < fail["next_at"])
+
     async def list_tools(self, server: str) -> dict[str, Any]:
         """Liste les outils d'un serveur descendant (catalogue mis en cache)."""
         cfg = self._servers.get(server)

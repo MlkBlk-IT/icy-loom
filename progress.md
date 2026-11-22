@@ -507,3 +507,50 @@ exclue : elle mesure des caractères, pas des tokens.
 - Écart connu : les lignes `ledger_entries.kind='token_tool_results'` portent `tokens_saved=0`
   alors que `tool_audit` mesure 118 654 tok réels → le ledger ne porte pas l'économie
   de compaction des résultats d'outils.
+
+
+---
+
+# progress.md — Session 2026-11-22 · TideCache-adapté + cache hybride sémantique
+
+Objectif de Malik : « go tide-adapté » + une seconde fonction d'économie de tokens (Caveman/RTK),
+un **hybride** qui marche sur le **sens** (idées/concepts), pas seulement sur les mêmes mots.
+
+## 1. Découverte : TideCache ≠ cache sémantique
+
+Le papier arXiv:2611.26619 (TideCache, MIT/ETH/UCSD, 2026-11-19) traite la gestion du
+**KV-cache GPU** pour le serving LLM hybride (SGLang, GB300/GH200, NVLink-C2C). Ce n'est
+pas du cache sémantique et ce n'est **pas implémentable sur un Dell CPU-only sans GPU**.
+Décision : adapter le *principe* (cache multi-niveaux, promotion/démotion transparente),
+pas le système.
+
+## 2. Ce qui existait déjà (inspection)
+
+| Module | Rôle | État |
+|---|---|---|
+| `cache.py` | `CacheStore` sur `cache_entries` (SHA-256 du corps canonique) | présent = **niveau L0 exact** |
+| `normalize.py` | NFKD, minuscules, nombres, diacritiques, ponctuation, `digest()` | présent = **niveau L1 lexical** |
+| `toolcompress.py` | compression schémas/résultats + détection de secrets | présent (base compression) |
+| `config.py` | `CacheConfig.semantic_enabled=False`, `semantic_threshold=0.95`, `semantic_url`, `semantic_collection` | **déclaré, non implémenté** |
+
+## 3. Architecture retenue (3 tiers + compression)
+
+```
+requete -> L0 exact (cache_entries.key)          ~0 ms   hit O(1)
+        -> L1 normalise (key du digest)          ~0 ms   reformulation lexicale
+        -> L2 SEMANTIQUE (embedding Qwen3-4B)     ~12 ms  meme SENS, autres mots
+        -> upstream (IcyCache -> omniroute)
+```
+L2 utilise `text-embedding-qwen3-embedding-4b` (2560-dim, LM Studio :1234) et une table
+SQLite `semantic_cache` ; recherche cosine via numpy (pas de nouvelle dependance lourde).
+Compression : le style Caveman (deja partage par `toolcompress.py`) reduit les valeurs
+avant stockage au niveau L2.
+
+## 4. Preuves runtime (2026-11-22 01:19)
+
+- LM Studio :1234 -> OK ; embedding dispo : `text-embedding-qwen3-embedding-4b` (2560-dim).
+- Qdrant :6333 -> OK.
+- IcyLoom gateway :8150 -> healthy.
+- DB : `D:/Icy-Loom/var/icyloom.db` (112 Mo) ; `cache_entries`=8, `tool_cache`=5, `llm_events`=143, `ledger_entries`=5498.
+
+(Detail d'implementation et mesures : sections suivantes.)
