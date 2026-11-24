@@ -17,6 +17,16 @@
 
 </div>
 
+> **Part of the [MLKBLK-IT ecosystem](https://github.com/MlkBlk-IT)** — local-first AI infrastructure,
+> CPU-only, documented honestly.
+>
+> **Stack:** [IcyLoom](https://github.com/MlkBlk-IT/icy-loom) (MCP tool gateway) ·
+> [Osiris](https://github.com/MlkBlk-IT/osiris) (context engine) ·
+> [KYRX](https://github.com/MlkBlk-IT/kyrx) (agent-fleet coordination) ·
+> [IcyCache](https://github.com/MlkBlk-IT/icycache) (LLM gateway + cache) ·
+> [Loom](https://github.com/MlkBlk-IT/mcp-loom-mcp) (portable context server)
+
+
 
 ## IcyLoom V2 — the MCP Tool Gateway
 
